@@ -1,0 +1,14 @@
+# art/source/furniture/beds/bed_single_r0_original.png
+size: 96x104 (expected 96x104)
+original: distinct RGB 2391, opaque(255) 0, semi-alpha 6519 (5525 kept at cut 128)
+clusters: 16 → palette colors 14
+fixed: distinct RGB 14, kept pixels 5525, semi removed 994, recolored 5525 (100.0%), mean dE 7.45, max dE 22.8, dE>15 127 px (2.3%)
+region as r0 (footprint 1x2, anchor 64,56): outside 53 px
+region as r1 (footprint 2x1, anchor 32,56): outside 179 px
+edge touch: top 0, left 37, right 23, bottom 0
+content bbox: x 0..95, y 5..98
+lowest row y=98 at x 47..49 (front vertex expected at x 32, y 104)
+leftmost col x=0 at y 37..73 (left vertex expected y 88)
+rightmost col x=95 at y 51..73 (right vertex expected y 72)
+wrote assets/pixel/furniture/beds/bed_single_r0.png
+wrote docs/asset-system/review/bed_single_r0_compare_clustered.png

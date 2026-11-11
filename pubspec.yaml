@@ -67,6 +67,7 @@ flutter:
   # 픽셀 아트 에셋 (docs/asset-system). PNG를 넣을 때 그 하위 폴더도 여기에 등록한다.
   assets:
     - assets/pixel/
+    - assets/pixel/furniture/beds/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
