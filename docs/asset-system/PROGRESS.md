@@ -8,7 +8,7 @@
 | 3 | 렌더링 기술 검토 | 완료 — CustomPainter 유지 | 아래 기록 |
 | 4 | 최소 프로토타입 1~7단계 | 완료 (침대는 draft) | 661bfb0 ~ 8908816 |
 | 4+ | 침대 재분류 (싱글·더블) | 완료 (모두 draft) | 아래 기록 |
-| 5 | 에셋 제작 파이프라인 | 대기 | |
+| 5 | 에셋 제작 파이프라인 | 진행 중 — 침대 템플릿 완료 | 아래 기록 |
 
 ---
 
@@ -192,3 +192,51 @@
 - 더블 R0 그림, 싱글 R0·R1 그림이 없다.
 - 더블 R1은 점유보다 작다(좌우 16px, 앞 7px 여백). 받아들일지, 다시 그릴지 검수가 필요하다.
 - 원본 좌우 기둥이 잘렸을 가능성이 있다.
+
+---
+
+## 2026-11-11 · 침대 제작 기준 템플릿 (PART 5 일부)
+
+**목적**: 기존 설계는 바꾸지 않는다. AI 초안 → Pixelorama/Aseprite 보정에서 반복해 쓸 기준 가이드를 만든다.
+실제 침대 디자인은 만들지 않았다.
+
+**추가 파일**
+- `tool/make_bed_templates.dart`: 템플릿 생성기. `overlay` 모드로 실제 그림 위에 가이드를 겹친 검수 이미지도 만든다.
+- `art/templates/beds/{bed_single_r0, bed_single_r1, bed_double_r0, bed_double_r1}/`
+  - `_guide.png`: 가이드 레이어
+  - `_art.png`: 빈 그림 레이어
+  - `_template.ase`: 레이어 2개 + 팔레트
+  - `_preview.png`: 범례
+- `art/templates/palette/oneul_sari_57.gpl`
+- `art/templates/README.md`: 가이드 색 범례, Pixelorama·Aseprite 사용법
+- `test/room/template_test.dart`: 33개
+- `docs/asset-system/review/bed_double_r1_on_template.png`: 기존 더블 R1을 템플릿에 겹친 모습
+
+**가이드 내용**
+- 실제 에셋과 같은 캔버스
+- 앵커(정확한 1px + 십자), 바닥 점유 마름모, 칸 경계
+- 허용 영역 경계 + 영역 밖 옅은 칠, 물체 높이 면
+- 머리판 변·발치 변·방향 화살표, 광원(왼쪽 위)
+
+**픽셀 좌표 검증 (`template_test.dart`, 앱 기준과 대조)**
+- 캔버스 크기 = 매니페스트 `spriteSpec`
+- 앵커 픽셀 = (ax, ay)
+- 꼭짓점·변 위 픽셀
+- 영역 밖 칠 = `AssetCheck.allowedRegion` 밖과 전 픽셀 일치
+- 머리판·발치 변 위치, 반대 변에는 머리판 표시 없음
+- 그림 레이어 완전 투명
+- `.ase` 다시 읽기: 헤더·크기·레이어 이름·팔레트 57색·가이드 셀 = 가이드 PNG
+- `.gpl` 57색
+
+**추가 작업**
+- 더블 R1 원본·보정본 비교(`review/bed_double_r1_compare.png`)와 방 배치 스크린샷(`review/bed_double_in_room_*.png`)을 다시 생성했다.
+  - 기존 파일과 바이트 단위로 같았다(결정적 결과).
+  - 보정본 `assets/pixel/furniture/beds/bed_double_r1.png`도 원본에서 재현돼 일치했다.
+
+**바꾸지 않은 것**: 에셋, 카탈로그, 매니페스트, 저장 구조, 앱 코드
+
+**한계**
+- Pixelorama 전용 형식(`.pxo`)은 만들지 않았다. 내부 형식을 확실히 알 수 없어서다. 레이어별 PNG로 같은 작업을 할 수 있다.
+- `.ase`는 사양에 맞춰 만들고 다시 읽어 검증했지만, 실제 Aseprite·Pixelorama에서 열어 보지는 않았다.
+
+**테스트**: `flutter analyze` 문제 없음, `flutter test` 전체 135개 통과.
