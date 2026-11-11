@@ -17,7 +17,7 @@ class PlaceCheck {
 /// 충돌 검사와 빈 자리 찾기 (docs/asset-system/02 §6).
 class Occupancy {
   Occupancy(this.manifest);
-  final AssetManifest manifest;
+  final PixelManifest manifest;
 
   /// 같은 격자에서 겹치면 안 되는 묶음: 막는 물체끼리, 러그끼리
   String? _group(ItemArt a) => switch (a.layer) {

@@ -113,8 +113,8 @@ class BaseArt {
   bool get isFinal => status == ArtStatus.finalArt;
 }
 
-class AssetManifest {
-  AssetManifest({required this.version, required this.items, required this.base});
+class PixelManifest {
+  PixelManifest({required this.version, required this.items, required this.base});
 
   final int version;
   final Map<String, ItemArt> items;
@@ -130,7 +130,7 @@ class AssetManifest {
   /// 바닥·벽이 모두 final이어야 아이소메트릭 기본 그림을 쓴다.
   bool get roomBaseFinal => (base['floor']?.isFinal ?? false) && (base['wallL']?.isFinal ?? false);
 
-  factory AssetManifest.parse(String source) {
+  factory PixelManifest.parse(String source) {
     final j = jsonDecode(source) as Map<String, dynamic>;
     final items = <String, ItemArt>{};
     ((j['items'] as Map?) ?? {}).forEach((k, v) {
@@ -146,9 +146,9 @@ class AssetManifest {
         sheets: ((m['sheets'] as Map?) ?? {}).cast<String, String>(),
       );
     });
-    return AssetManifest(version: (j['version'] as num?)?.toInt() ?? 1, items: items, base: base);
+    return PixelManifest(version: (j['version'] as num?)?.toInt() ?? 1, items: items, base: base);
   }
 
-  static Future<AssetManifest> load([AssetBundle? bundle]) async =>
-      AssetManifest.parse(await (bundle ?? rootBundle).loadString(manifestPath));
+  static Future<PixelManifest> load([AssetBundle? bundle]) async =>
+      PixelManifest.parse(await (bundle ?? rootBundle).loadString(manifestPath));
 }

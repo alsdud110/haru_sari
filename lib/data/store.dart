@@ -73,10 +73,10 @@ class AppState extends ChangeNotifier {
     DateTime Function()? clock,
     Reminders? reminders,
     String initialName = '',
-    AssetManifest? manifest,
+    PixelManifest? manifest,
   }) : _clock = clock ?? DateTime.now,
        reminders = reminders ?? NoReminders(),
-       manifest = manifest ?? AssetManifest(version: 1, items: const {}, base: const {}) {
+       manifest = manifest ?? PixelManifest(version: 1, items: const {}, base: const {}) {
     _load();
     if (profile.name.isEmpty) profile.name = initialName;
   }
@@ -86,7 +86,7 @@ class AppState extends ChangeNotifier {
   final Reminders reminders;
 
   /// 가구 점유·회전 정보 (assets/pixel/manifest.json)
-  final AssetManifest manifest;
+  final PixelManifest manifest;
   late final Occupancy occupancy = Occupancy(manifest);
 
   static const _kRoutines = 'routines';

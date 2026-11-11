@@ -10,7 +10,7 @@ import 'package:oneul_sari/room/iso.dart';
 import 'package:oneul_sari/room/manifest.dart';
 import 'package:oneul_sari/room/palette.dart';
 
-AssetManifest loadManifest() => AssetManifest.parse(File(AssetManifest.manifestPath).readAsStringSync());
+PixelManifest loadManifest() => PixelManifest.parse(File(PixelManifest.manifestPath).readAsStringSync());
 
 /// 허용 영역 안을 팔레트 색으로 채운 테스트용 PNG.
 Future<Uint8List> fakeSprite(
@@ -87,12 +87,12 @@ void main() {
     for (final art in m.items.values) {
       final paths = [...art.rotations.values, ?art.path, ...art.sheets.values];
       for (final p in paths) {
-        final f = File('${AssetManifest.assetRoot}$p');
+        final f = File('${PixelManifest.assetRoot}$p');
         if (art.isFinal) expect(f.existsSync(), isTrue, reason: '${art.id}: final인데 $p 없음');
       }
     }
     for (final b in m.base.values) {
-      if (b.isFinal && b.path != null) expect(File('${AssetManifest.assetRoot}${b.path}').existsSync(), isTrue);
+      if (b.isFinal && b.path != null) expect(File('${PixelManifest.assetRoot}${b.path}').existsSync(), isTrue);
     }
     expect(m.roomBaseFinal, isFalse, reason: '바닥·벽 에셋이 아직 없으므로 draft여야 한다');
   });
@@ -101,7 +101,7 @@ void main() {
     await tester.runAsync(() async {
       for (final art in m.items.values.where((a) => a.isFloor)) {
         for (final e in art.rotations.entries) {
-          final f = File('${AssetManifest.assetRoot}${e.value}');
+          final f = File('${PixelManifest.assetRoot}${e.value}');
           if (!f.existsSync()) continue;
           final problems = await AssetCheck.objectSprite(art, e.key, f.readAsBytesSync());
           if (art.isFinal) {

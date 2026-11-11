@@ -12,6 +12,6 @@ Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR');
   final kv = PrefsKeyValue(await SharedPreferences.getInstance());
-  final manifest = await AssetManifest.load();
+  final manifest = await PixelManifest.load();
   runApp(OneulSariApp(kv: kv, auth: AuthService(kv), reminders: LocalReminders(), manifest: manifest));
 }

@@ -32,7 +32,7 @@ class OneulSariApp extends StatefulWidget {
   final AuthService auth;
   final Reminders? reminders;
   final DateTime Function()? clock;
-  final AssetManifest? manifest;
+  final PixelManifest? manifest;
 
   @override
   State<OneulSariApp> createState() => _OneulSariAppState();

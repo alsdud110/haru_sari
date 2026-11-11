@@ -212,7 +212,7 @@ void main() {
 
     test('방이 꽉 차면 사도 보관함으로 가고, 코인은 정상 차감된다', () {
       // 테스트용 매니페스트: 침대가 방 전체(8×8)를 차지한다
-      final tm = AssetManifest.parse(
+      final tm = PixelManifest.parse(
         '{"items": {"bed_single": {"layer": "object", "footprint": [8, 8], "height": 8},'
         ' "chair_wood": {"layer": "object", "footprint": [1, 1], "height": 8}}}',
       );

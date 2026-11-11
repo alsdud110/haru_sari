@@ -117,7 +117,7 @@ void main() {
 
     test('가득 차면 null (테스트용 매니페스트: 2×2 블록 16개로 방을 채움)', () {
       final blocks = [for (var i = 0; i < 16; i++) '"b$i": {"layer": "object", "footprint": [2, 2], "height": 8}'];
-      final tm = AssetManifest.parse(
+      final tm = PixelManifest.parse(
         '{"items": {${blocks.join(',')}, "chair": {"layer": "object", "footprint": [1, 1], "height": 8}}}',
       );
       final o = Occupancy(tm);
