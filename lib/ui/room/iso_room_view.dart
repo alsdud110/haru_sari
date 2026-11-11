@@ -107,7 +107,9 @@ class _IsoRoomViewState extends State<IsoRoomView> with SingleTickerProviderStat
   void didChangeDependencies() {
     super.didChangeDependencies();
     final s = AppScope.of(context);
-    RegistryScope.of(context)?.preload(s.room.floor.keys);
+    final reg = RegistryScope.of(context);
+    reg?.preload(s.room.floor.keys);
+    preloadMinimi(reg, s.profile);
   }
 
   @override

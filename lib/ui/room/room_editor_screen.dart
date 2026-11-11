@@ -164,6 +164,7 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
         : (RoomLayout.fromJson(l.toJson())..wall[_dragId!] = _ghostWall!);
     final scene = RoomScene.build(shownLayout, s.manifest, override: override);
     reg?.preload(l.floor.keys);
+    preloadMinimi(reg, s.profile);
 
     return Scaffold(
       appBar: AppBar(
