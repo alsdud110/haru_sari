@@ -1,17 +1,115 @@
-# oneul_sari
+# 오늘살이
 
-A new Flutter project.
+> 평범한 하루를 살아낸 것도 성취예요.
 
-## Getting Started
+반복되는 일상을 보내는 20~30대를 위한 루틴 기록 앱입니다. 기상, 물 마시기, 출퇴근, 식사처럼 매일 하는 일을 체크하면 하루가 쌓이고, 쌓인 하루로 나를 닮은 **미니미의 방**을 꾸밉니다.
 
-This project is a starting point for a Flutter application.
+생산성 앱이 아닙니다. 루틴을 놓친 날에도 벌점이나 연속 기록 끊김이 없고, 앱은 늘 다정한 말로 다시 시작을 돕습니다.
 
-A few resources to get you started if this is your first Flutter project:
+## 주요 기능
 
-- [Learn Flutter](https://docs.flutter.dev/get-started/learn-flutter)
-- [Write your first Flutter app](https://docs.flutter.dev/get-started/codelab)
-- [Flutter learning resources](https://docs.flutter.dev/reference/learning-resources)
+| 영역 | 내용 |
+|---|---|
+| **오늘** | 요일에 맞는 오늘의 루틴, 체크 / 한 번에 기록하기, 달성률 링, 부드러운 한마디 |
+| **보상** | 하루 루틴 70% 이상 달성 시 경험치·코인 지급 (하루 1회), 레벨업 시 새 아이템 해금 |
+| **내 방** | 미니미 방, 가구·의상·액세서리 상점, 보관함, 배치 / 입기 |
+| **기록** | 일간(완료 목록·한 줄 메모), 주간(막대·날짜별 목록), 월간(달력·루틴별 달성 현황) |
+| **배지** | 첫 기록, 온전한 하루, 누적 기록일, 다시 시작 등 12종 — 연속 기록 배지는 없음 |
+| **루틴 관리** | 이름·아이콘·카테고리·요일·시간·한 줄 메모, 잠시 쉬기 스위치, 삭제 |
+| **알림** | 루틴 시작 알림, 하루 마감 알림, 전체 끄기 — 미완료를 재촉하는 알림은 없음 |
+| **계정** | 가입·로그인·로그아웃, 닉네임·이메일·비밀번호 변경, 계정 삭제 |
 
-For help getting started with Flutter development, view the
-[online documentation](https://docs.flutter.dev/), which offers tutorials,
-samples, guidance on mobile development, and a full API reference.
+## 보상 규칙
+
+| 항목 | 값 |
+|---|---|
+| 하루 보상 기준 | 그날 루틴의 70% 이상 완료 |
+| 기본 보상 | 20 XP + 10 코인 |
+| 100% 달성 보너스 | +10 XP + 5 코인 |
+| 다음 레벨까지 | 현재 레벨 × 50 XP |
+| 레벨업 보너스 | +20 코인 |
+| 놓친 날 | 경험치·레벨·코인·아이템 차감 없음 |
+
+수치는 `lib/data/rewards.dart` 한 곳에서 바꿉니다.
+
+## 시작하기
+
+```bash
+flutter pub get
+flutter run
+```
+
+- Flutter 3.47 / Dart 3.13 기준
+- Android, iOS 지원
+
+## 테스트
+
+```bash
+flutter analyze
+flutter test
+```
+
+| 파일 | 다루는 것 |
+|---|---|
+| `test/store_test.dart` | 기록·보상·루틴 관리·상점·배지·계정 규칙 |
+| `test/widget_test.dart` | 가입부터 보상·방·상점까지 주요 흐름, 로그아웃·재로그인, 기록 탭 |
+| `test/motion_test.dart` | 스낵바·토스트·팝업·스프링·로딩·순차 등장 모션 |
+
+## 폴더 구조
+
+```
+lib/
+├─ main.dart                  앱 시작 (저장소·계정·알림 연결)
+├─ app.dart                   로그인 여부 / 첫 설정 여부에 따른 화면 분기
+├─ theme/tokens.dart          색·간격·모서리·테마 (디자인 토큰)
+├─ data/
+│  ├─ models.dart             루틴·하루 기록·프로필·알림 설정
+│  ├─ store.dart              앱 상태와 저장 (AppState)
+│  ├─ rewards.dart            보상 규칙
+│  ├─ catalog.dart            상점 아이템·루틴 템플릿
+│  ├─ badges.dart             배지 정의와 획득 조건
+│  ├─ auth.dart               계정 (현재는 기기 안 저장)
+│  └─ reminders.dart          알림 예약
+└─ ui/
+   ├─ motion.dart             모션 규칙과 공용 컴포넌트
+   ├─ widgets.dart            공용 위젯 (Panel, 링, 칩 등)
+   ├─ auth_screens.dart       소개·가입·로그인·계정 정보
+   ├─ onboarding.dart         첫 설정 (미니미·루틴 템플릿·알림)
+   ├─ shell.dart              하단 탭
+   ├─ today.dart              오늘·보상 시트·레벨 달성·격려 화면
+   ├─ routines.dart           루틴 관리·편집
+   ├─ records.dart            일간·주간·월간 기록
+   ├─ settings.dart           나 탭·알림 설정·배지
+   └─ room/
+      ├─ room_screen.dart     내 방·상점·보관함·아이템 상세
+      └─ room_painter.dart    방·가구·미니미 그림
+```
+
+## 모션 규칙
+
+모든 화면은 `lib/ui/motion.dart`의 규칙만 씁니다.
+
+| 요소 | 모션 |
+|---|---|
+| 스낵바 | 아래에서 슬라이드 · 들어올 때 ease-out, 나갈 때 ease-in |
+| 토스트 | 제자리 페이드 인/아웃 |
+| 팝업 | 90%에서 커지며 등장 (ease-out) |
+| 바텀시트 | 아래에서 슬라이드 · 배경 페이드 |
+| 체크 | 스프링으로 톡 튀는 scale |
+| 로딩 | linear로 일정하게 회전 |
+| 제목·순서 | 70ms 간격으로 한 줄씩 등장 |
+
+기기의 '동작 줄이기' 설정을 켜면 확대·스프링·순차 등장이 꺼집니다.
+
+## 그림 에셋
+
+방, 가구, 미니미는 지금 코드(`CustomPainter`)로 그립니다. 그림 에셋이 준비되면 `lib/data/catalog.dart`에서 아이템의 `assetPath`를 채우면 이미지로 바뀝니다. 에셋은 아이템마다 배경이 투명한 PNG가 좋습니다.
+
+## 알려진 한계
+
+- **계정은 기기 안에만 저장됩니다.** 다른 기기와 동기화되지 않고, 이메일·소셜 계정 복구가 없습니다. 서버(Firebase 등)를 붙일 때는 `lib/data/auth.dart`를 같은 메서드를 가진 구현으로 바꾸면 됩니다.
+- iOS 알림은 실제 기기에서 확인하지 않았습니다.
+
+## 기획 문서
+
+기획은 manyfast의 '오늘살이' 프로젝트(PRD·기능명세서·보상 정책 PL-BBQESH·유저플로우·와이어프레임 v5)를 따릅니다.
