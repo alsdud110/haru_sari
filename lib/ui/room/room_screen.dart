@@ -9,6 +9,7 @@ import '../settings.dart';
 import '../motion.dart';
 import '../widgets.dart';
 import 'iso_room_view.dart';
+import 'room_editor_screen.dart';
 import 'room_painter.dart';
 
 /// 내 방: 방 그림 · 미니미 상태 · 방 꾸밈 현황 · 보유 아이템 요약
@@ -52,6 +53,15 @@ class RoomScreen extends StatelessWidget {
               style: t.bodySmall,
             ),
             const SizedBox(height: Space.lg),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(
+                context,
+                MaterialPageRoute(fullscreenDialog: true, builder: (_) => const RoomEditorScreen()),
+              ),
+              icon: const Icon(Icons.open_with_rounded),
+              label: const Text('방 꾸미기'),
+            ),
+            const SizedBox(height: Space.sm),
             Row(
               children: [
                 Expanded(
