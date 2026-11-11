@@ -8,6 +8,7 @@ import '../../theme/tokens.dart';
 import '../settings.dart';
 import '../motion.dart';
 import '../widgets.dart';
+import 'iso_room_view.dart';
 import 'room_painter.dart';
 
 /// 내 방: 방 그림 · 미니미 상태 · 방 꾸밈 현황 · 보유 아이템 요약
@@ -41,7 +42,10 @@ class RoomScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Space.lg),
-            RoomView(placed: s.legacyPlacedView),
+            FullBleed(
+              height: FullBleed.heightFor(context),
+              child: RoomViewport(builder: (context, fit) => IsoRoomView(fit: fit)),
+            ),
             const SizedBox(height: Space.sm),
             Text(
               placed.isEmpty ? '아직 텅 빈 방이에요. 하루를 살아낼 때마다 조금씩 채워져요.' : '지금까지 살아낸 하루들이 이 방을 만들었어요.',

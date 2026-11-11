@@ -4,6 +4,7 @@ import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
 import 'room/manifest.dart';
+import 'room/registry.dart';
 import 'theme/tokens.dart';
 import 'ui/auth_screens.dart';
 import 'ui/onboarding.dart';
@@ -40,6 +41,9 @@ class OneulSariApp extends StatefulWidget {
 
 class _OneulSariAppState extends State<OneulSariApp> {
   AppState? _state;
+
+  /// 픽셀 에셋 이미지 캐시 (계정과 무관하므로 앱 전체에서 하나)
+  late final AssetRegistry? _registry = widget.manifest == null ? null : AssetRegistry(widget.manifest!);
   String? _uid;
 
   AppState _stateFor(String uid) {
@@ -85,7 +89,7 @@ class _OneulSariAppState extends State<OneulSariApp> {
 
   @override
   Widget build(BuildContext context) {
-    return AuthScope(
+    final app = AuthScope(
       auth: widget.auth,
       child: ListenableBuilder(
         listenable: widget.auth,
@@ -100,6 +104,8 @@ class _OneulSariAppState extends State<OneulSariApp> {
         },
       ),
     );
+    final reg = _registry;
+    return reg == null ? app : RegistryScope(registry: reg, child: app);
   }
 }
 
