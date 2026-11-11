@@ -28,24 +28,10 @@ void main(List<String> args) {
   final comparePath = args.contains('--compare') ? opt('compare', '') : null;
   final (w, d) = rot == 'r0' ? (fp[0], fp[1]) : (fp[1], fp[0]);
 
-  var raw = img.decodePng(File(args[0]).readAsBytesSync())!.convert(numChannels: 4);
+  final raw = img.decodePng(File(args[0]).readAsBytesSync())!.convert(numChannels: 4);
   final spec = spriteSpec(w, d, h);
   final out = StringBuffer();
   out.writeln('# ${args[0]}');
-
-  // --grid auto|N : 확대된 AI 이미지(아트 픽셀 하나 = N×N 블록)를 1배로 줄인다 (블록 중심 5점 다수결)
-  if (args.contains('--grid')) {
-    final g = opt('grid', 'auto');
-    final (minBX, _, maxBX, _) = _bbox(raw, alphaCut);
-    final (s, ox, oy, note) = switch (g) {
-      'auto' => estimateGrid(raw, alphaCut),
-      // fit: 그림 폭을 규격 폭에 맞춘다 (원래 블록과 어긋날 수 있음 — 보고서에 표시)
-      'fit' => ((maxBX - minBX + 1) / spec.width, -1.0, -1.0, 'fit to spec width ${spec.width}'),
-      _ => (double.parse(g), -1.0, -1.0, 'manual'),
-    };
-    raw = downscaleGrid(raw, s, alphaCut, ox: ox, oy: oy);
-    out.writeln('grid: block ${s.toStringAsFixed(2)} px ($note) → ${raw.width}x${raw.height}');
-  }
 
   // --canvas WxH --offset x,y|auto : 크기를 바꾸지 않고 더 큰 캔버스에 옮겨 놓는다 (늘리기·줄이기 없음)
   var src = raw;
@@ -69,16 +55,6 @@ void main(List<String> args) {
       final cy = spec.ay + (w + d) * 8; // 점유 마름모 중심 y
       ox = (cx - (minX + maxX) / 2).floor();
       oy = cy - sideY;
-    } else if (off == 'front') {
-      // 그림의 가장 낮은 점(가운데)을 바닥 점유의 앞 꼭짓점에 맞춘다
-      var maxY = -1;
-      for (final p in raw) {
-        if (p.a.toInt() >= alphaCut) maxY = math.max(maxY, p.y);
-      }
-      final xs = [for (final p in raw) if (p.a.toInt() >= alphaCut && p.y == maxY) p.x];
-      final fx = spec.ax + (w - d) * 32, fy = spec.height - 1;
-      ox = fx - ((xs.first + xs.last) / 2).round();
-      oy = fy - maxY;
     } else {
       final o = off.split(',').map(int.parse).toList();
       ox = o[0];
@@ -253,17 +229,6 @@ void main(List<String> args) {
   out.writeln('leftmost col x=$minX at y ${leftYs.first}..${leftYs.last} (left vertex expected y ${spec.ay + d * 16})');
   out.writeln('rightmost col x=$maxX at y ${rightYs.first}..${rightYs.last} (right vertex expected y ${spec.ay + w * 16})');
 
-  // 바닥선 기울기: 가장 낮은 점 → 좌·우 끝 열의 가장 낮은 점. 2:1이면 0.50
-  final fxm = (bottomXs.first + bottomXs.last) / 2;
-  final slopeL = (maxY - leftYs.last) / math.max(1, fxm - minX);
-  final slopeR = (maxY - rightYs.last) / math.max(1, maxX - fxm);
-  final slopeOk = (slopeL - 0.5).abs() <= 0.04 && (slopeR - 0.5).abs() <= 0.04;
-  out.writeln('base slope: left ${slopeL.toStringAsFixed(3)}, right ${slopeR.toStringAsFixed(3)} '
-      '(2:1 = 0.500) → ${slopeOk ? 'OK' : 'STRUCTURE: projection is not 2:1'}');
-  // 다리 접점이 바닥선에서 얼마나 뜨는가 (앞 꼭짓점 기준 2:1 선과의 차이)
-  final liftL = (spec.ay + d * 16) - leftYs.last, liftR = (spec.ay + w * 16) - rightYs.last;
-  out.writeln('floor gap at left/right vertex: ${liftL}px / ${liftR}px (0 = on the floor line)');
-
   File(args[1])
     ..createSync(recursive: true)
     ..writeAsBytesSync(img.encodePng(fixed));
@@ -413,88 +378,3 @@ String pct(int a, int b) => '${(100 * a / math.max(b, 1)).toStringAsFixed(1)}%';
 
 double dist((double, double, double) a, (double, double, double) b) =>
     math.sqrt(math.pow(a.$1 - b.$1, 2) + math.pow(a.$2 - b.$2, 2) + math.pow(a.$3 - b.$3, 2));
-
-// ───────── 확대 이미지 → 1배 (AI 생성 이미지용) ─────────
-
-int _cdiff(img.Pixel p, img.Pixel q) =>
-    (p.r - q.r).abs().toInt() + (p.g - q.g).abs().toInt() + (p.b - q.b).abs().toInt();
-
-(int, int, int, int) _bbox(img.Image im, int cut) {
-  var minX = im.width, maxX = -1, minY = im.height, maxY = -1;
-  for (final p in im) {
-    if (p.a.toInt() < cut) continue;
-    minX = math.min(minX, p.x);
-    maxX = math.max(maxX, p.x);
-    minY = math.min(minY, p.y);
-    maxY = math.max(maxY, p.y);
-  }
-  return (minX, minY, maxX, maxY);
-}
-
-/// 블록 크기 추정: 같은 색이 이어지는 가로 길이들이 블록 크기의 정수배에 가장 잘 맞는 값.
-(double, double, double, String) estimateGrid(img.Image im, int cut) {
-  final (minX, minY, maxX, maxY) = _bbox(im, cut);
-  final runs = <int, int>{};
-  for (var y = minY; y <= maxY; y += 2) {
-    var start = minX;
-    for (var x = minX + 1; x <= maxX; x++) {
-      final p = im.getPixel(x, y), q = im.getPixel(x - 1, y);
-      final edge = (p.a.toInt() < cut) != (q.a.toInt() < cut) || _cdiff(p, q) > 60;
-      if (p.a.toInt() < cut && q.a.toInt() < cut) {
-        start = x;
-        continue;
-      }
-      if (edge) {
-        final r = x - start;
-        if (r >= 4 && r <= 200) runs[r] = (runs[r] ?? 0) + 1;
-        start = x;
-      }
-    }
-  }
-  var best = 8.0, bestScore = -1.0;
-  for (var s = 6.0; s <= 40; s += 0.1) {
-    var score = 0.0;
-    runs.forEach((r, c) {
-      final k = (r / s).round();
-      if (k < 1 || k > 6) return;
-      final err = (r / s - k).abs();
-      score += c * math.max(0, 1 - err * 4) / k; // 1배에 가까울수록, 정수배에 가까울수록 높게
-    });
-    if (score > bestScore) {
-      bestScore = score;
-      best = s;
-    }
-  }
-  return (best, minX.toDouble(), minY.toDouble(), 'auto from ${runs.length} run lengths');
-}
-
-/// 블록마다 중심과 네 점(25%·75%)을 보고 가장 많은 색을 고른다. 알파는 중심 기준.
-img.Image downscaleGrid(img.Image im, double s, int cut, {double ox = -1, double oy = -1}) {
-  final (minX, minY, maxX, maxY) = _bbox(im, cut);
-  final x0 = ox >= 0 ? ox : minX.toDouble(), y0 = oy >= 0 ? oy : minY.toDouble();
-  final cols = ((maxX + 1 - x0) / s).round(), rows = ((maxY + 1 - y0) / s).round();
-  final out = img.Image(width: cols, height: rows, numChannels: 4);
-  for (var j = 0; j < rows; j++) {
-    for (var i = 0; i < cols; i++) {
-      img.Pixel at(double fx, double fy) => im.getPixel(
-            (x0 + (i + fx) * s).floor().clamp(0, im.width - 1),
-            (y0 + (j + fy) * s).floor().clamp(0, im.height - 1),
-          );
-      final c = at(0.5, 0.5);
-      if (c.a.toInt() < cut) continue;
-      final samples = [c, at(0.3, 0.3), at(0.7, 0.3), at(0.3, 0.7), at(0.7, 0.7)].where((p) => p.a.toInt() >= cut).toList();
-      // 다수결: 서로 가까운 색(차 < 40)이 가장 많은 표본
-      img.Pixel pick = c;
-      var bestN = 0;
-      for (final p in samples) {
-        final n = samples.where((q) => _cdiff(p, q) < 40).length;
-        if (n > bestN) {
-          bestN = n;
-          pick = p;
-        }
-      }
-      out.setPixelRgba(i, j, pick.r, pick.g, pick.b, 255);
-    }
-  }
-  return out;
-}

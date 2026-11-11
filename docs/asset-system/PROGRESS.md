@@ -8,7 +8,7 @@
 | 3 | 렌더링 기술 검토 | 완료 — CustomPainter 유지 | 아래 기록 |
 | 4 | 최소 프로토타입 1~7단계 | 완료 (침대는 draft) | 661bfb0 ~ 8908816 |
 | 4+ | 침대 재분류 (싱글·더블) | 완료 (모두 draft) | 아래 기록 |
-| 5 | 에셋 제작 파이프라인 | 진행 중 — 침대 템플릿 완료 | 아래 기록 |
+| 5 | 에셋 제작 파이프라인 | 대기 | |
 
 ---
 
@@ -195,83 +195,13 @@
 
 ---
 
-## 2026-11-11 · 침대 제작 기준 템플릿 (PART 5 일부)
+## 2026-11-11 · 이미지 제작 보류 — 더블 침대 재분류까지만 유지
 
-**목적**: 기존 설계는 바꾸지 않는다. AI 초안 → Pixelorama/Aseprite 보정에서 반복해 쓸 기준 가이드를 만든다.
-실제 침대 디자인은 만들지 않았다.
+사용자 결정으로 이미지 제작을 잠시 보류한다. 더블 침대 재분류(`b5645a9`) 이후 작업은 되돌렸다(git revert). 필요하면 아래 커밋에서 다시 가져올 수 있다.
+- `546c92c`: 침대 제작 기준 템플릿 (art/templates, tool/make_bed_templates.dart, template_test)
+- `60f0e68`: ChatGPT 생성 워크플로 검증 (bed_single_r0 v1 분석, pixel_fix --grid/--offset front/기울기 판정, asset_review_test, 10배 가이드)
 
-**추가 파일**
-- `tool/make_bed_templates.dart`: 템플릿 생성기. `overlay` 모드로 실제 그림 위에 가이드를 겹친 검수 이미지도 만든다.
-- `art/templates/beds/{bed_single_r0, bed_single_r1, bed_double_r0, bed_double_r1}/`
-  - `_guide.png`: 가이드 레이어
-  - `_art.png`: 빈 그림 레이어
-  - `_template.ase`: 레이어 2개 + 팔레트
-  - `_preview.png`: 범례
-- `art/templates/palette/oneul_sari_57.gpl`
-- `art/templates/README.md`: 가이드 색 범례, Pixelorama·Aseprite 사용법
-- `test/room/template_test.dart`: 33개
-- `docs/asset-system/review/bed_double_r1_on_template.png`: 기존 더블 R1을 템플릿에 겹친 모습
-
-**가이드 내용**
-- 실제 에셋과 같은 캔버스
-- 앵커(정확한 1px + 십자), 바닥 점유 마름모, 칸 경계
-- 허용 영역 경계 + 영역 밖 옅은 칠, 물체 높이 면
-- 머리판 변·발치 변·방향 화살표, 광원(왼쪽 위)
-
-**픽셀 좌표 검증 (`template_test.dart`, 앱 기준과 대조)**
-- 캔버스 크기 = 매니페스트 `spriteSpec`
-- 앵커 픽셀 = (ax, ay)
-- 꼭짓점·변 위 픽셀
-- 영역 밖 칠 = `AssetCheck.allowedRegion` 밖과 전 픽셀 일치
-- 머리판·발치 변 위치, 반대 변에는 머리판 표시 없음
-- 그림 레이어 완전 투명
-- `.ase` 다시 읽기: 헤더·크기·레이어 이름·팔레트 57색·가이드 셀 = 가이드 PNG
-- `.gpl` 57색
-
-**추가 작업**
-- 더블 R1 원본·보정본 비교(`review/bed_double_r1_compare.png`)와 방 배치 스크린샷(`review/bed_double_in_room_*.png`)을 다시 생성했다.
-  - 기존 파일과 바이트 단위로 같았다(결정적 결과).
-  - 보정본 `assets/pixel/furniture/beds/bed_double_r1.png`도 원본에서 재현돼 일치했다.
-
-**바꾸지 않은 것**: 에셋, 카탈로그, 매니페스트, 저장 구조, 앱 코드
-
-**한계**
-- Pixelorama 전용 형식(`.pxo`)은 만들지 않았다. 내부 형식을 확실히 알 수 없어서다. 레이어별 PNG로 같은 작업을 할 수 있다.
-- `.ase`는 사양에 맞춰 만들고 다시 읽어 검증했지만, 실제 Aseprite·Pixelorama에서 열어 보지는 않았다.
-
-**테스트**: `flutter analyze` 문제 없음, `flutter test` 전체 135개 통과.
-
----
-
-## 2026-11-11 · 워크플로 변경 검증: `bed_single_r0` ChatGPT 생성 v1
-
-**새 워크플로 (사용자 결정)**
-1. 규격 분석
-2. ChatGPT 프롬프트 작성
-3. 사용자가 생성해 전달
-4. 자동 보정
-5. 자동 검증
-6. 방 적용 스크린샷
-7. 구조 문제면 재생성 프롬프트
-
-Pixelorama 수동 보정은 기본 과정에서 뺐다.
-
-**결과: 구조 실패 → 재생성 프롬프트 v2 작성** (`review/bed_single_r0_gpt_v1.md`)
-- 해결된 것: 흰 안개 배경·후광 제거, 알파 0/255, 팔레트 12색(평균 ΔE 5.0), 방향·디자인
-- 해결 안 된 것(구조):
-  - 원래 해상도 약 70×63, 블록 13~17px로 불규칙
-  - 바닥선 기울기 0.58 (2:1 아님)
-  - 허용 영역 밖 9px, 머리판 쪽 다리 7px 뜸
-- 앱 에셋(`assets/pixel/`)에는 넣지 않았다. 매니페스트·카탈로그·저장 구조도 바꾸지 않았다.
-
-**도구 추가 (보정·검증 자동화)**
-- `tool/pixel_fix.dart`
-  - `--grid auto|fit|N`: 확대된 AI 이미지를 블록 다수결로 1배로 줄인다. `auto`는 이번 이미지에서 17을 골라 부정확했다.
-  - `--offset front`: 그림의 가장 낮은 점을 앞 꼭짓점에 맞춘다.
-  - 보고서에 **바닥선 기울기**(2:1 판정)와 **바닥 접점 뜸(px)** 을 추가했다.
-- `test/room/asset_review_test.dart`
-  - 후보 PNG를 앱 에셋에 넣지 않고 실제 방에 그려 스크린샷을 만든다.
-  - `--dart-define` 값이 없으면 건너뛰므로 일반 테스트에는 영향이 없다.
-- `tool/make_bed_templates.dart`: 침대마다 `_guide_x10.png`(960×1040, 블록 10px)를 추가로 만든다. AI 편집용 그림판이다. 기존 템플릿 파일은 그대로다.
-
-**테스트**: `flutter analyze` 문제 없음, `flutter test` 135개 통과 + 1개 건너뜀(검수 테스트, 값 없을 때).
+유지되는 상태:
+- `bed_double` 카탈로그 등록 (100코인, Lv.3)
+- 보정본 `assets/pixel/furniture/beds/bed_double_r1.png` (**draft**: 개발 모드 `--dart-define=SHOW_DRAFT_ASSETS=true`에서만 표시, 출시 빌드에서는 기존 그림)
+- `bed_single`은 PNG 없이 기존 그림
