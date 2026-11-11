@@ -1,4 +1,4 @@
-package com.harusari.haru_sari
+package com.harusari.app
 
 import io.flutter.embedding.android.FlutterActivity
 
