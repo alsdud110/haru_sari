@@ -1,3 +1,5 @@
+import '../room/layout.dart';
+
 /// 루틴 카테고리.
 const routineCategories = ['생활', '건강', '식사', '이동', '마음', '기타'];
 
@@ -182,6 +184,7 @@ class Profile {
     Map<String, String>? badges,
     Map<String, String>? acquired,
     AlarmSettings? alarms,
+    this.room,
   }) : owned = owned ?? {},
        placed = placed ?? {},
        badges = badges ?? {},
@@ -216,6 +219,10 @@ class Profile {
   final Map<String, String> acquired;
   AlarmSettings alarms;
 
+  /// 아이소메트릭 방 배치 (docs/asset-system/02 §5). 없으면 불러올 때 [placed]에서 만든다.
+  /// [placed]는 기존 데이터 호환을 위해 지우지 않고 남겨 둔다.
+  RoomLayout? room;
+
   Map<String, dynamic> toJson() => {
     'name': name,
     'xp': xp,
@@ -230,6 +237,7 @@ class Profile {
     'badges': badges,
     'acquired': acquired,
     'alarms': alarms.toJson(),
+    if (room != null) 'room': room!.toJson(),
   };
 
   factory Profile.fromJson(Map<String, dynamic> j) => Profile(
@@ -246,6 +254,7 @@ class Profile {
     badges: ((j['badges'] as Map?) ?? {}).cast<String, String>(),
     acquired: ((j['acquired'] as Map?) ?? {}).cast<String, String>(),
     alarms: AlarmSettings.fromJson((j['alarms'] as Map?)?.cast<String, dynamic>() ?? {}),
+    room: j['room'] is Map ? RoomLayout.fromJson((j['room'] as Map).cast<String, dynamic>()) : null,
   );
 }
 

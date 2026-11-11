@@ -4,6 +4,10 @@ import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'badges.dart';
+import '../room/iso.dart';
+import '../room/layout.dart';
+import '../room/manifest.dart';
+import '../room/occupancy.dart';
 import 'catalog.dart';
 import 'models.dart';
 import 'reminders.dart';
@@ -59,13 +63,20 @@ class PrefixedKeyValue implements KeyValue {
 /// 계정별 데이터가 저장되는 접두어.
 String userPrefix(String uid) => 'u/$uid/';
 
-enum BuyResult { ok, alreadyOwned, levelTooLow, notEnoughCoins }
+/// [okStored]: 샀지만 방에 빈 자리가 없어 보관함에 넣음 (buy의 결과로만 나온다)
+enum BuyResult { ok, okStored, alreadyOwned, levelTooLow, notEnoughCoins }
 
 /// 앱 전체 상태. 루틴·하루 기록·프로필(경험치/코인/방/옷/배지)을 저장한다.
 class AppState extends ChangeNotifier {
-  AppState(this._kv, {DateTime Function()? clock, Reminders? reminders, String initialName = ''})
-    : _clock = clock ?? DateTime.now,
-      reminders = reminders ?? NoReminders() {
+  AppState(
+    this._kv, {
+    DateTime Function()? clock,
+    Reminders? reminders,
+    String initialName = '',
+    AssetManifest? manifest,
+  }) : _clock = clock ?? DateTime.now,
+       reminders = reminders ?? NoReminders(),
+       manifest = manifest ?? AssetManifest(version: 1, items: const {}, base: const {}) {
     _load();
     if (profile.name.isEmpty) profile.name = initialName;
   }
@@ -73,6 +84,10 @@ class AppState extends ChangeNotifier {
   final KeyValue _kv;
   final DateTime Function() _clock;
   final Reminders reminders;
+
+  /// 가구 점유·회전 정보 (assets/pixel/manifest.json)
+  final AssetManifest manifest;
+  late final Occupancy occupancy = Occupancy(manifest);
 
   static const _kRoutines = 'routines';
   static const _kLogs = 'logs';
@@ -105,7 +120,19 @@ class AppState extends ChangeNotifier {
     final p = _kv.read(_kProfile);
     if (p != null) profile = Profile.fromJson((jsonDecode(p) as Map).cast<String, dynamic>());
     onboarded = _kv.read(_kOnboarded) == 'true';
+    _migrateRoom();
   }
+
+  /// 기존 사용자: room이 없으면 placed(자리 → id)에서 한 번 만든다. 코인·보유·기록은 건드리지 않는다.
+  void _migrateRoom() {
+    if (profile.room != null) return;
+    final room = RoomLayout.fromLegacy(profile.placed);
+    occupancy.repair(room); // 겹치면 옮기고, 자리가 없으면 빼서 보관함에 남긴다
+    profile.room = room;
+    if (_kv.read(_kProfile) != null) _save();
+  }
+
+  RoomLayout get room => profile.room ??= RoomLayout();
 
   Future<void> _save() async {
     await _kv.write(_kRoutines, jsonEncode(routines.map((e) => e.toJson()).toList()));
@@ -301,41 +328,70 @@ class AppState extends ChangeNotifier {
     return BuyResult.ok;
   }
 
-  /// 사서 바로 쓴다(가구는 그 자리에 놓고, 옷은 입는다). 원래 것은 보관함으로 간다.
+  /// 사서 바로 쓴다. 가구는 빈 자리에 놓고(자리가 없으면 보관함), 옷·액세서리는 입는다.
+  /// 같은 분류 가구가 이미 있어도 교체하지 않고 함께 둔다. 벽지는 하나만이라 교체한다.
   BuyResult buy(ShopItem item) {
     final can = canBuy(item);
     if (can != BuyResult.ok) return can;
     profile.coins -= item.price;
     profile.owned.add(item.id);
     profile.acquired[item.id] = todayKey;
-    _use(item);
+    final used = _use(item);
     _commit();
-    return BuyResult.ok;
+    return used ? BuyResult.ok : BuyResult.okStored;
   }
 
-  void _use(ShopItem item) {
+  /// 놓기·입기. 방에 자리가 없으면 false.
+  bool _use(ShopItem item) {
     switch (item.kind) {
-      case ItemKind.furniture:
-        profile.placed[item.slot!.name] = item.id;
       case ItemKind.outfit:
         profile.outfitId = item.id;
+        return true;
       case ItemKind.accessory:
         profile.accessoryId = item.id;
+        return true;
+      case ItemKind.furniture:
+        final art = manifest[item.id];
+        if (art == null) return false;
+        final r = room;
+        switch (art.layer) {
+          case ArtLayer.surface:
+            r.wallSurface = item.id;
+            return true;
+          case ArtLayer.wall:
+            final spot = occupancy.findWallSpot(r, item.id, prefer: r.lastWall[item.id]);
+            if (spot == null) return false;
+            r.wall[item.id] = spot;
+            return true;
+          case ArtLayer.object || ArtLayer.floorDecor:
+            final spot = occupancy.findFloorSpot(r, item.id, prefer: r.lastFloor[item.id]);
+            if (spot == null) return false;
+            r.floor[item.id] = spot;
+            r.minimi = occupancy.minimiSpot(r, r.minimi);
+            return true;
+          case ArtLayer.character:
+            return false;
+        }
     }
   }
 
-  /// 방에 놓기 / 입기
-  void use(ShopItem item) {
-    if (!profile.owned.contains(item.id)) return;
-    _use(item);
-    _commit();
+  /// 방에 놓기 / 입기. 방에 빈 자리가 없으면 false.
+  bool use(ShopItem item) {
+    if (!profile.owned.contains(item.id)) return false;
+    final ok = _use(item);
+    if (ok) _commit();
+    return ok;
   }
 
-  /// 보관함으로 넣기 / 벗기
+  /// 보관함으로 넣기 / 벗기. 가구는 마지막 위치를 기억해 다시 놓을 때 먼저 쓴다.
   void putAway(ShopItem item) {
     switch (item.kind) {
       case ItemKind.furniture:
-        if (profile.placed[item.slot!.name] == item.id) profile.placed.remove(item.slot!.name);
+        final r = room;
+        if (r.floor.remove(item.id) case final p?) r.lastFloor[item.id] = p;
+        if (r.wall.remove(item.id) case final p?) r.lastWall[item.id] = p;
+        if (r.wallSurface == item.id) r.wallSurface = null;
+        if (r.floorSurface == item.id) r.floorSurface = null;
       case ItemKind.outfit:
         if (profile.outfitId == item.id) profile.outfitId = null;
       case ItemKind.accessory:
@@ -345,7 +401,7 @@ class AppState extends ChangeNotifier {
   }
 
   bool isInUse(ShopItem item) => switch (item.kind) {
-    ItemKind.furniture => profile.placed[item.slot!.name] == item.id,
+    ItemKind.furniture => room.contains(item.id),
     ItemKind.outfit => profile.outfitId == item.id,
     ItemKind.accessory => profile.accessoryId == item.id,
   };
@@ -355,7 +411,47 @@ class AppState extends ChangeNotifier {
   /// 보관함: 갖고 있지만 쓰지 않는 것
   List<ShopItem> get storedItems => ownedItems.where((i) => !isInUse(i)).toList();
 
-  List<ShopItem> get placedFurniture => profile.placed.values.map(itemById).nonNulls.toList();
+  List<ShopItem> get placedFurniture => room.ids.map(itemById).nonNulls.toList();
+
+  /// 기존 정면 2D 방(대체 그림)용: 자리마다 하나씩. 같은 자리 가구가 여럿이면 먼저 놓인 것.
+  Map<RoomSlot, ShopItem> get legacyPlacedView {
+    final out = <RoomSlot, ShopItem>{};
+    for (final item in placedFurniture) {
+      out.putIfAbsent(item.slot!, () => item);
+    }
+    return out;
+  }
+
+  // ───────── 방 꾸미기 (편집 화면) ─────────
+
+  /// 바닥 가구 옮기기·회전. 놓을 수 없으면 그대로 두고 이유를 돌려준다.
+  PlaceCheck moveFloor(String id, FloorPos to) {
+    final r = room;
+    if (!r.floor.containsKey(id)) return const PlaceCheck(PlaceStatus.notPlaceable);
+    final c = occupancy.canPlaceFloor(r, id, to);
+    if (!c.ok) return c;
+    r.floor[id] = to;
+    r.minimi = occupancy.minimiSpot(r, r.minimi);
+    _commit();
+    return c;
+  }
+
+  /// 제자리에서 회전. 회전하면 겹치면 그대로 둔다.
+  PlaceCheck rotateFloor(String id) {
+    final p = room.floor[id];
+    if (p == null) return const PlaceCheck(PlaceStatus.notPlaceable);
+    return moveFloor(id, FloorPos(p.x, p.y, p.r == Rot.r0 ? Rot.r1 : Rot.r0));
+  }
+
+  PlaceCheck moveWall(String id, WallPos to) {
+    final r = room;
+    if (!r.wall.containsKey(id)) return const PlaceCheck(PlaceStatus.notPlaceable);
+    final c = occupancy.canPlaceWall(r, id, to);
+    if (!c.ok) return c;
+    r.wall[id] = to;
+    _commit();
+    return c;
+  }
 
   /// 레벨업으로 새로 열린 아이템.
   List<ShopItem> unlockedAt(int level) => shopCatalog.where((i) => i.level == level).toList();

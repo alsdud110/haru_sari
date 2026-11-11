@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
+import 'room/manifest.dart';
 import 'theme/tokens.dart';
 import 'ui/auth_screens.dart';
 import 'ui/onboarding.dart';
@@ -26,11 +27,12 @@ class AuthScope extends InheritedNotifier<AuthService> {
 }
 
 class OneulSariApp extends StatefulWidget {
-  const OneulSariApp({super.key, required this.kv, required this.auth, this.reminders, this.clock});
+  const OneulSariApp({super.key, required this.kv, required this.auth, this.reminders, this.clock, this.manifest});
   final KeyValue kv;
   final AuthService auth;
   final Reminders? reminders;
   final DateTime Function()? clock;
+  final AssetManifest? manifest;
 
   @override
   State<OneulSariApp> createState() => _OneulSariAppState();
@@ -49,6 +51,7 @@ class _OneulSariAppState extends State<OneulSariApp> {
         clock: widget.clock,
         reminders: widget.reminders,
         initialName: widget.auth.current?.nickname ?? '',
+        manifest: widget.manifest,
       );
       if (_state!.onboarded) _state!.syncReminders();
     }

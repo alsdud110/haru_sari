@@ -6,6 +6,10 @@ import 'package:oneul_sari/data/auth.dart';
 import 'package:oneul_sari/data/reminders.dart';
 import 'package:oneul_sari/data/store.dart';
 
+import 'room/manifest_test.dart' show loadManifest;
+
+final manifest = loadManifest();
+
 void main() {
   setUpAll(() => initializeDateFormatting('ko_KR'));
 
@@ -15,7 +19,7 @@ void main() {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(OneulSariApp(kv: kv, auth: auth, reminders: NoReminders(), clock: clock));
+    await tester.pumpWidget(OneulSariApp(kv: kv, auth: auth, reminders: NoReminders(), clock: clock, manifest: manifest));
     await tester.pumpAndSettle();
   }
 
@@ -75,7 +79,7 @@ void main() {
     final kv = MemoryKeyValue();
     final auth = AuthService(kv);
     auth.signUp(email: 'a@b.com', password: '12345678', nickname: '하루');
-    final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock);
+    final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
     s.finishOnboarding(minimi: s.profile.minimi, picked: []);
 
     await pump(tester, kv, auth);
@@ -103,7 +107,7 @@ void main() {
   testWidgets('기록 탭: 일간·주간·월간이 그려진다', (tester) async {
     final kv = MemoryKeyValue();
     final auth = AuthService(kv)..signUp(email: 'a@b.com', password: '12345678', nickname: '민');
-    final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock);
+    final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
     s.finishOnboarding(minimi: s.profile.minimi, picked: []);
     await pump(tester, kv, auth);
 

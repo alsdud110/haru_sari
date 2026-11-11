@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter_test/flutter_test.dart';
 import 'package:oneul_sari/data/auth.dart';
 import 'package:oneul_sari/data/catalog.dart';
@@ -5,6 +7,14 @@ import 'package:oneul_sari/data/models.dart';
 import 'package:oneul_sari/data/reminders.dart';
 import 'package:oneul_sari/data/rewards.dart';
 import 'package:oneul_sari/data/store.dart';
+import 'package:oneul_sari/room/iso.dart';
+import 'package:oneul_sari/room/layout.dart';
+import 'package:oneul_sari/room/manifest.dart';
+import 'package:oneul_sari/room/occupancy.dart';
+
+import 'room/manifest_test.dart' show loadManifest;
+
+final manifest = loadManifest();
 
 class FakeReminders implements Reminders {
   int syncs = 0;
@@ -37,7 +47,7 @@ void main() {
     now = DateTime(2026, 11, 11, 9);
     kv = MemoryKeyValue();
     rem = FakeReminders();
-    s = AppState(kv, clock: () => now, reminders: rem, initialName: '민');
+    s = AppState(kv, clock: () => now, reminders: rem, initialName: '민', manifest: manifest);
     s.finishOnboarding(
       minimi: const Minimi(),
       picked: [
@@ -135,7 +145,7 @@ void main() {
     test('카테고리와 메모가 저장된다', () async {
       s.upsertRoutine(r('e', memo: '기상 후 바로')..category = '건강');
       await Future<void>.delayed(Duration.zero);
-      final again = AppState(kv, clock: () => now);
+      final again = AppState(kv, clock: () => now, manifest: manifest);
       final e = again.routines.firstWhere((x) => x.id == 'e');
       expect(e.memo, '기상 후 바로');
       expect(e.category, '건강');
@@ -168,20 +178,113 @@ void main() {
       expect(s.buy(desk), BuyResult.alreadyOwned);
     });
 
-    test('같은 자리에 새 가구를 놓으면 원래 가구는 보관함으로 간다', () {
+    test('같은 분류 가구를 여러 개 놓을 수 있고, 보관했다 다시 놓으면 원래 자리로 간다', () {
       s.profile
-        ..level = 4
-        ..coins = 200;
+        ..level = 6
+        ..coins = 500;
       final a = itemById('rug_round')!, b = itemById('rug_stripe')!;
-      s.buy(a);
-      s.buy(b);
-      expect(s.isInUse(b), isTrue);
-      expect(s.storedItems, [a]);
-      s.use(a);
-      expect(s.isInUse(a), isTrue);
-      s.putAway(a);
-      expect(s.profile.placed.containsKey('rug'), isFalse);
-      expect(s.storedItems.length, 2);
+      final bed1 = itemById('bed_single')!, bed2 = itemById('bed_quilt')!;
+      for (final i in [a, b, bed1, bed2]) {
+        expect(s.buy(i), BuyResult.ok, reason: i.id);
+      }
+      expect(s.isInUse(a) && s.isInUse(b) && s.isInUse(bed1) && s.isInUse(bed2), isTrue);
+      expect(s.storedItems, isEmpty);
+      // 겹치지 않게 놓였다
+      for (final e in s.room.floor.entries) {
+        expect(s.occupancy.canPlaceFloor(s.room, e.key, e.value).ok, isTrue, reason: e.key);
+      }
+      final where = s.room.floor[bed1.id];
+      s.putAway(bed1);
+      expect(s.storedItems, [bed1]);
+      expect(s.use(bed1), isTrue);
+      expect(s.room.floor[bed1.id], where);
+    });
+
+    test('벽지는 하나만 — 새로 사면 교체되고 이전 것은 보관함으로', () {
+      s.profile
+        ..level = 6
+        ..coins = 500;
+      s.buy(itemById('wall_sage')!);
+      s.buy(itemById('wall_sky')!);
+      expect(s.room.wallSurface, 'wall_sky');
+      expect(s.storedItems.map((e) => e.id), ['wall_sage']);
+    });
+
+    test('방이 꽉 차면 사도 보관함으로 가고, 코인은 정상 차감된다', () {
+      // 테스트용 매니페스트: 침대가 방 전체(8×8)를 차지한다
+      final tm = AssetManifest.parse(
+        '{"items": {"bed_single": {"layer": "object", "footprint": [8, 8], "height": 8},'
+        ' "chair_wood": {"layer": "object", "footprint": [1, 1], "height": 8}}}',
+      );
+      final t = AppState(MemoryKeyValue(), clock: () => now, manifest: tm);
+      t.profile
+        ..level = 3
+        ..coins = 200;
+      expect(t.buy(itemById('bed_single')!), BuyResult.ok);
+      expect(t.buy(itemById('chair_wood')!), BuyResult.okStored);
+      expect(t.profile.coins, 200 - 60 - 25);
+      expect(t.profile.owned, contains('chair_wood'));
+      expect(t.storedItems.map((e) => e.id), ['chair_wood']);
+      expect(t.use(itemById('chair_wood')!), isFalse);
+      t.putAway(itemById('bed_single')!);
+      expect(t.use(itemById('chair_wood')!), isTrue);
+    });
+
+    test('기존 사용자: placed만 있는 저장 데이터를 불러오면 room이 생기고 다른 데이터는 그대로다', () async {
+      final kv = MemoryKeyValue();
+      final legacy = Profile(
+        name: '하루',
+        level: 4,
+        coins: 77,
+        owned: {'bed_single', 'desk_wood', 'rug_round', 'window_curtain', 'wall_sage', 'outfit_knit'},
+        placed: {
+          'bed': 'bed_single',
+          'desk': 'desk_wood',
+          'rug': 'rug_round',
+          'window': 'window_curtain',
+          'wallpaper': 'wall_sage',
+        },
+        outfitId: 'outfit_knit',
+        acquired: {'bed_single': '2026-11-01'},
+      );
+      final json = legacy.toJson()..remove('room');
+      expect(json.containsKey('room'), isFalse);
+      await kv.write('profile', jsonEncode(json));
+      await kv.write('onboarded', 'true');
+
+      final st = AppState(kv, clock: () => now, manifest: manifest);
+      expect(st.profile.coins, 77);
+      expect(st.profile.level, 4);
+      expect(st.profile.owned.length, 6);
+      expect(st.profile.outfitId, 'outfit_knit');
+      expect(st.profile.acquired['bed_single'], '2026-11-01');
+      expect(st.profile.placed.length, 5, reason: 'placed는 지우지 않는다');
+      expect(st.room.floor.keys, containsAll(['bed_single', 'desk_wood', 'rug_round']));
+      expect(st.room.wall.keys, ['window_curtain']);
+      expect(st.room.wallSurface, 'wall_sage');
+      expect(st.storedItems, isEmpty);
+      // 저장됐다가 다시 열어도 같다
+      await Future<void>.delayed(Duration.zero);
+      final again = AppState(kv, clock: () => now, manifest: manifest);
+      expect(again.room.floor, st.room.floor);
+    });
+
+    test('편집: 옮기기·회전·충돌 시 그대로', () {
+      s.profile
+        ..level = 3
+        ..coins = 500;
+      s.buy(itemById('bed_single')!);
+      s.buy(itemById('chair_wood')!);
+      final bed = s.room.floor['bed_single']!;
+      expect(s.moveFloor('bed_single', const FloorPos(0, 0)).ok, isTrue);
+      expect(s.rotateFloor('bed_single').ok, isTrue);
+      expect(s.room.floor['bed_single']!.r, Rot.r1);
+      // 의자를 침대 위로 옮기면 실패하고 그대로
+      final chair = s.room.floor['chair_wood']!;
+      final c = s.moveFloor('chair_wood', const FloorPos(1, 0));
+      expect(c.status, PlaceStatus.blocked);
+      expect(s.room.floor['chair_wood'], chair);
+      expect(bed, isNotNull);
     });
 
     test('옷과 액세서리를 사서 입고 벗는다', () {
@@ -241,7 +344,7 @@ void main() {
   test('저장한 상태를 다시 불러온다', () async {
     s.completeMany(['a', 'b', 'c']);
     await Future<void>.delayed(Duration.zero);
-    final again = AppState(kv, clock: () => now);
+    final again = AppState(kv, clock: () => now, manifest: manifest);
     expect(again.onboarded, isTrue);
     expect(again.routines.length, 5);
     expect(again.todayLog.done, 3);

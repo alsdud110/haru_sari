@@ -41,7 +41,7 @@ class RoomScreen extends StatelessWidget {
               ],
             ),
             const SizedBox(height: Space.lg),
-            RoomView(placed: {for (final i in placed) i.slot!: i}),
+            RoomView(placed: s.legacyPlacedView),
             const SizedBox(height: Space.sm),
             Text(
               placed.isEmpty ? '아직 텅 빈 방이에요. 하루를 살아낼 때마다 조금씩 채워져요.' : '지금까지 살아낸 하루들이 이 방을 만들었어요.',
@@ -400,7 +400,7 @@ class _ShopCard extends StatelessWidget {
       BuyResult.alreadyOwned => ('보유 중', AppColors.sage),
       BuyResult.levelTooLow => ('Lv.${item.level}부터', AppColors.textMuted),
       BuyResult.notEnoughCoins => ('${item.price} 코인', AppColors.textMuted),
-      BuyResult.ok => ('${item.price} 코인', AppColors.text),
+      BuyResult.ok || BuyResult.okStored => ('${item.price} 코인', AppColors.text),
     };
 
     return Semantics(
@@ -545,8 +545,9 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
               )
             : FilledButton(
                 onPressed: () {
-                  s.use(item);
+                  final ok = s.use(item);
                   Navigator.pop(ctx);
+                  if (!ok) showAppToast(context, '방에 빈 자리가 없어요. 다른 가구를 보관함에 넣어 주세요');
                 },
                 child: Text(useVerb),
               );
@@ -564,11 +565,19 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
             hint = replaceHint;
             action = FilledButton(
               onPressed: () {
-                if (s.buy(item) == BuyResult.ok) {
+                final result = s.buy(item);
+                if (result == BuyResult.ok || result == BuyResult.okStored) {
                   HapticFeedback.mediumImpact();
                   Navigator.pop(ctx);
                   final badges = s.takePendingBadges();
-                  showAppToast(context, item.isFurniture ? '${item.name}을(를) 방에 들였어요' : '${item.name}을(를) 입었어요');
+                  showAppToast(
+                    context,
+                    result == BuyResult.okStored
+                        ? '방에 빈 자리가 없어 ${item.name}을(를) 보관함에 넣었어요'
+                        : item.isFurniture
+                        ? '${item.name}을(를) 방에 들였어요'
+                        : '${item.name}을(를) 입었어요',
+                  );
                   if (badges.isNotEmpty) showNewBadges(context, badges);
                 }
               },

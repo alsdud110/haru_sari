@@ -6,10 +6,12 @@ import 'app.dart';
 import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
+import 'room/manifest.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await initializeDateFormatting('ko_KR');
   final kv = PrefsKeyValue(await SharedPreferences.getInstance());
-  runApp(OneulSariApp(kv: kv, auth: AuthService(kv), reminders: LocalReminders()));
+  final manifest = await AssetManifest.load();
+  runApp(OneulSariApp(kv: kv, auth: AuthService(kv), reminders: LocalReminders(), manifest: manifest));
 }
