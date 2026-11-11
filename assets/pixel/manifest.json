@@ -1,0 +1,39 @@
+{
+  "version": 1,
+  "grid": { "tileW": 64, "tileH": 32, "size": 8, "wallH": 160 },
+  "base": {
+    "floor": { "path": "rooms/floors/floor_wood.png", "status": "draft" },
+    "wallL": { "path": "rooms/walls/wall_cream_l.png", "status": "draft" },
+    "minimi_base": { "status": "draft", "sheets": { "idle": "characters/base/base_idle.png" } },
+    "minimi_hair_back": { "status": "draft", "sheets": { "idle": "characters/hair/hair_basic_back_idle.png" } },
+    "minimi_hair_front": { "status": "draft", "sheets": { "idle": "characters/hair/hair_basic_front_idle.png" } }
+  },
+  "items": {
+    "bed_single": { "layer": "object", "footprint": [1, 2], "height": 52, "rotations": { "r0": "furniture/beds/bed_single_r0.png", "r1": "furniture/beds/bed_single_r1.png" }, "status": "draft", "rev": 1 },
+    "bed_quilt": { "layer": "object", "footprint": [1, 2], "height": 52, "rotations": { "r0": "furniture/beds/bed_quilt_r0.png", "r1": "furniture/beds/bed_quilt_r1.png" }, "status": "draft", "rev": 1 },
+    "desk_wood": { "layer": "object", "footprint": [2, 1], "height": 64, "rotations": { "r0": "furniture/desks/desk_wood_r0.png", "r1": "furniture/desks/desk_wood_r1.png" }, "status": "draft", "rev": 1 },
+    "desk_white": { "layer": "object", "footprint": [2, 1], "height": 64, "rotations": { "r0": "furniture/desks/desk_white_r0.png", "r1": "furniture/desks/desk_white_r1.png" }, "status": "draft", "rev": 1 },
+    "chair_wood": { "layer": "object", "footprint": [1, 1], "height": 48, "rotations": { "r0": "furniture/chairs/chair_wood_r0.png", "r1": "furniture/chairs/chair_wood_r1.png" }, "status": "draft", "rev": 1 },
+    "lamp_stand": { "layer": "object", "footprint": [1, 1], "height": 104, "rotations": { "r0": "furniture/decorations/lamp_stand_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "lamp_pendant": { "layer": "object", "footprint": [1, 1], "height": 104, "blocking": false, "rotations": { "r0": "furniture/decorations/lamp_pendant_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "plant_small": { "layer": "object", "footprint": [1, 1], "height": 36, "rotations": { "r0": "furniture/decorations/plant_small_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "plant_big": { "layer": "object", "footprint": [1, 1], "height": 92, "rotations": { "r0": "furniture/decorations/plant_big_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "rug_round": { "layer": "floorDecor", "footprint": [2, 2], "height": 0, "rotations": { "r0": "furniture/decorations/rug_round_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "rug_stripe": { "layer": "floorDecor", "footprint": [2, 3], "height": 0, "rotations": { "r0": "furniture/decorations/rug_stripe_r0.png" }, "mirrorR1": true, "status": "draft", "rev": 1 },
+    "shelf_book": { "layer": "wall", "span": 2, "height": 32, "zRange": [48, 112], "path": "furniture/decorations/shelf_book_wall.png", "status": "draft", "rev": 1 },
+    "window_curtain": { "layer": "wall", "span": 2, "height": 72, "zRange": [24, 72], "path": "rooms/windows/window_curtain_wall.png", "status": "draft", "rev": 1 },
+    "frame_sun": { "layer": "wall", "span": 1, "height": 40, "zRange": [40, 104], "path": "furniture/decorations/frame_sun_wall.png", "status": "draft", "rev": 1 },
+    "wall_sage": { "layer": "surface", "path": "rooms/walls/wall_sage_l.png", "status": "draft", "rev": 1 },
+    "wall_sky": { "layer": "surface", "path": "rooms/walls/wall_sky_l.png", "status": "draft", "rev": 1 },
+    "outfit_knit": { "layer": "character", "slot": "outfit", "sheets": { "idle": "characters/outfits/outfit_knit_idle.png" }, "status": "draft", "rev": 1 },
+    "outfit_stripe": { "layer": "character", "slot": "outfit", "sheets": { "idle": "characters/outfits/outfit_stripe_idle.png" }, "status": "draft", "rev": 1 },
+    "outfit_overall": { "layer": "character", "slot": "outfit", "sheets": { "idle": "characters/outfits/outfit_overall_idle.png" }, "status": "draft", "rev": 1 },
+    "outfit_hoodie": { "layer": "character", "slot": "outfit", "sheets": { "idle": "characters/outfits/outfit_hoodie_idle.png" }, "status": "draft", "rev": 1 },
+    "outfit_pajama": { "layer": "character", "slot": "outfit", "sheets": { "idle": "characters/outfits/outfit_pajama_idle.png" }, "status": "draft", "rev": 1 },
+    "acc_starpin": { "layer": "character", "slot": "head", "mirror": false, "sheets": { "idle": "characters/accessories/acc_starpin_idle.png" }, "status": "draft", "rev": 1 },
+    "acc_ribbon": { "layer": "character", "slot": "head", "mirror": false, "sheets": { "idle": "characters/accessories/acc_ribbon_idle.png" }, "status": "draft", "rev": 1 },
+    "acc_beanie": { "layer": "character", "slot": "head", "hides": ["hair_front"], "sheets": { "idle": "characters/accessories/acc_beanie_idle.png" }, "status": "draft", "rev": 1 },
+    "acc_glasses": { "layer": "character", "slot": "face", "sheets": { "idle": "characters/accessories/acc_glasses_idle.png" }, "status": "draft", "rev": 1 },
+    "acc_headphone": { "layer": "character", "slot": "head", "sheets": { "idle": "characters/accessories/acc_headphone_idle.png" }, "status": "draft", "rev": 1 }
+  }
+}
