@@ -10,6 +10,7 @@
   },
   "items": {
     "bed_single": { "layer": "object", "footprint": [1, 2], "height": 52, "rotations": { "r0": "furniture/beds/bed_single_r0.png", "r1": "furniture/beds/bed_single_r1.png" }, "status": "draft", "rev": 1 },
+    "bed_double": { "layer": "object", "footprint": [2, 2], "height": 56, "rotations": { "r0": "furniture/beds/bed_double_r0.png", "r1": "furniture/beds/bed_double_r1.png" }, "status": "draft", "rev": 1, "source": "ai+manual" },
     "bed_quilt": { "layer": "object", "footprint": [1, 2], "height": 52, "rotations": { "r0": "furniture/beds/bed_quilt_r0.png", "r1": "furniture/beds/bed_quilt_r1.png" }, "status": "draft", "rev": 1 },
     "desk_wood": { "layer": "object", "footprint": [2, 1], "height": 64, "rotations": { "r0": "furniture/desks/desk_wood_r0.png", "r1": "furniture/desks/desk_wood_r1.png" }, "status": "draft", "rev": 1 },
     "desk_white": { "layer": "object", "footprint": [2, 1], "height": 64, "rotations": { "r0": "furniture/desks/desk_white_r0.png", "r1": "furniture/desks/desk_white_r1.png" }, "status": "draft", "rev": 1 },

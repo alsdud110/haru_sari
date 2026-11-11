@@ -1,9 +1,12 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:oneul_sari/data/catalog.dart';
 import 'package:oneul_sari/data/models.dart';
+import 'package:oneul_sari/data/store.dart';
 import 'package:oneul_sari/room/asset_check.dart';
 import 'package:oneul_sari/room/iso.dart';
 import 'package:oneul_sari/room/layout.dart';
@@ -15,73 +18,136 @@ import 'package:oneul_sari/ui/room/minimi_sprite.dart';
 import 'manifest_test.dart' show loadManifest;
 import 'scene_test.dart' show FakeBundle;
 
-/// 사용자가 만든 침대(보정본, draft)를 실제 방에 넣어 본다.
-/// 검수용 스크린샷: `flutter test test/room/bed_asset_test.dart --dart-define=WRITE_REVIEW=true`
+/// 침대 두 종: 싱글(1×2, PNG 제작 예정) / 더블(2×2, 사용자 그림을 재분류한 draft)
+/// 검수 스크린샷: `flutter test test/room/bed_asset_test.dart --dart-define=WRITE_REVIEW=true`
 const writeReview = bool.fromEnvironment('WRITE_REVIEW');
 
 void main() {
   final m = loadManifest();
-  const path = 'assets/pixel/furniture/beds/bed_single_r0.png';
-  final file = File(path);
+  const doublePath = 'assets/pixel/furniture/beds/bed_double_r1.png';
+  final doubleFile = File(doublePath);
 
-  test('침대 보정본은 draft이고, 원본은 별도로 보존돼 있다', () {
-    expect(file.existsSync(), isTrue);
-    expect(m['bed_single']!.isFinal, isFalse, reason: '검수 전에는 final로 표시하지 않는다');
-    expect(File('art/source/furniture/beds/bed_single_r0_original.png').existsSync(), isTrue);
+  group('규격', () {
+    test('싱글: 1×2, 96×104, R0 앵커 (64,56), R1 앵커 (32,56)', () {
+      final a = m['bed_single']!;
+      expect(a.footprint, (1, 2));
+      expect(a.spriteSpec(Rot.r0), (width: 96, height: 104, ax: 64, ay: 56));
+      expect(a.spriteSpec(Rot.r1), (width: 96, height: 104, ax: 32, ay: 56));
+      expect(a.isFinal, isFalse);
+    });
+
+    test('더블: 2×2, 높이 56 → 128×120, 앵커 (64,56) (R0·R1 같음)', () {
+      final a = m['bed_double']!;
+      expect(a.footprint, (2, 2));
+      expect(a.height, 56);
+      expect(a.spriteSpec(Rot.r0), (width: 128, height: 120, ax: 64, ay: 56));
+      expect(a.spriteSpec(Rot.r1), (width: 128, height: 120, ax: 64, ay: 56));
+      expect(a.rotations.keys, containsAll([Rot.r0, Rot.r1]));
+      expect(a.mirrorR1, isFalse, reason: '광원 때문에 반전 금지, R0·R1 따로 그림');
+      expect(a.isFinal, isFalse);
+    });
+
+    test('카탈로그: 더블 100코인·레벨 3, 싱글은 그대로 60코인·레벨 3', () {
+      final d = itemById('bed_double')!;
+      expect((d.price, d.level, d.slot), (100, 3, RoomSlot.bed));
+      final s = itemById('bed_single')!;
+      expect((s.price, s.level), (60, 3));
+    });
   });
 
-  testWidgets('검증기: 크기·알파·팔레트는 통과, 허용 영역은 아직 어긋남(재작업 필요)', (tester) async {
-    await tester.runAsync(() async {
-      final problems = await AssetCheck.objectSprite(m['bed_single']!, Rot.r0, file.readAsBytesSync());
-      expect(problems.where((p) => p.contains('크기') || p.contains('반투명') || p.contains('팔레트')), isEmpty);
-      // 현재 그림은 정사각형에 가까운 더블 침대라 1×2 점유 기둥 밖으로 53px이 나간다 (review 문서 참고)
-      expect(problems.single, contains('허용 영역 밖'));
+  group('파일', () {
+    test('원본은 이름만 바꿔 보존, 싱글 자리에는 PNG가 없다', () {
+      expect(File('art/source/furniture/beds/bed_double_r1_original.png').existsSync(), isTrue);
+      expect(doubleFile.existsSync(), isTrue);
+      expect(File('assets/pixel/furniture/beds/bed_single_r0.png').existsSync(), isFalse);
+    });
+
+    testWidgets('더블 R1 보정본: 크기·알파·팔레트·허용 영역 모두 통과 (늘리지 않고 옮겨 놓음)', (tester) async {
+      await tester.runAsync(() async {
+        final problems = await AssetCheck.objectSprite(m['bed_double']!, Rot.r1, doubleFile.readAsBytesSync());
+        expect(problems, isEmpty);
+      });
+    });
+  });
+
+  group('데이터 호환', () {
+    test('싱글 침대를 산 기존 사용자: ID·구매일·배치 그대로, 더블은 따로 산다', () async {
+      final kv = MemoryKeyValue();
+      final old = Profile(
+        level: 3,
+        coins: 120,
+        owned: {'bed_single'},
+        acquired: {'bed_single': '2026-11-01'},
+        placed: {'bed': 'bed_single'},
+      );
+      await kv.write('profile', jsonEncode(old.toJson()..remove('room')));
+      final s = AppState(kv, clock: () => DateTime(2026, 11, 11, 9), manifest: m);
+      expect(s.profile.owned, {'bed_single'});
+      expect(s.profile.acquired['bed_single'], '2026-11-01');
+      expect(s.room.floor['bed_single'], const FloorPos(0, 1));
+
+      expect(s.buy(itemById('bed_double')!), BuyResult.ok);
+      expect(s.profile.coins, 20);
+      expect(s.room.floor.keys, containsAll(['bed_single', 'bed_double']));
+      expect(s.isInUse(itemById('bed_single')!), isTrue);
+      // 둘이 겹치지 않는다
+      for (final e in s.room.floor.entries) {
+        expect(s.occupancy.canPlaceFloor(s.room, e.key, e.value).ok, isTrue, reason: e.key);
+      }
+    });
+
+    test('더블 2×2 회전: 점유는 그대로 2×2, 방 끝에서도 회전 가능', () {
+      final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: m);
+      s.profile
+        ..level = 3
+        ..coins = 200;
+      s.buy(itemById('bed_double')!);
+      expect(s.moveFloor('bed_double', const FloorPos(6, 6)).ok, isTrue);
+      expect(s.rotateFloor('bed_double').ok, isTrue);
+      expect(s.room.floor['bed_double'], const FloorPos(6, 6, Rot.r1));
+      expect(s.moveFloor('bed_double', const FloorPos(7, 6, Rot.r1)).status.name, 'outOfRoom');
     });
   });
 
   Future<AssetRegistry> devRegistry() async {
-    final reg = AssetRegistry(m, bundle: FakeBundle({path: file.readAsBytesSync()}), showDraft: true);
-    await reg.preload(['bed_single']);
+    final reg = AssetRegistry(m, bundle: FakeBundle({doublePath: doubleFile.readAsBytesSync()}), showDraft: true);
+    await reg.preload(['bed_double', 'bed_single']);
     return reg;
   }
 
-  testWidgets('개발 모드: R0은 PNG로, R1은 그림이 없어 기존 그림으로 대체', (tester) async {
+  testWidgets('개발 모드: 더블 R1은 PNG, R0과 싱글은 그림이 없어 기존 그림 / 출시 모드는 draft 미사용', (tester) async {
     await tester.runAsync(() async {
       final reg = await devRegistry();
-      final r0 = reg.sprite('bed_single', Rot.r0);
-      expect(r0, isNotNull);
-      expect((r0!.image.width, r0.image.height), (96, 104));
-      expect(reg.sprite('bed_single', Rot.r1), isNull, reason: 'R1 PNG 없음, 침대는 반전 금지(명암)');
-      // 알파 마스크로 터치 판정: 이불 가운데는 불투명, 왼쪽 위 구석은 투명
-      expect(r0.opaqueAt(60, 70), isTrue);
-      expect(r0.opaqueAt(2, 2), isFalse);
-    });
-  });
-
-  testWidgets('출시 모드: draft 침대는 쓰지 않는다', (tester) async {
-    await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle({path: file.readAsBytesSync()}), showDraft: false);
-      await reg.preload(['bed_single']);
+      final r1 = reg.sprite('bed_double', Rot.r1);
+      expect(r1, isNotNull);
+      expect((r1!.image.width, r1.image.height), (128, 120));
+      expect(r1.opaqueAt(64, 80), isTrue);
+      expect(r1.opaqueAt(2, 2), isFalse);
+      expect(reg.sprite('bed_double', Rot.r0), isNull);
       expect(reg.sprite('bed_single', Rot.r0), isNull);
+
+      final release = AssetRegistry(m, bundle: FakeBundle({doublePath: doubleFile.readAsBytesSync()}), showDraft: false);
+      await release.preload(['bed_double']);
+      expect(release.sprite('bed_double', Rot.r1), isNull);
     });
   });
 
-  test('깊이 정렬: 침대 앞 칸의 의자·미니미는 침대보다 나중에, 뒤의 화분은 먼저', () {
+  test('깊이 정렬: 더블 침대 앞의 의자·미니미는 나중에, 뒤의 화분은 먼저', () {
     final l = RoomLayout(
       floor: {
-        'bed_single': const FloorPos(3, 2),
-        'chair_wood': const FloorPos(4, 3), // 침대 오른쪽 옆 (x가 큼 → 앞)
-        'plant_small': const FloorPos(3, 1), // 침대 뒤
+        'bed_double': const FloorPos(3, 2, Rot.r1),
+        'chair_wood': const FloorPos(5, 3),
+        'plant_small': const FloorPos(3, 1),
       },
-      minimi: (3, 4), // 침대 발치 앞
+      minimi: (3, 4),
     );
     final ids = RoomScene.build(l, m).entries.map((e) => e.id).toList();
-    expect(ids.indexOf('plant_small'), lessThan(ids.indexOf('bed_single')));
-    expect(ids.indexOf('chair_wood'), greaterThan(ids.indexOf('bed_single')));
-    expect(ids.indexOf(RoomScene.minimiId), greaterThan(ids.indexOf('bed_single')));
+    expect(ids.indexOf('plant_small'), lessThan(ids.indexOf('bed_double')));
+    expect(ids.indexOf('chair_wood'), greaterThan(ids.indexOf('bed_double')));
+    expect(ids.indexOf(RoomScene.minimiId), greaterThan(ids.indexOf('bed_double')));
   });
 
-  testWidgets('실제 방에 그리기: R0·R1·편집 표시 모두 예외 없음 (+ 검수 스크린샷)', (tester) async {
+  testWidgets('실제 방에 그리기: 더블 R1·R0(대체)·싱글(대체)·편집 표시 예외 없음 (+ 검수 스크린샷)', (tester) async {
     final reg = await tester.runAsync(devRegistry);
     Future<void> shot(String name, RoomLayout l, {String? selected}) async {
       final painter = IsoRoomPainter(
@@ -113,19 +179,23 @@ void main() {
     addTearDown(tester.view.reset);
 
     final base = {
-      'chair_wood': const FloorPos(4, 3),
+      'chair_wood': const FloorPos(5, 3),
       'plant_small': const FloorPos(3, 1),
-      'rug_round': const FloorPos(2, 4),
+      'rug_round': const FloorPos(1, 5),
+      'bed_single': const FloorPos(0, 1),
     };
-    await shot('bed_in_room_r0', RoomLayout(floor: {'bed_single': const FloorPos(3, 2), ...base}, minimi: (3, 4)));
     await shot(
-      'bed_in_room_r0_footprint',
-      RoomLayout(floor: {'bed_single': const FloorPos(3, 2), ...base}, minimi: (3, 4)),
-      selected: 'bed_single',
+      'bed_double_in_room_r1',
+      RoomLayout(floor: {'bed_double': const FloorPos(3, 2, Rot.r1), ...base}, minimi: (3, 5)),
     );
     await shot(
-      'bed_in_room_r1_fallback',
-      RoomLayout(floor: {'bed_single': const FloorPos(2, 2, Rot.r1), ...base}, minimi: (3, 4)),
+      'bed_double_in_room_r1_footprint',
+      RoomLayout(floor: {'bed_double': const FloorPos(3, 2, Rot.r1), ...base}, minimi: (3, 5)),
+      selected: 'bed_double',
+    );
+    await shot(
+      'bed_double_in_room_r0_fallback',
+      RoomLayout(floor: {'bed_double': const FloorPos(3, 2), ...base}, minimi: (3, 5)),
     );
     expect(IsoGrid.canvasW, 512);
   });

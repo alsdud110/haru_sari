@@ -28,10 +28,46 @@ void main(List<String> args) {
   final comparePath = args.contains('--compare') ? opt('compare', '') : null;
   final (w, d) = rot == 'r0' ? (fp[0], fp[1]) : (fp[1], fp[0]);
 
-  final src = img.decodePng(File(args[0]).readAsBytesSync())!.convert(numChannels: 4);
+  final raw = img.decodePng(File(args[0]).readAsBytesSync())!.convert(numChannels: 4);
   final spec = spriteSpec(w, d, h);
   final out = StringBuffer();
   out.writeln('# ${args[0]}');
+
+  // --canvas WxH --offset x,y|auto : 크기를 바꾸지 않고 더 큰 캔버스에 옮겨 놓는다 (늘리기·줄이기 없음)
+  var src = raw;
+  if (args.contains('--canvas')) {
+    final cv = opt('canvas', '${spec.width}x${spec.height}').split('x').map(int.parse).toList();
+    final off = opt('offset', 'auto');
+    int ox, oy;
+    if (off == 'auto') {
+      // 그림 바닥 마름모의 중심 ≈ (좌우 끝의 가운데, 좌우 끝 열이 가장 낮게 내려온 y)
+      var minX = raw.width, maxX = -1;
+      for (final p in raw) {
+        if (p.a.toInt() < alphaCut) continue;
+        minX = math.min(minX, p.x);
+        maxX = math.max(maxX, p.x);
+      }
+      var sideY = 0;
+      for (final p in raw) {
+        if (p.a.toInt() >= alphaCut && (p.x == minX || p.x == maxX)) sideY = math.max(sideY, p.y);
+      }
+      final cx = spec.ax + (w - d) * 16; // 점유 마름모 중심 x
+      final cy = spec.ay + (w + d) * 8; // 점유 마름모 중심 y
+      ox = (cx - (minX + maxX) / 2).floor();
+      oy = cy - sideY;
+    } else {
+      final o = off.split(',').map(int.parse).toList();
+      ox = o[0];
+      oy = o[1];
+    }
+    src = img.Image(width: cv[0], height: cv[1], numChannels: 4);
+    for (final p in raw) {
+      final x = p.x + ox, y = p.y + oy;
+      if (x < 0 || y < 0 || x >= cv[0] || y >= cv[1]) continue;
+      src.setPixelRgba(x, y, p.r, p.g, p.b, p.a);
+    }
+    out.writeln('placed ${raw.width}x${raw.height} onto ${cv[0]}x${cv[1]} at offset ($ox, $oy), no scaling');
+  }
   out.writeln('size: ${src.width}x${src.height} (expected ${spec.width}x${spec.height})');
 
   // ── 원본 통계

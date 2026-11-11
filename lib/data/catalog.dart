@@ -89,6 +89,7 @@ const shopCatalog = <ShopItem>[
   ShopItem(id: 'chair_wood', name: '원목 의자', kind: _f, slot: RoomSlot.chair, price: 25, level: 2, variant: 0),
   ShopItem(id: 'window_curtain', name: '커튼 달린 창', kind: _f, slot: RoomSlot.window, price: 35, level: 2, variant: 0),
   ShopItem(id: 'bed_single', name: '포근한 침대', kind: _f, slot: RoomSlot.bed, price: 60, level: 3, variant: 0),
+  ShopItem(id: 'bed_double', name: '체크 더블 침대', kind: _f, slot: RoomSlot.bed, price: 100, level: 3, variant: 2),
   ShopItem(id: 'frame_sun', name: '노을 액자', kind: _f, slot: RoomSlot.wallDecor, price: 20, level: 3, variant: 0),
   ShopItem(id: 'shelf_book', name: '책 선반', kind: _f, slot: RoomSlot.shelf, price: 35, level: 3, variant: 0),
   ShopItem(id: 'rug_stripe', name: '줄무늬 러그', kind: _f, slot: RoomSlot.rug, price: 30, level: 4, variant: 1),

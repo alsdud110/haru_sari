@@ -1,0 +1,15 @@
+# art/source/furniture/beds/bed_double_r1_original.png
+placed 96x104 onto 128x120 at offset (16, 15), no scaling
+size: 128x120 (expected 128x120)
+original: distinct RGB 2391, opaque(255) 0, semi-alpha 6519 (5525 kept at cut 128)
+clusters: 16 → palette colors 14
+fixed: distinct RGB 14, kept pixels 5525, semi removed 994, recolored 5525 (100.0%), mean dE 7.45, max dE 22.8, dE>15 127 px (2.3%)
+region as r1 (footprint 2x2, anchor 64,56): outside 0 px
+region as r0 (footprint 2x2, anchor 64,56): outside 0 px
+edge touch: top 0, left 0, right 0, bottom 0
+content bbox: x 16..111, y 20..113
+lowest row y=113 at x 63..65 (front vertex expected at x 64, y 120)
+leftmost col x=16 at y 52..88 (left vertex expected y 88)
+rightmost col x=111 at y 66..88 (right vertex expected y 88)
+wrote assets/pixel/furniture/beds/bed_double_r1.png
+wrote docs/asset-system/review/bed_double_r1_compare.png

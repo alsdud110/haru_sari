@@ -211,10 +211,34 @@ void drawFurniture(Canvas c, ShopItem item, Rect r) {
       c.drawRRect(_rr(f(0, 0, 0.16, 0.9), 6), _p(frameColor)); // 헤드보드
       c.drawRRect(_rr(f(0.04, 0.42, 1, 0.86), 8), _p(frameColor));
       c.drawRRect(_rr(f(0.06, 0.32, 0.98, 0.62), 10), _p(Colors.white)); // 매트리스
-      c.drawRRect(_rr(f(0.10, 0.22, 0.34, 0.44), 10), _p(const Color(0xFFFFFBF5))); // 베개
+      if (item.variant == 2) {
+        // 더블 침대: 베개 두 개를 위아래로
+        c.drawRRect(_rr(f(0.10, 0.12, 0.34, 0.30), 8), _p(const Color(0xFFFFFBF5)));
+        c.drawRRect(_rr(f(0.10, 0.34, 0.34, 0.52), 8), _p(const Color(0xFFFFFBF5)));
+      } else {
+        c.drawRRect(_rr(f(0.10, 0.22, 0.34, 0.44), 10), _p(const Color(0xFFFFFBF5))); // 베개
+      }
       final blanket = f(0.36, 0.30, 0.98, 0.70);
-      c.drawRRect(_rr(blanket, 10), _p(item.variant == 1 ? AppColors.sageSoft : AppColors.primarySoft));
-      if (item.variant == 1) {
+      c.drawRRect(_rr(blanket, 10), _p(item.variant >= 1 ? AppColors.sageSoft : AppColors.primarySoft));
+      if (item.variant == 2) {
+        // 체크무늬 이불
+        final sq = _p(AppColors.sage.withValues(alpha: 0.55));
+        for (var i = 0; i < 4; i++) {
+          for (var j = 0; j < 2; j++) {
+            if ((i + j).isEven) {
+              c.drawRect(
+                Rect.fromLTWH(
+                  blanket.left + blanket.width * i / 4,
+                  blanket.top + blanket.height * j / 2,
+                  blanket.width / 4,
+                  blanket.height / 2,
+                ),
+                sq,
+              );
+            }
+          }
+        }
+      } else if (item.variant == 1) {
         final q = Paint()
           ..color = AppColors.sage.withValues(alpha: 0.5)
           ..strokeWidth = 1.5;
