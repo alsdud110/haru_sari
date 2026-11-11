@@ -397,6 +397,9 @@ void main(List<String> args) {
     File('${dir.path}/${t.id}_art.png').writeAsBytesSync(img.encodePng(art));
     File('${dir.path}/${t.id}_template.ase').writeAsBytesSync(writeAse(g, t.id));
     File('${dir.path}/${t.id}_preview.png').writeAsBytesSync(img.encodePng(preview(g, t)));
+    // AI 생성 도구에 그림판으로 줄 10배 가이드 (블록 10px, nearest)
+    final x10 = img.copyResize(g, width: g.width * 10, height: g.height * 10, interpolation: img.Interpolation.nearest);
+    File('${dir.path}/${t.id}_guide_x10.png').writeAsBytesSync(img.encodePng(x10));
     final s = spriteSpec(t.w, t.d, t.h);
     stdout.writeln('${t.id}: ${s.width}x${s.height} anchor (${s.ax},${s.ay}) verts ${footprintVerts(t.w, t.d, s.ax, s.ay)}');
   }
