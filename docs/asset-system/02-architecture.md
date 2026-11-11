@@ -277,6 +277,8 @@ class IsoGrid {
   - 처리 순서: `toByteData(rawRgba)` → 색 교체 → `decodeImageFromPixels`
 
 ### 9.2 단계별 대체
+
+> **구현 변경 (2026-11-11, PART 4)**: 아래 첫 줄 대신, 방은 항상 아이소메트릭으로 그리고 바닥·벽은 PNG가 없으면 팔레트 색 코드 그림으로 대신한다. 편집 결과가 내 방 탭에 그대로 보이게 하려는 것이다. 자세한 내용은 PROGRESS.md.
 | 상황 | 그리는 방식 |
 |---|---|
 | 방 기본 에셋(바닥·벽)이 `final`이 아님 | **방 전체를 기존 `RoomPainter`(정면 2D)로 그린다.** 지금 앱과 똑같다. 기능 플래그 `RoomRenderMode.legacy` |
