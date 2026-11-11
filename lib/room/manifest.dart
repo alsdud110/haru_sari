@@ -60,10 +60,11 @@ class ItemArt {
   final bool mirror;
 
   bool get isFinal => status == ArtStatus.finalArt;
-  bool get rotatable => rotations.containsKey(Rot.r1) || mirrorR1;
+  /// 바닥에 놓는 것은 모두 네 방향으로 돌릴 수 있다 (그림이 없는 방향은 대체 그림).
+  bool get rotatable => isFloor;
   bool get isFloor => layer == ArtLayer.object || layer == ArtLayer.floorDecor;
 
-  (int, int) footprintFor(Rot r) => r == Rot.r0 ? footprint : (footprint.$2, footprint.$1);
+  (int, int) footprintFor(Rot r) => r.index.isEven ? footprint : (footprint.$2, footprint.$1);
 
   ({int width, int height, int ax, int ay}) spriteSpec(Rot r) {
     final (w, d) = footprintFor(r);

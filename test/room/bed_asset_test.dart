@@ -66,6 +66,9 @@ void main() {
       await tester.runAsync(() async {
         final problems = await AssetCheck.objectSprite(m['bed_double']!, Rot.r1, doubleFile.readAsBytesSync());
         expect(problems, isEmpty);
+        // R0은 R1을 좌우로 뒤집은 임시본 (명암은 손보지 않음)
+        final r0 = File('assets/pixel/furniture/beds/bed_double_r0.png').readAsBytesSync();
+        expect(await AssetCheck.objectSprite(m['bed_double']!, Rot.r0, r0), isEmpty);
       });
     });
   });

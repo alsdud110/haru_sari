@@ -409,4 +409,26 @@ void main() {
       expect(AuthService(kv).current?.nickname, '민');
     });
   });
+
+  test('개발용 충전: 코인 +10000, 레벨은 상점 최고 해금 레벨', () {
+    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9));
+    final before = s.profile.coins;
+    s.debugTopUp();
+    expect(s.profile.coins, before + 10000);
+    expect(shopCatalog.every((i) => i.level <= s.profile.level), isTrue);
+  });
+
+  test('회전: 네 방향을 차례로 돌아 제자리로, 막힌 방향은 건너뛴다', () {
+    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest)..debugTopUp();
+    s.buy(itemById('bed_single')!);
+    expect(s.moveFloor('bed_single', const FloorPos(3, 3)).ok, isTrue);
+    for (final r in [Rot.r1, Rot.r2, Rot.r3, Rot.r0]) {
+      expect(s.rotateFloor('bed_single').ok, isTrue);
+      expect(s.room.floor['bed_single']!.r, r);
+    }
+    // 오른쪽 끝 열: 1×2는 서지만 2×1(R1·R3)은 방 밖 → R0에서 바로 R2로
+    expect(s.moveFloor('bed_single', const FloorPos(7, 3)).ok, isTrue);
+    expect(s.rotateFloor('bed_single').ok, isTrue);
+    expect(s.room.floor['bed_single']!.r, Rot.r2);
+  });
 }

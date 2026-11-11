@@ -697,7 +697,7 @@ class ItemThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.assetPath != null) {
-      return Image.asset(item.assetPath!, width: size, height: size, fit: BoxFit.contain);
+      return Image.asset(item.assetPath!, width: size, height: size, fit: BoxFit.contain, filterQuality: FilterQuality.none);
     }
     if (!item.isFurniture) {
       return SizedBox.square(

@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:math' as math;
 
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -139,6 +140,14 @@ class AppState extends ChangeNotifier {
     await _kv.write(_kLogs, jsonEncode(logs.map((k, v) => MapEntry(k, v.toJson()))));
     await _kv.write(_kProfile, jsonEncode(profile.toJson()));
     await _kv.write(_kOnboarded, onboarded.toString());
+  }
+
+  /// 개발용: 코인 10000 충전 + 상점에서 가장 높은 해금 레벨로 올린다 (디버그 빌드의 코인 칩 길게 누르기).
+  void debugTopUp() {
+    profile
+      ..coins += 10000
+      ..level = math.max(profile.level, shopCatalog.map((i) => i.level).reduce(math.max));
+    _commit();
   }
 
   void _commit({bool resync = false}) {
@@ -440,7 +449,13 @@ class AppState extends ChangeNotifier {
   PlaceCheck rotateFloor(String id) {
     final p = room.floor[id];
     if (p == null) return const PlaceCheck(PlaceStatus.notPlaceable);
-    return moveFloor(id, FloorPos(p.x, p.y, p.r == Rot.r0 ? Rot.r1 : Rot.r0));
+    // 다음 방향부터 차례로, 놓을 수 있는 첫 방향으로 돌린다
+    var last = const PlaceCheck(PlaceStatus.notPlaceable);
+    for (var i = 1; i < Rot.values.length; i++) {
+      last = moveFloor(id, FloorPos(p.x, p.y, Rot.values[(p.r.index + i) % Rot.values.length]));
+      if (last.ok) break;
+    }
+    return last;
   }
 
   PlaceCheck moveWall(String id, WallPos to) {

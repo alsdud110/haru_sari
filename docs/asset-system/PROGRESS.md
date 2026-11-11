@@ -205,3 +205,19 @@
 - `bed_double` 카탈로그 등록 (100코인, Lv.3)
 - 보정본 `assets/pixel/furniture/beds/bed_double_r1.png` (**draft**: 개발 모드 `--dart-define=SHOW_DRAFT_ASSETS=true`에서만 표시, 출시 빌드에서는 기존 그림)
 - `bed_single`은 PNG 없이 기존 그림
+
+---
+
+## 2026-11-11 · 네 방향 회전, 입체 대체 그림, 화분 PNG
+
+- **회전 4방향** (`Rot.r0~r3`, 01 §3.2). 바닥에 놓는 것은 모두 회전할 수 있다. 저장은 index라 기존 데이터(0·1)와 호환된다.
+- **입체 대체 그림** `lib/ui/room/iso_boxes.dart`: 침대 3종·책상 2종·의자를 상자로 쌓아 3D로 돌려 그린다. 평면 그림이 아이소메트릭 방에서 비뚤어 보이던 문제를 없앴다. 조명·화분은 기존 평면 그림 그대로.
+- **작은 화분 PNG** `furniture/decorations/plant_small_r0.png` (draft): `tool/draw_plant_small.dart`가 코드로 그린다. 상점 썸네일도 이 PNG를 쓴다(`ShopItem.assetPath`). 썸네일은 draft 숨김과 상관없이 보이므로 출시 전에 final 여부를 확인한다.
+- **더블 침대 R0**: R1을 좌우로 뒤집은 임시본. 명암이 광원과 반대라 다시 칠해야 한다.
+- **draft 표시 기본값 변경**: 디버그 빌드는 기본으로 draft를 보여 준다. 끄려면 `--dart-define=SHOW_DRAFT_ASSETS=false`. 출시 빌드는 여전히 final만 쓴다.
+- **개발용 충전**: 디버그 빌드에서 코인 칩을 길게 누르면 코인 +10000, 레벨은 상점 최고 해금 레벨.
+- 루틴 추가 화면의 카테고리·아이콘을 그리드로 바꿨다.
+
+남은 것:
+- 더블 침대 R2·R3은 상자 그림이라 R0·R1(PNG)과 그림체가 다르다.
+- 싱글·퀼트 침대, 책상, 의자, 조명, 큰 화분, 러그는 PNG가 없다.

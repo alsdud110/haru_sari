@@ -7,6 +7,7 @@ import '../../room/manifest.dart';
 import '../../room/palette.dart';
 import '../../room/registry.dart';
 import '../../room/scene.dart';
+import 'iso_boxes.dart';
 import 'room_painter.dart';
 
 Color px(int rgb) => Color(0xFF000000 | rgb);
@@ -227,7 +228,14 @@ class IsoRoomPainter extends CustomPainter {
       c.drawPath(inner, Paint()..color = b);
       return;
     }
-    // 가구: 점유 칸 위쪽 상자에 기존 그림 (가로세로 비율 유지, 바닥에 붙임)
+    // 방향이 있는 가구(침대·책상·의자): 상자를 쌓아 네 방향 입체로 그린다
+    final boxes = isoBoxesFor(item, manifest[e.id]?.footprint ?? (1, 1));
+    if (boxes != null) {
+      final (x, y, _, _) = e.footprint!;
+      drawIsoBoxes(c, boxes, manifest[e.id]!.footprint, e.rot, x, y);
+      return;
+    }
+    // 대칭 가구(조명·화분): 점유 칸 위쪽 상자에 기존 그림 (가로세로 비율 유지, 바닥에 붙임)
     final box = e.box.rect;
     final ref = slotRect(item.slot!, const Size(300, 300));
     final ratio = ref.width / ref.height;

@@ -83,7 +83,7 @@ const _f = ItemKind.furniture;
 const shopCatalog = <ShopItem>[
   // 가구
   ShopItem(id: 'rug_round', name: '동그란 러그', kind: _f, slot: RoomSlot.rug, price: 20, level: 1, variant: 0),
-  ShopItem(id: 'plant_small', name: '작은 화분', kind: _f, slot: RoomSlot.plant, price: 15, level: 1, variant: 0),
+  ShopItem(id: 'plant_small', name: '작은 화분', kind: _f, slot: RoomSlot.plant, price: 15, level: 1, variant: 0, assetPath: 'assets/pixel/furniture/decorations/plant_small_r0.png'),
   ShopItem(id: 'lamp_stand', name: '스탠드 조명', kind: _f, slot: RoomSlot.lamp, price: 25, level: 1, variant: 0),
   ShopItem(id: 'desk_wood', name: '원목 책상', kind: _f, slot: RoomSlot.desk, price: 40, level: 2, variant: 0),
   ShopItem(id: 'chair_wood', name: '원목 의자', kind: _f, slot: RoomSlot.chair, price: 25, level: 2, variant: 0),

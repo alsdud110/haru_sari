@@ -9,9 +9,9 @@ import 'iso.dart';
 import 'manifest.dart';
 import 'palette.dart';
 
-/// draft 에셋을 화면에 쓸지. 출시 빌드는 false (final만 씀).
-/// 개발 중 확인: `flutter run --dart-define=SHOW_DRAFT_ASSETS=true`
-const kShowDraftAssets = bool.fromEnvironment('SHOW_DRAFT_ASSETS');
+/// draft 에셋을 화면에 쓸지. 출시 빌드는 false (final만 씀), 디버그 빌드는 기본으로 켠다.
+/// 끄고 확인: `flutter run --dart-define=SHOW_DRAFT_ASSETS=false`
+const kShowDraftAssets = bool.fromEnvironment('SHOW_DRAFT_ASSETS', defaultValue: kDebugMode);
 
 class LoadedSprite {
   LoadedSprite(this.image, this.alpha, {this.mirror = false});
@@ -61,9 +61,10 @@ class AssetRegistry extends ChangeNotifier {
     if (art == null || !_usable(art)) return null;
     final s = _sprites[_key(id, r)];
     if (s != null) return s;
-    if (r == Rot.r1 && art.mirrorR1 && !art.rotations.containsKey(Rot.r1)) {
+    // 대칭 물체: R0 한 장으로 네 방향을 그린다 (R1·R3은 좌우 반전)
+    if (art.mirrorR1 && !art.rotations.containsKey(r)) {
       final base = _sprites[_key(id, Rot.r0)];
-      if (base != null) return LoadedSprite(base.image, base.alpha, mirror: true);
+      if (base != null) return LoadedSprite(base.image, base.alpha, mirror: r.index.isOdd);
     }
     return null;
   }

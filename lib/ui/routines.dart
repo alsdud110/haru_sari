@@ -200,9 +200,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             const SizedBox(height: Space.xl),
             Text('카테고리', style: t.titleMedium),
             const SizedBox(height: Space.sm),
-            Wrap(
-              spacing: Space.sm,
-              runSpacing: Space.sm,
+            _ChoiceGrid(
+              columns: 3,
               children: [
                 for (final c in routineCategories)
                   _Choice(
@@ -219,9 +218,8 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             const SizedBox(height: Space.xl),
             Text('아이콘', style: t.titleMedium),
             const SizedBox(height: Space.sm),
-            Wrap(
-              spacing: Space.sm,
-              runSpacing: Space.sm,
+            _ChoiceGrid(
+              columns: 6,
               children: [
                 for (final e in _emojiChoices)
                   _Choice(
@@ -335,6 +333,27 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       ),
     );
   }
+}
+
+/// 선택 버튼을 같은 폭의 칸으로 나란히 놓는다 (칸 높이 48).
+class _ChoiceGrid extends StatelessWidget {
+  const _ChoiceGrid({required this.columns, required this.children});
+  final int columns;
+  final List<Widget> children;
+
+  @override
+  Widget build(BuildContext context) => GridView(
+    shrinkWrap: true,
+    padding: EdgeInsets.zero,
+    physics: const NeverScrollableScrollPhysics(),
+    gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+      crossAxisCount: columns,
+      mainAxisExtent: 48,
+      crossAxisSpacing: Space.sm,
+      mainAxisSpacing: Space.sm,
+    ),
+    children: children,
+  );
 }
 
 class _Choice extends StatelessWidget {

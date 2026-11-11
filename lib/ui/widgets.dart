@@ -1,5 +1,6 @@
 import 'dart:math' as math;
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../app.dart';
@@ -124,8 +125,10 @@ class CoinChip extends StatelessWidget {
   const CoinChip({super.key});
   @override
   Widget build(BuildContext context) {
-    final p = AppScope.of(context).profile;
-    return StatChip(icon: Icons.circle, label: '${p.coins}', color: AppColors.coin, bg: AppColors.coinSoft);
+    final s = AppScope.of(context);
+    final chip = StatChip(icon: Icons.circle, label: '${s.profile.coins}', color: AppColors.coin, bg: AppColors.coinSoft);
+    // 디버그 빌드에서만: 길게 누르면 테스트용 코인·레벨 충전
+    return kDebugMode ? GestureDetector(onLongPress: s.debugTopUp, child: chip) : chip;
   }
 }
 

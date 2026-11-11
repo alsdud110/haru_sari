@@ -1,8 +1,9 @@
 import 'dart:math' as math;
 import 'dart:ui';
 
-/// 가구 방향. R0 = 앞면이 왼쪽 아래, R1 = 앞면이 오른쪽 아래 (w·d가 바뀜).
-enum Rot { r0, r1 }
+/// 가구 방향 (90°씩 돈다). 앞면이 R0 = 왼쪽 아래, R1 = 오른쪽 아래, R2 = 오른쪽 위(뒷모습), R3 = 왼쪽 위(뒷모습).
+/// R1·R3은 w·d가 바뀐다. 저장은 index라 순서를 바꾸면 안 된다.
+enum Rot { r0, r1, r2, r3 }
 
 /// 스프라이트 하나가 캔버스에 놓이는 상자.
 class SpriteBox {

@@ -37,7 +37,6 @@ class Occupancy {
   PlaceCheck canPlaceFloor(RoomLayout l, String id, FloorPos p) {
     final art = manifest[id];
     if (art == null || !art.isFloor) return const PlaceCheck(PlaceStatus.notPlaceable);
-    if (p.r == Rot.r1 && !art.rotatable) return const PlaceCheck(PlaceStatus.notPlaceable);
     final me = rectOf(id, p);
     if (!IsoGrid.inRoom(me.$1, me.$2, me.$3, me.$4)) return const PlaceCheck(PlaceStatus.outOfRoom);
     final g = _group(art);
@@ -81,7 +80,7 @@ class Occupancy {
         if (a.$2 != b.$2) return a.$2.compareTo(b.$2);
         return a.$1.compareTo(b.$1);
       });
-    for (final r in [Rot.r0, if (art.rotatable) Rot.r1]) {
+    for (final r in [Rot.r0, Rot.r1]) {
       for (final (x, y) in cells) {
         final p = FloorPos(x, y, r);
         if (canPlaceFloor(l, id, p).ok) return p;
