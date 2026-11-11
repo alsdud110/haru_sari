@@ -1,6 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/room/asset_check.dart';
-import 'package:oneul_sari/room/iso.dart';
+import 'package:haru_sari/room/asset_check.dart';
+import 'package:haru_sari/room/iso.dart';
 
 void main() {
   test('바닥 네 꼭짓점', () {

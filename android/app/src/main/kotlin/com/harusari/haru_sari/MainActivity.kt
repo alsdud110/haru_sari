@@ -1,4 +1,4 @@
-package com.oneulsari.oneul_sari
+package com.harusari.haru_sari
 
 import io.flutter.embedding.android.FlutterActivity
 

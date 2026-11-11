@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'package:oneul_sari/app.dart';
-import 'package:oneul_sari/data/auth.dart';
-import 'package:oneul_sari/data/reminders.dart';
-import 'package:oneul_sari/data/store.dart';
+import 'package:haru_sari/app.dart';
+import 'package:haru_sari/data/auth.dart';
+import 'package:haru_sari/data/reminders.dart';
+import 'package:haru_sari/data/store.dart';
 
 import 'room/manifest_test.dart' show loadManifest;
 
@@ -19,7 +19,7 @@ void main() {
     tester.view.physicalSize = const Size(390 * 3, 844 * 3);
     tester.view.devicePixelRatio = 3;
     addTearDown(tester.view.reset);
-    await tester.pumpWidget(OneulSariApp(kv: kv, auth: auth, reminders: NoReminders(), clock: clock, manifest: manifest));
+    await tester.pumpWidget(HaruSariApp(kv: kv, auth: auth, reminders: NoReminders(), clock: clock, manifest: manifest));
     await tester.pumpAndSettle();
   }
 

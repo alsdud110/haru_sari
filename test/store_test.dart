@@ -1,16 +1,16 @@
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/data/auth.dart';
-import 'package:oneul_sari/data/catalog.dart';
-import 'package:oneul_sari/data/models.dart';
-import 'package:oneul_sari/data/reminders.dart';
-import 'package:oneul_sari/data/rewards.dart';
-import 'package:oneul_sari/data/store.dart';
-import 'package:oneul_sari/room/iso.dart';
-import 'package:oneul_sari/room/layout.dart';
-import 'package:oneul_sari/room/manifest.dart';
-import 'package:oneul_sari/room/occupancy.dart';
+import 'package:haru_sari/data/auth.dart';
+import 'package:haru_sari/data/catalog.dart';
+import 'package:haru_sari/data/models.dart';
+import 'package:haru_sari/data/reminders.dart';
+import 'package:haru_sari/data/rewards.dart';
+import 'package:haru_sari/data/store.dart';
+import 'package:haru_sari/room/iso.dart';
+import 'package:haru_sari/room/layout.dart';
+import 'package:haru_sari/room/manifest.dart';
+import 'package:haru_sari/room/occupancy.dart';
 
 import 'room/manifest_test.dart' show loadManifest;
 

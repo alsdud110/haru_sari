@@ -4,16 +4,16 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/data/catalog.dart';
-import 'package:oneul_sari/data/models.dart';
-import 'package:oneul_sari/data/store.dart';
-import 'package:oneul_sari/room/asset_check.dart';
-import 'package:oneul_sari/room/iso.dart';
-import 'package:oneul_sari/room/layout.dart';
-import 'package:oneul_sari/room/registry.dart';
-import 'package:oneul_sari/room/scene.dart';
-import 'package:oneul_sari/ui/room/iso_room_painter.dart';
-import 'package:oneul_sari/ui/room/minimi_sprite.dart';
+import 'package:haru_sari/data/catalog.dart';
+import 'package:haru_sari/data/models.dart';
+import 'package:haru_sari/data/store.dart';
+import 'package:haru_sari/room/asset_check.dart';
+import 'package:haru_sari/room/iso.dart';
+import 'package:haru_sari/room/layout.dart';
+import 'package:haru_sari/room/registry.dart';
+import 'package:haru_sari/room/scene.dart';
+import 'package:haru_sari/ui/room/iso_room_painter.dart';
+import 'package:haru_sari/ui/room/minimi_sprite.dart';
 
 import 'manifest_test.dart' show loadManifest;
 import 'scene_test.dart' show FakeBundle;

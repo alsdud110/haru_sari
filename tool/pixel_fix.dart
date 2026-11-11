@@ -9,7 +9,7 @@ import 'dart:io';
 import 'dart:math' as math;
 
 import 'package:image/image.dart' as img;
-import 'package:oneul_sari/room/palette.dart';
+import 'package:haru_sari/room/palette.dart';
 
 void main(List<String> args) {
   if (args.length < 2) {

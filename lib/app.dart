@@ -27,8 +27,8 @@ class AuthScope extends InheritedNotifier<AuthService> {
   static AuthService read(BuildContext context) => context.getInheritedWidgetOfExactType<AuthScope>()!.notifier!;
 }
 
-class OneulSariApp extends StatefulWidget {
-  const OneulSariApp({super.key, required this.kv, required this.auth, this.reminders, this.clock, this.manifest});
+class HaruSariApp extends StatefulWidget {
+  const HaruSariApp({super.key, required this.kv, required this.auth, this.reminders, this.clock, this.manifest});
   final KeyValue kv;
   final AuthService auth;
   final Reminders? reminders;
@@ -36,10 +36,10 @@ class OneulSariApp extends StatefulWidget {
   final PixelManifest? manifest;
 
   @override
-  State<OneulSariApp> createState() => _OneulSariAppState();
+  State<HaruSariApp> createState() => _HaruSariAppState();
 }
 
-class _OneulSariAppState extends State<OneulSariApp> {
+class _HaruSariAppState extends State<HaruSariApp> {
   AppState? _state;
 
   /// 픽셀 에셋 이미지 캐시 (계정과 무관하므로 앱 전체에서 하나)
@@ -85,7 +85,7 @@ class _OneulSariAppState extends State<OneulSariApp> {
   }
 
   MaterialApp _app({Key? key, required Widget home}) =>
-      MaterialApp(key: key, title: '오늘살이', debugShowCheckedModeBanner: false, theme: buildTheme(), home: home);
+      MaterialApp(key: key, title: '하루살이', debugShowCheckedModeBanner: false, theme: buildTheme(), home: home);
 
   @override
   Widget build(BuildContext context) {

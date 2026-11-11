@@ -4,11 +4,11 @@ import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/data/catalog.dart';
-import 'package:oneul_sari/room/asset_check.dart';
-import 'package:oneul_sari/room/iso.dart';
-import 'package:oneul_sari/room/manifest.dart';
-import 'package:oneul_sari/room/palette.dart';
+import 'package:haru_sari/data/catalog.dart';
+import 'package:haru_sari/room/asset_check.dart';
+import 'package:haru_sari/room/iso.dart';
+import 'package:haru_sari/room/manifest.dart';
+import 'package:haru_sari/room/palette.dart';
 
 PixelManifest loadManifest() => PixelManifest.parse(File(PixelManifest.manifestPath).readAsStringSync());
 

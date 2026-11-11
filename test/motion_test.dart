@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/ui/motion.dart';
+import 'package:haru_sari/ui/motion.dart';
 
 Widget _host(Widget Function(BuildContext) body) => MaterialApp(
   home: Scaffold(

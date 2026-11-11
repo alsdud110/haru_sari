@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 
-/// 오늘살이 디자인 토큰. 위젯에서 색·간격을 직접 쓰지 말고 여기서 가져온다.
+/// 하루살이 디자인 토큰. 위젯에서 색·간격을 직접 쓰지 말고 여기서 가져온다.
 class AppColors {
   static const background = Color(0xFFFBF6EF); // 따뜻한 크림
   static const surface = Color(0xFFFFFFFF);

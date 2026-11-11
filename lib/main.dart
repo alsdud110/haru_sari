@@ -13,5 +13,5 @@ Future<void> main() async {
   await initializeDateFormatting('ko_KR');
   final kv = PrefsKeyValue(await SharedPreferences.getInstance());
   final manifest = await PixelManifest.load();
-  runApp(OneulSariApp(kv: kv, auth: AuthService(kv), reminders: LocalReminders(), manifest: manifest));
+  runApp(HaruSariApp(kv: kv, auth: AuthService(kv), reminders: LocalReminders(), manifest: manifest));
 }

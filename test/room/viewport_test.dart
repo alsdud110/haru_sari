@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:oneul_sari/ui/room/iso_room_view.dart';
+import 'package:haru_sari/ui/room/iso_room_view.dart';
 
 void main() {
   test('RoomFit: 기기별 크기와 스크롤 여부', () {

@@ -103,7 +103,7 @@ class LocalReminders implements Reminders {
           for (final d in r.weekdays) {
             await _plugin.zonedSchedule(
               id: id++,
-              title: '오늘살이',
+              title: '하루살이',
               body: routineAlarmBody(r),
               scheduledDate: _next(r.minuteOfDay!, weekday: d),
               notificationDetails: _details,
