@@ -1,0 +1,309 @@
+import 'package:flutter_test/flutter_test.dart';
+import 'package:oneul_sari/data/auth.dart';
+import 'package:oneul_sari/data/catalog.dart';
+import 'package:oneul_sari/data/models.dart';
+import 'package:oneul_sari/data/reminders.dart';
+import 'package:oneul_sari/data/rewards.dart';
+import 'package:oneul_sari/data/store.dart';
+
+class FakeReminders implements Reminders {
+  int syncs = 0;
+  List<Routine> lastRoutines = [];
+  AlarmSettings? lastSettings;
+  @override
+  Future<void> sync({required List<Routine> routines, required AlarmSettings settings}) async {
+    syncs++;
+    lastRoutines = routines;
+    lastSettings = settings;
+  }
+
+  @override
+  Future<void> clear() async {}
+  @override
+  Future<bool> requestPermission() async => true;
+}
+
+void main() {
+  // 2026-11-11 은 수요일
+  var now = DateTime(2026, 11, 11, 9);
+  late MemoryKeyValue kv;
+  late AppState s;
+  late FakeReminders rem;
+
+  Routine r(String id, {Set<int>? days, String memo = ''}) =>
+      Routine(id: id, name: id, emoji: '✨', weekdays: days, memo: memo);
+
+  setUp(() {
+    now = DateTime(2026, 11, 11, 9);
+    kv = MemoryKeyValue();
+    rem = FakeReminders();
+    s = AppState(kv, clock: () => now, reminders: rem, initialName: '민');
+    s.finishOnboarding(
+      minimi: const Minimi(),
+      picked: [
+        r('a'),
+        r('b'),
+        r('c'),
+        r('d'),
+        r('weekend', days: {6, 7}),
+      ],
+    );
+    s.takePendingBadges();
+  });
+
+  group('기록과 보상', () {
+    test('오늘 요일에 맞는 루틴만 오늘 목록에 들어간다', () {
+      expect(s.todayRoutines.map((e) => e.id), ['a', 'b', 'c', 'd']);
+      expect(s.profile.name, '민');
+    });
+
+    test('기준(70%)을 처음 넘을 때 한 번만 보상한다', () {
+      expect(s.toggle('a'), isNull); // 25%
+      expect(s.toggle('b'), isNull); // 50%
+      final reward = s.toggle('c'); // 75%
+      expect(reward, isNotNull);
+      expect(reward!.xp, RewardRules.baseXp);
+      expect(s.profile.coins, RewardRules.baseCoins);
+      expect(s.profile.totalXp, RewardRules.baseXp);
+      expect(s.todayReward!.coins, RewardRules.baseCoins);
+
+      s.toggle('b');
+      expect(s.toggle('b'), isNull);
+      expect(s.profile.coins, RewardRules.baseCoins);
+    });
+
+    test('완료를 취소해도 보상은 회수하지 않는다', () {
+      s.completeMany(['a', 'b', 'c']);
+      final coins = s.profile.coins;
+      expect(coins, greaterThan(0));
+      for (final id in ['a', 'b', 'c']) {
+        s.toggle(id);
+      }
+      expect(s.todayLog.done, 0);
+      expect(s.profile.coins, coins);
+    });
+
+    test('한 번에 기록은 고른 것만 완료한다', () {
+      final reward = s.completeMany(['a', 'b', 'c', 'd']);
+      expect(s.todayLog.done, 4);
+      expect(reward!.perfect, isTrue);
+      expect(reward.xp, RewardRules.baseXp + RewardRules.perfectBonusXp);
+    });
+
+    test('레벨업: 경험치가 넘치면 다음 레벨로 넘어간다', () {
+      final r1 = addXp(1, 40, 20);
+      expect(r1.level, 2);
+      expect(r1.xp, 10);
+      expect(r1.levelsGained, 1);
+    });
+
+    test('날이 바뀌면 새 기록이 생기고 지난 기록은 그대로다', () {
+      s.toggle('a');
+      now = DateTime(2026, 11, 14, 9); // 토요일
+      expect(s.todayRoutines.map((e) => e.id), ['a', 'b', 'c', 'd', 'weekend']);
+      expect(s.todayLog.done, 0);
+      expect(s.logs['2026-11-11']!.done, 1);
+    });
+
+    test('오늘 한 줄 메모는 오늘 기록에만 붙는다', () {
+      s.setTodayMemo('  오늘도 무사히  ');
+      expect(s.todayLog.memo, '오늘도 무사히');
+      now = DateTime(2026, 11, 12, 9);
+      expect(s.todayLog.memo, '');
+      expect(s.logs['2026-11-11']!.memo, '오늘도 무사히');
+    });
+  });
+
+  group('루틴 관리', () {
+    test('루틴을 지워도 지난 기록은 남는다', () {
+      s.toggle('a');
+      now = DateTime(2026, 11, 12, 9);
+      s.deleteRoutine('a');
+      expect(s.todayRoutines.map((e) => e.id), isNot(contains('a')));
+      expect(s.logs['2026-11-11']!.scheduled.containsKey('a'), isTrue);
+    });
+
+    test('쉬는 루틴은 오늘 목록에서 빠지고 다시 켜면 돌아온다', () {
+      s.toggle('a');
+      s.setRoutineActive('a', false);
+      expect(s.todayRoutines.map((e) => e.id), isNot(contains('a')));
+      expect(s.todayLog.completed, isNot(contains('a')));
+      s.setRoutineActive('a', true);
+      expect(s.todayRoutines.map((e) => e.id), contains('a'));
+    });
+
+    test('카테고리와 메모가 저장된다', () async {
+      s.upsertRoutine(r('e', memo: '기상 후 바로')..category = '건강');
+      await Future<void>.delayed(Duration.zero);
+      final again = AppState(kv, clock: () => now);
+      final e = again.routines.firstWhere((x) => x.id == 'e');
+      expect(e.memo, '기상 후 바로');
+      expect(e.category, '건강');
+    });
+
+    test('루틴이나 알림 설정이 바뀌면 알림을 다시 건다', () {
+      final before = rem.syncs;
+      s.upsertRoutine(
+        r('a')
+          ..alarmOn = true
+          ..minuteOfDay = 420,
+      );
+      s.updateAlarms(s.profile.alarms..dayEnd = true);
+      expect(rem.syncs, before + 2);
+      expect(rem.lastSettings!.dayEnd, isTrue);
+    });
+  });
+
+  group('상점·방·옷', () {
+    test('가구는 레벨과 코인이 충분해야 산다', () {
+      final desk = itemById('desk_wood')!; // Lv2, 40
+      expect(s.buy(desk), BuyResult.levelTooLow);
+      s.profile.level = 2;
+      expect(s.buy(desk), BuyResult.notEnoughCoins);
+      s.profile.coins = 100;
+      expect(s.buy(desk), BuyResult.ok);
+      expect(s.profile.coins, 60);
+      expect(s.isInUse(desk), isTrue);
+      expect(s.profile.acquired[desk.id], '2026-11-11');
+      expect(s.buy(desk), BuyResult.alreadyOwned);
+    });
+
+    test('같은 자리에 새 가구를 놓으면 원래 가구는 보관함으로 간다', () {
+      s.profile
+        ..level = 4
+        ..coins = 200;
+      final a = itemById('rug_round')!, b = itemById('rug_stripe')!;
+      s.buy(a);
+      s.buy(b);
+      expect(s.isInUse(b), isTrue);
+      expect(s.storedItems, [a]);
+      s.use(a);
+      expect(s.isInUse(a), isTrue);
+      s.putAway(a);
+      expect(s.profile.placed.containsKey('rug'), isFalse);
+      expect(s.storedItems.length, 2);
+    });
+
+    test('옷과 액세서리를 사서 입고 벗는다', () {
+      s.profile
+        ..level = 5
+        ..coins = 300;
+      final knit = itemById('outfit_knit')!, pin = itemById('acc_starpin')!;
+      s.buy(knit);
+      s.buy(pin);
+      expect(s.profile.outfitId, knit.id);
+      expect(s.profile.accessoryId, pin.id);
+      s.putAway(knit);
+      expect(s.profile.outfitId, isNull);
+      expect(s.storedItems, [knit]);
+    });
+  });
+
+  group('배지 (연속 기록 없음)', () {
+    test('첫 기록·해낸 하루·온전한 하루', () {
+      s.completeMany(['a', 'b', 'c', 'd']);
+      expect(s.takePendingBadges(), containsAll(['first_check', 'first_day', 'perfect_day']));
+      expect(s.takePendingBadges(), isEmpty);
+    });
+
+    test('며칠 쉬었다가 다시 기록하면 다시 시작 배지', () {
+      s.toggle('a');
+      s.takePendingBadges();
+      now = DateTime(2026, 11, 16, 9); // 5일 뒤
+      s.toggle('a');
+      expect(s.takePendingBadges(), contains('comeback'));
+    });
+
+    test('연이은 날에는 다시 시작 배지가 없다', () {
+      s.toggle('a');
+      now = DateTime(2026, 11, 12, 9);
+      s.toggle('a');
+      expect(s.profile.badges.containsKey('comeback'), isFalse);
+    });
+
+    test('첫 옷을 입으면 새 옷 배지', () {
+      s.profile.coins = 100;
+      s.buy(itemById('outfit_knit')!);
+      expect(s.takePendingBadges(), containsAll(['first_item', 'first_outfit']));
+    });
+  });
+
+  test('월간 루틴별 현황을 센다', () {
+    s.completeMany(['a', 'b']);
+    now = DateTime(2026, 11, 12, 9);
+    s.toggle('a');
+    final stats = s.perRoutine(DateTime(2026, 11, 1), DateTime(2026, 11, 30));
+    final a = stats.firstWhere((e) => e.label.contains('a'));
+    expect(a.done, 2);
+    expect(a.total, 2);
+  });
+
+  test('저장한 상태를 다시 불러온다', () async {
+    s.completeMany(['a', 'b', 'c']);
+    await Future<void>.delayed(Duration.zero);
+    final again = AppState(kv, clock: () => now);
+    expect(again.onboarded, isTrue);
+    expect(again.routines.length, 5);
+    expect(again.todayLog.done, 3);
+    expect(again.profile.coins, s.profile.coins);
+    expect(again.profile.badges, s.profile.badges);
+  });
+
+  group('계정', () {
+    late AuthService auth;
+    setUp(() => auth = AuthService(MemoryKeyValue()));
+
+    test('가입하면 바로 로그인되고, 같은 이메일로는 다시 가입할 수 없다', () {
+      expect(auth.signUp(email: 'A@b.com', password: '12345678', nickname: '민'), isNull);
+      expect(auth.current!.email, 'a@b.com');
+      expect(auth.signUp(email: 'a@b.com', password: '12345678', nickname: '또'), isNotNull);
+    });
+
+    test('입력 검사', () {
+      expect(auth.signUp(email: 'nope', password: '12345678', nickname: '민'), isNotNull);
+      expect(auth.signUp(email: 'a@b.com', password: '123', nickname: '민'), isNotNull);
+      expect(auth.signUp(email: 'a@b.com', password: '12345678', nickname: ' '), isNotNull);
+    });
+
+    test('로그아웃 후 맞는 비밀번호로만 로그인된다', () {
+      auth.signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+      auth.logout();
+      expect(auth.signedIn, isFalse);
+      expect(auth.login(email: 'a@b.com', password: 'wrongpass'), isNotNull);
+      expect(auth.login(email: 'a@b.com', password: '12345678'), isNull);
+    });
+
+    test('비밀번호 변경', () {
+      auth.signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+      expect(auth.changePassword(oldPassword: 'x', newPassword: 'abcdefgh'), isNotNull);
+      expect(auth.changePassword(oldPassword: '12345678', newPassword: 'abcdefgh'), isNull);
+      auth.logout();
+      expect(auth.login(email: 'a@b.com', password: 'abcdefgh'), isNull);
+    });
+
+    test('계정 삭제: 비밀번호를 확인하고 그 계정의 기록만 함께 지운다', () async {
+      final kv = MemoryKeyValue();
+      final a = AuthService(kv)..signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+      final uid = a.current!.uid;
+      await kv.write('${userPrefix(uid)}routines', '[]');
+      await kv.write('${userPrefix('other')}routines', '[]');
+
+      expect(await a.deleteAccount(password: 'wrongpass'), isNotNull);
+      expect(a.signedIn, isTrue);
+      expect(await a.deleteAccount(password: '12345678'), isNull);
+      expect(a.signedIn, isFalse);
+      expect(kv.read('${userPrefix(uid)}routines'), isNull);
+      expect(kv.read('${userPrefix('other')}routines'), '[]');
+      expect(a.login(email: 'a@b.com', password: '12345678'), isNotNull);
+      // 같은 이메일로 다시 가입할 수 있다
+      expect(a.signUp(email: 'a@b.com', password: '12345678', nickname: '민'), isNull);
+    });
+
+    test('세션은 다시 열어도 유지된다', () async {
+      final kv = MemoryKeyValue();
+      AuthService(kv).signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+      await Future<void>.delayed(Duration.zero);
+      expect(AuthService(kv).current?.nickname, '민');
+    });
+  });
+}
