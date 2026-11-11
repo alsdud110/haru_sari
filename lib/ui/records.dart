@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
@@ -49,20 +50,35 @@ class RecordsScreen extends StatelessWidget {
           body: ListView(
             padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xxl),
             children: [
-              SegmentedButton<RecordRange>(
-                showSelectedIcon: false,
-                style: SegmentedButton.styleFrom(
-                  selectedBackgroundColor: AppColors.primarySoft,
-                  side: const BorderSide(color: AppColors.line),
+              if (isApple)
+                CupertinoSlidingSegmentedControl<RecordRange>(
+                  groupValue: r,
+                  backgroundColor: AppColors.surfaceMuted,
+                  thumbColor: AppColors.surface,
+                  children: const {
+                    RecordRange.day: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('일간')),
+                    RecordRange.week: Text('주간'),
+                    RecordRange.month: Text('월간'),
+                  },
+                  onValueChanged: (v) {
+                    if (v != null) range.value = v;
+                  },
+                )
+              else
+                SegmentedButton<RecordRange>(
+                  showSelectedIcon: false,
+                  style: SegmentedButton.styleFrom(
+                    selectedBackgroundColor: AppColors.primarySoft,
+                    side: const BorderSide(color: AppColors.line),
+                  ),
+                  segments: const [
+                    ButtonSegment(value: RecordRange.day, label: Text('일간')),
+                    ButtonSegment(value: RecordRange.week, label: Text('주간')),
+                    ButtonSegment(value: RecordRange.month, label: Text('월간')),
+                  ],
+                  selected: {r},
+                  onSelectionChanged: (v) => range.value = v.first,
                 ),
-                segments: const [
-                  ButtonSegment(value: RecordRange.day, label: Text('일간')),
-                  ButtonSegment(value: RecordRange.week, label: Text('주간')),
-                  ButtonSegment(value: RecordRange.month, label: Text('월간')),
-                ],
-                selected: {r},
-                onSelectionChanged: (v) => range.value = v.first,
-              ),
               const SizedBox(height: Space.lg),
               Row(
                 children: [

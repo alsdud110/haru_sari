@@ -88,7 +88,7 @@ class RoutineManageScreen extends StatelessWidget {
                             ],
                           ),
                         ),
-                        Switch(
+                        Switch.adaptive(
                           value: r.active,
                           activeThumbColor: AppColors.primary,
                           onChanged: (v) => s.setRoutineActive(r.id, v),
@@ -294,7 +294,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                         r.alarmOn = false;
                       }),
                     ),
-                  SwitchListTile(
+                  SwitchListTile.adaptive(
                     title: const Text('알림 받기'),
                     subtitle: Text(r.minuteOfDay == null ? '시간을 정하면 켤 수 있어요' : '그 시간에 살며시 알려드려요'),
                     value: r.alarmOn,

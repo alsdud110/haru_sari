@@ -283,14 +283,14 @@ class _TemplateStep extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                SwitchListTile(
+                SwitchListTile.adaptive(
                   title: const Text('루틴 시간에 알림 받기'),
                   subtitle: const Text('고른 루틴의 시간에 살며시 알려드려요'),
                   value: routineAlarm,
                   activeThumbColor: AppColors.primary,
                   onChanged: onRoutineAlarm,
                 ),
-                SwitchListTile(
+                SwitchListTile.adaptive(
                   title: const Text('하루 마무리 알림'),
                   subtitle: const Text('오후 10시, 오늘을 돌아볼 시간을 알려드려요'),
                   value: dayEnd,

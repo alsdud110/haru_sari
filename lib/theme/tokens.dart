@@ -1,3 +1,5 @@
+import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
+import 'package:flutter/foundation.dart' show defaultTargetPlatform;
 import 'package:flutter/material.dart';
 
 /// 하루살이 디자인 토큰. 위젯에서 색·간격을 직접 쓰지 말고 여기서 가져온다.
@@ -50,7 +52,11 @@ class Motion {
   static const curve = Curves.easeOutCubic;
 }
 
+/// 애플 기기면 iOS(HIG) 모양, 그 밖에는 머티리얼 3 모양을 쓴다.
+bool get isApple => defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS;
+
 ThemeData buildTheme() {
+  final ios = isApple;
   final base = ThemeData(
     useMaterial3: true,
     colorScheme: ColorScheme.fromSeed(
@@ -60,33 +66,57 @@ ThemeData buildTheme() {
       brightness: Brightness.light,
     ),
     scaffoldBackgroundColor: AppColors.background,
+    // iOS: 물결 없이 눌림만 살짝, 옆으로 밀며 넘기고 뒤로 쓸어 닫는다. 안드로이드: 머티리얼 기본(물결·시스템 뒤로 가기)
+    splashFactory: ios ? NoSplash.splashFactory : null,
+    highlightColor: ios ? AppColors.text.withValues(alpha: 0.06) : null,
+    pageTransitionsTheme: ios
+        ? PageTransitionsTheme(
+            builders: {for (final p in TargetPlatform.values) p: const CupertinoPageTransitionsBuilder()},
+          )
+        : null,
+    dividerTheme: DividerThemeData(color: AppColors.line, thickness: ios ? 0.5 : 1, space: 1),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.surface,
+      surfaceTintColor: Colors.transparent,
+      shape: ios ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)) : null,
+    ),
+    switchTheme: SwitchThemeData(
+      trackColor: WidgetStateProperty.resolveWith(
+        (st) => ios && st.contains(WidgetState.selected) ? AppColors.sage : null,
+      ),
+    ),
   );
-  const t = TextStyle(color: AppColors.text, letterSpacing: -0.2);
+  // iOS 글자 단계: Title1 28 · Title2 22 · Headline/Body 17 · Subheadline 15 · Footnote 13
+  // 머티리얼 3 글자 단계: 28 · 22 · 16 · 16 · 14 · 12
+  final up = ios ? 1.0 : 0.0;
+  final t = TextStyle(color: AppColors.text, letterSpacing: ios ? -0.3 : -0.2);
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
-      headlineMedium: t.copyWith(fontSize: 26, fontWeight: FontWeight.w700, height: 1.25),
-      titleLarge: t.copyWith(fontSize: 20, fontWeight: FontWeight.w700),
-      titleMedium: t.copyWith(fontSize: 16, fontWeight: FontWeight.w600),
-      bodyLarge: t.copyWith(fontSize: 16, height: 1.45),
-      bodyMedium: t.copyWith(fontSize: 14, height: 1.45),
-      bodySmall: t.copyWith(fontSize: 12, color: AppColors.textMuted),
+      headlineMedium: t.copyWith(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25),
+      titleLarge: t.copyWith(fontSize: 22, fontWeight: FontWeight.w700),
+      titleMedium: t.copyWith(fontSize: 16 + up, fontWeight: FontWeight.w600),
+      bodyLarge: t.copyWith(fontSize: 16 + up, height: 1.45),
+      bodyMedium: t.copyWith(fontSize: 14 + up, height: 1.45),
+      bodySmall: t.copyWith(fontSize: 12 + up, color: AppColors.textMuted),
       labelLarge: t.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
     ),
-    appBarTheme: const AppBarTheme(
+    appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
       foregroundColor: AppColors.text,
       elevation: 0,
       scrolledUnderElevation: 0,
-      centerTitle: false,
-      titleTextStyle: TextStyle(color: AppColors.text, fontSize: 20, fontWeight: FontWeight.w700),
+      centerTitle: ios,
+      titleTextStyle: ios
+          ? const TextStyle(color: AppColors.text, fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4)
+          : const TextStyle(color: AppColors.text, fontSize: 22, fontWeight: FontWeight.w700),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
-        minimumSize: const Size.fromHeight(52),
+        minimumSize: Size.fromHeight(ios ? 50 : 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
-        textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.w700),
+        textStyle: TextStyle(fontSize: 16 + up, fontWeight: ios ? FontWeight.w600 : FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -113,14 +143,38 @@ ThemeData buildTheme() {
         borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
     ),
-    navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
-      indicatorColor: AppColors.primarySoft,
-      height: 68,
-      labelTextStyle: WidgetStateProperty.all(
-        const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
-      ),
-    ),
+    navigationBarTheme: ios
+        ? NavigationBarThemeData(
+            backgroundColor: AppColors.surface,
+            surfaceTintColor: Colors.transparent,
+            elevation: 0,
+            // iOS 탭바: 알약 표시 없이 색으로만 선택을 알린다
+            indicatorColor: Colors.transparent,
+            overlayColor: WidgetStateProperty.all(Colors.transparent),
+            height: 56,
+            iconTheme: WidgetStateProperty.resolveWith(
+              (st) => IconThemeData(
+                size: 26,
+                color: st.contains(WidgetState.selected) ? AppColors.primary : AppColors.textMuted,
+              ),
+            ),
+            labelTextStyle: WidgetStateProperty.resolveWith(
+              (st) => TextStyle(
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+                color: st.contains(WidgetState.selected) ? AppColors.primary : AppColors.textMuted,
+              ),
+            ),
+          )
+        // 머티리얼 3 내비게이션 바: 알약 표시, 높이 80(기본값)
+        : NavigationBarThemeData(
+            backgroundColor: AppColors.surface,
+            surfaceTintColor: Colors.transparent,
+            indicatorColor: AppColors.primarySoft,
+            labelTextStyle: WidgetStateProperty.all(
+              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
+            ),
+          ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
   );
 }

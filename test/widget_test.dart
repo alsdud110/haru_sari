@@ -73,7 +73,7 @@ void main() {
     await settleish(tester);
     // 30코인 + 레벨업 보너스 없음(15 코인) → 20코인 러그 못 삼
     expect(find.text('코인이 조금 모자라요'), findsOneWidget);
-  });
+  }, variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}));
 
   testWidgets('로그아웃했다가 다시 로그인하면 기록이 이어진다', (tester) async {
     final kv = MemoryKeyValue();
@@ -121,5 +121,5 @@ void main() {
     await tester.tap(find.text('일간'));
     await tester.pumpAndSettle();
     expect(find.text('루틴이 없던 날이에요'), findsOneWidget);
-  });
+  }, variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}));
 }

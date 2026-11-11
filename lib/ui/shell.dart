@@ -1,5 +1,7 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
+import '../theme/tokens.dart';
 import 'records.dart';
 import 'room/room_screen.dart';
 import 'settings.dart';
@@ -63,31 +65,59 @@ class _HomeShellState extends State<HomeShell> {
         index: _index,
         children: [for (var i = 0; i < pages.length; i++) TickerMode(enabled: i == _index, child: pages[i])],
       ),
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: _index,
-        onDestinationSelected: _select,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.wb_sunny_outlined),
-            selectedIcon: Icon(Icons.wb_sunny_rounded),
-            label: '오늘',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.chair_outlined),
-            selectedIcon: Icon(Icons.chair_rounded),
-            label: '내 방',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.calendar_month_outlined),
-            selectedIcon: Icon(Icons.calendar_month_rounded),
-            label: '기록',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.person_outline_rounded),
-            selectedIcon: Icon(Icons.person_rounded),
-            label: '나',
-          ),
-        ],
+      bottomNavigationBar: DecoratedBox(
+        decoration: BoxDecoration(
+          border: isApple ? const Border(top: BorderSide(color: AppColors.line, width: 0.5)) : null,
+        ),
+        child: NavigationBar(
+          selectedIndex: _index,
+          onDestinationSelected: _select,
+          destinations: isApple
+              ? const [
+                  NavigationDestination(
+                    icon: Icon(CupertinoIcons.sun_max),
+                    selectedIcon: Icon(CupertinoIcons.sun_max_fill),
+                    label: '오늘',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(CupertinoIcons.house),
+                    selectedIcon: Icon(CupertinoIcons.house_fill),
+                    label: '내 방',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(CupertinoIcons.calendar),
+                    selectedIcon: Icon(CupertinoIcons.calendar_today),
+                    label: '기록',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(CupertinoIcons.person),
+                    selectedIcon: Icon(CupertinoIcons.person_fill),
+                    label: '나',
+                  ),
+                ]
+              : const [
+                  NavigationDestination(
+                    icon: Icon(Icons.wb_sunny_outlined),
+                    selectedIcon: Icon(Icons.wb_sunny_rounded),
+                    label: '오늘',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.chair_outlined),
+                    selectedIcon: Icon(Icons.chair_rounded),
+                    label: '내 방',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.calendar_month_outlined),
+                    selectedIcon: Icon(Icons.calendar_month_rounded),
+                    label: '기록',
+                  ),
+                  NavigationDestination(
+                    icon: Icon(Icons.person_outline_rounded),
+                    selectedIcon: Icon(Icons.person_rounded),
+                    label: '나',
+                  ),
+                ],
+        ),
       ),
     );
   }

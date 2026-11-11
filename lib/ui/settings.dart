@@ -1,3 +1,4 @@
+import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/material.dart';
 
 import '../app.dart';
@@ -77,7 +78,7 @@ class ProfileScreen extends StatelessWidget {
           ]),
           const SizedBox(height: Space.lg),
           _Section('알림', [
-            SwitchListTile(
+            SwitchListTile.adaptive(
               secondary: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
               title: Text('알림 전체 허용', style: t.titleMedium),
               subtitle: Text('앱의 모든 알림을 켜거나 꺼요', style: t.bodySmall),
@@ -182,7 +183,9 @@ class _Tile extends StatelessWidget {
     leading: Icon(icon, color: AppColors.primary),
     title: Text(title, style: Theme.of(context).textTheme.titleMedium),
     subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
-    trailing: const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+    trailing: isApple
+        ? const Icon(CupertinoIcons.chevron_forward, size: 16, color: AppColors.textMuted)
+        : const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
     onTap: onTap,
   );
 }
@@ -229,7 +232,7 @@ class AlarmSettingsScreen extends StatelessWidget {
             padding: EdgeInsets.zero,
             child: Column(
               children: [
-                SwitchListTile(
+                SwitchListTile.adaptive(
                   title: const Text('루틴 시작 알림'),
                   subtitle: const Text('루틴마다 정해 둔 시간에 알려드려요'),
                   value: a.routineStart,
@@ -237,7 +240,7 @@ class AlarmSettingsScreen extends StatelessWidget {
                   onChanged: enabled ? (v) => s.updateAlarms(a..routineStart = v) : null,
                 ),
                 const Divider(height: 1, color: AppColors.line),
-                SwitchListTile(
+                SwitchListTile.adaptive(
                   title: const Text('하루 마감 알림'),
                   subtitle: const Text('오늘 하루를 돌아볼 시간을 알려드려요'),
                   value: a.dayEnd,
@@ -271,7 +274,7 @@ class AlarmSettingsScreen extends StatelessWidget {
                 children: [
                   for (var i = 0; i < timed.length; i++) ...[
                     if (i > 0) const Divider(height: 1, color: AppColors.line),
-                    SwitchListTile(
+                    SwitchListTile.adaptive(
                       title: Text('${timed[i].emoji} ${timed[i].name}'),
                       subtitle: Text(
                         '${weekdaySummary(timed[i].weekdays)} ${formatMinute(timed[i].minuteOfDay)}'
