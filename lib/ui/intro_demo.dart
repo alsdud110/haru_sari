@@ -207,8 +207,7 @@ class _IntroProgressDemoState extends _DemoState<IntroProgressDemo> {
 
 /// 3장: 미니미 곁에 가구가 하나씩 놓인다. [onMinimiDoubleTap]은 개발자 모드 진입에 쓴다.
 ///
-/// 가구는 방에서 쓰는 픽셀 그림 그대로다 (미니미와 같은 그림체). 지금 픽셀 그림이 있는 가구는
-/// 작은 화분과 더블 침대 둘뿐이라 그 둘을 쓴다.
+/// 가구는 방에서 쓰는 픽셀 그림 그대로다 (미니미와 같은 그림체): 작은 화분, 협탁, 더블 침대.
 class IntroRoomDemo extends _Demo {
   const IntroRoomDemo({super.key, required super.active, this.onMinimiDoubleTap});
   final VoidCallback? onMinimiDoubleTap;
@@ -218,38 +217,46 @@ class IntroRoomDemo extends _Demo {
 
 class _IntroRoomDemoState extends _DemoState<IntroRoomDemo> {
   static const _plant = 'assets/pixel/furniture/decorations/plant_small_r0.png'; // 64×72
+  static const _nightstand = 'assets/pixel/furniture/storage/nightstand_r0.png'; // 64×80
   static const _bed = 'assets/pixel/furniture/beds/bed_double_r1.png'; // 128×120
 
-  /// 바닥에서 톡 솟아난다 (조금 넘쳤다가 제자리).
+  /// 제자리에서 뽁 하고 튀어나온다 (조금 넘쳤다가 제자리).
   Widget _furniture(String asset, double w, double h, double from) => IgnorePointer(
     child: Transform.scale(
-      scale: Curves.easeOutBack.transform(part(from, 0.24)),
-      alignment: Alignment.bottomCenter,
-      child: Image.asset(
-        asset,
-        width: w,
-        height: h,
-        filterQuality: FilterQuality.none, // 픽셀이 뭉개지지 않게
-        excludeFromSemantics: true,
-        errorBuilder: (_, _, _) => SizedBox(width: w, height: h),
+      scale: Curves.easeOutBack.transform(part(from, 0.22)),
+      child: SizedBox(
+        child: Image.asset(
+          asset,
+          width: w,
+          height: h,
+          filterQuality: FilterQuality.none, // 픽셀이 뭉개지지 않게
+          excludeFromSemantics: true,
+          errorBuilder: (_, _, _) => SizedBox(width: w, height: h),
+        ),
       ),
     ),
   );
 
   @override
-  Widget scene(BuildContext context) => Row(
-    mainAxisSize: MainAxisSize.min,
-    crossAxisAlignment: CrossAxisAlignment.end, // 모두 같은 바닥선에 선다
-    children: [
-      _furniture(_plant, 64, 72, 0.25),
-      const SizedBox(width: Space.sm),
-      GestureDetector(
-        key: const ValueKey('intro-minimi'),
-        onDoubleTap: widget.onMinimiDoubleTap,
-        child: Breathing(child: MinimiView(profile: Profile(), happy: true, width: 120)),
-      ),
-      const SizedBox(width: Space.sm),
-      _furniture(_bed, 128, 120, 0.55),
-    ],
+  Widget scene(BuildContext context) => SizedBox(
+    width: 344,
+    height: 196,
+    child: Stack(
+      clipBehavior: Clip.none,
+      children: [
+        // 미니미는 가운데. 가구는 오른쪽 위 → 왼쪽 가운데 → 오른쪽 아래 순서로 톡톡 튀어나온다.
+        Align(alignment: const Alignment(-1, 0.1), child: _furniture(_bed, 128, 120, 0.42)),
+        Align(
+          alignment: const Alignment(0.12, 0),
+          child: GestureDetector(
+            key: const ValueKey('intro-minimi'),
+            onDoubleTap: widget.onMinimiDoubleTap,
+            child: Breathing(child: MinimiView(profile: Profile(), happy: true, width: 120)),
+          ),
+        ),
+        Align(alignment: const Alignment(1, -1), child: _furniture(_nightstand, 64, 80, 0.18)),
+        Align(alignment: const Alignment(0.9, 1), child: _furniture(_plant, 64, 72, 0.66)),
+      ],
+    ),
   );
 }
