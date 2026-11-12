@@ -47,12 +47,11 @@ shopCatalog ──────► ShopItem(id, price, level, kind, slot)        
   "room": {
     "floor":  { "path": "rooms/floors/floor_wood.png" },             // 64×32 타일
     "wallL":  { "path": "rooms/walls/wall_cream_l.png" },            // 32×176 조각
-    "status": "draft"
   },
   "items": {
     "<ShopItem.id>": {
       "layer": "object | floorDecor | wall | surface | character",
-      "status": "draft | final",          // final만 실제 화면에 쓴다 (§9)
+      // (상태 표시 없음: 파일이 있고 규격이 맞으면 화면에 쓴다, §9)
       "rev": 1,                           // 그림을 다시 그리면 +1
       "source": "ai+manual | manual",
       // layer별 필드는 아래 표
@@ -143,7 +142,6 @@ w, d = rot == r0 ? footprint : footprint 뒤집기
     "r0": "furniture/beds/bed_single_r0.png",
     "r1": "furniture/beds/bed_single_r1.png"
   },
-  "status": "draft",
   "rev": 1,
   "source": "ai+manual"
 }
@@ -282,12 +280,12 @@ class IsoGrid {
 > **구현 변경 (2026-11-11, PART 4)**: 아래 첫 줄 대신, 방은 항상 아이소메트릭으로 그리고 바닥·벽은 PNG가 없으면 팔레트 색 코드 그림으로 대신한다. 편집 결과가 내 방 탭에 그대로 보이게 하려는 것이다. 자세한 내용은 PROGRESS.md.
 | 상황 | 그리는 방식 |
 |---|---|
-| 방 기본 에셋(바닥·벽)이 `final`이 아님 | **방 전체를 기존 `RoomPainter`(정면 2D)로 그린다.** 지금 앱과 똑같다. 기능 플래그 `RoomRenderMode.legacy` |
-| 방은 아이소메트릭인데 가구 PNG가 없거나 `draft`이거나 크기가 틀림 | 그 가구만 기존 `drawFurniture` 벡터 그림을 **계산된 스프라이트 상자 안에** 그리고, 점유 마름모 외곽선을 덧그린다. 디버그 빌드에서는 '임시' 표시 |
+| 방 기본 에셋(바닥·벽) 파일이 없음 | **방 전체를 기존 `RoomPainter`(정면 2D)로 그린다.** 지금 앱과 똑같다. 기능 플래그 `RoomRenderMode.legacy` |
+| 방은 아이소메트릭인데 가구 PNG가 없거나 크기가 틀림 | 그 가구만 기존 `drawFurniture` 벡터 그림을 **계산된 스프라이트 상자 안에** 그리고, 점유 마름모 외곽선을 덧그린다. 디버그 빌드에서는 '임시' 표시 |
 | 미니미 레이어가 하나라도 없음 | 미니미 전체를 기존 `MinimiPainter`로 그린다. 레이어를 섞지 않는다 |
 | 상점 썸네일 | `ItemThumb`: PNG가 있으면 정수배로 키워 `FilterQuality.none`으로, 없으면 지금 벡터 그림. `errorBuilder`도 벡터 그림 |
 
-- `draft` 에셋은 개발자 설정(`kShowDraftAssets`)이 켜져 있을 때만 화면에 나온다. 출시 빌드에는 `final`만 나온다.
+- 초안/최종 상태 구분은 없다(2026-11-12 폐지). 파일이 있고 규격이 맞으면 개발·출시 빌드 모두 화면에 쓴다.
 - 누락은 앱을 멈추지 않는다. 디버그 로그에 id와 이유만 남긴다.
 
 ## 10. 검증 (테스트로 자동화)
@@ -295,7 +293,7 @@ class IsoGrid {
 | 테스트 | 확인 내용 |
 |---|---|
 | `iso_test` | 꼭짓점·왕복 변환, `tileAt`, 정수 확대 계산 |
-| `manifest_test` | 상점 26개 id가 모두 매니페스트에 있음 (`final`이면 파일 필수). 파일 존재, PNG 크기 = 계산값, 알파 0/255, 팔레트 밖 색 없음, 허용 영역 밖 픽셀 없음, 캐릭터 시트 크기 일치 |
+| `manifest_test` | 상점 26개 id가 모두 매니페스트에 있음. 있는 파일은 모두: PNG 크기 = 계산값, 알파 0/255, 팔레트 밖 색 없음, 허용 영역 밖 픽셀 없음, 캐릭터 시트 크기 일치 |
 | `occupancy_test` | 범위 밖·겹침·러그·벽 칸, `findFreeSpot`, 회전 충돌 |
 | `depth_test` | 기준 장면 순서, 무작위 배치 200개에서 '겹치는 화면 영역'이 있는 쌍의 순서가 항상 맞음 |
 | `layout_test` | `room` 저장·복원, `placed` → `room` 마이그레이션, 기존 필드 보존, 같은 분류 여러 개 |
@@ -313,7 +311,7 @@ class IsoGrid {
 | `lib/ui/room/room_screen.dart` | `RoomView` → 렌더 모드 분기, '방 꾸미기' 버튼 |
 | 신규 `lib/room/*` | iso, layout, occupancy, depth, manifest, registry, painters, editor |
 | `pubspec.yaml` | `assets: - assets/pixel/` |
-| 신규 `assets/pixel/manifest.json` | 처음에는 모든 항목 `draft` |
+| 신규 `assets/pixel/manifest.json` | 상태 표시 없음 (파일이 있으면 사용) |
 
 ## 12. 이번 설계의 수치 검증 기록
 프로젝트 밖 임시 스크립트로 계산했다(프로젝트 파일은 바꾸지 않음).
@@ -346,16 +344,16 @@ class IsoGrid {
 7. **R1 만들기**: R0을 좌우 반전한 뒤 **명암을 다시 칠한다**(광원 왼쪽 위 유지). 반전만 하고 끝내지 않는다.
 8. **내보내기**: `bed_single_r0.png`, `bed_single_r1.png`. RGBA 8bit, 메타데이터 없음.
 9. **자동 검증**: `manifest_test` — 크기 96×104, 알파 0/255, 팔레트, 허용 영역.
-10. **사람 검수**: 개발 모드의 기준 장면에서 s=2로 미니미·의자·러그 옆에 두고 확인한다. 크기 비율, 외곽선 두께, 명암 방향이 맞으면 `status: final`로 바꾼다.
+10. **사람 검수**: 개발 모드의 기준 장면에서 s=2로 미니미·의자·러그 옆에 두고 확인한다. 크기 비율, 외곽선 두께, 명암 방향이 맞는 것만 `assets/pixel/`에 넣는다.
 
 ### 13.2 Flutter 쪽 순서
 1. PART 4의 1~5단계(03 §4.3)가 먼저 있어야 한다. 좌표·매니페스트·배치 데이터·레지스트리·아이소메트릭 렌더러(대체 그림 상태)·뷰포트를 뜻한다.
 2. PNG 두 장을 `assets/pixel/furniture/beds/`에 넣는다. `pubspec.yaml`에는 `assets/pixel/`이 이미 등록돼 있다(1단계에서 등록).
-3. 매니페스트 `bed_single` 항목을 §3.3대로 쓴다. 처음에는 `status: draft`로 둔다.
+3. 매니페스트 `bed_single` 항목을 §3.3대로 쓴다. 상태 표시는 두지 않는다.
 4. `flutter test test/manifest_test.dart` — 크기·알파·팔레트·영역 통과를 확인한다.
-5. 개발 모드(`kShowDraftAssets = true`)에서 기준 장면을 확인한다. 이때 **이 침대만 PNG**로 그려지고 나머지는 대체 그림이다.
+5. 개발 실행(`flutter run`)에서 기준 장면을 확인한다. 이때 **이 침대만 PNG**로 그려지고 나머지는 대체 그림이다.
 6. 편집 화면에서 R0↔R1 회전과 드래그를 확인한다. 깊이 정렬도 본다(침대 앞 칸의 의자가 침대를 가림).
-7. 검수가 끝나면 `status: final`로 바꾸고 커밋한다. 바닥·벽이 아직 `draft`면 출시 빌드는 여전히 기존 2D 방이다(§9.2).
+7. 검수가 끝난 PNG만 `assets/pixel/`에 넣고 커밋한다. 넣은 파일은 출시 빌드에도 바로 쓰인다.
 
 ## 14. 침대 두 종 규격 (2026-11-11 확정)
 
@@ -373,7 +371,7 @@ class IsoGrid {
 | 반전 | 금지 (광원) | 금지 (광원) |
 | 베개 | 1개 | 2개 |
 | 파일 | `furniture/beds/bed_single_r0.png`, `bed_single_r1.png` | `furniture/beds/bed_double_r0.png`, `bed_double_r1.png` |
-| 현재 상태 | PNG 없음 (대체 그림) | R1 draft PNG (사용자 그림 재분류), R0은 R1을 좌우로 뒤집은 임시본 (명암 미보정) |
+| 현재 상태 | PNG 없음 (대체 그림) | R1 PNG (사용자 그림 재분류, 사람 검수 전), R0은 R1을 좌우로 뒤집은 임시본 (명암 미보정) |
 
 - 더블은 점유가 정사각형이라 회전해도 점유·캔버스·앵커가 같다. 그림만 R0·R1 두 장을 그린다.
 - R2·R3(뒷모습)은 PNG가 없어 두 침대 모두 상자 입체 대체 그림으로 그린다 (01 §3.2).

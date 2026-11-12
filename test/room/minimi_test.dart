@@ -69,7 +69,7 @@ void main() {
 
   testWidgets('시트가 없으면 null → 기존 미니미 그림 (예외 없음)', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle({}), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle({}));
       final p = profile();
       preloadMinimi(reg, p);
       await Future<void>.delayed(const Duration(milliseconds: 50));
@@ -81,7 +81,7 @@ void main() {
 
   testWidgets('레이어 순서·겹침·피부색 바꾸기', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files()), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files()));
       final p = profile(acc: 'acc_glasses', skin: 2);
       await reg.preloadMinimi(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0);
       final layers = reg.minimiLayers(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0)!;
@@ -96,7 +96,7 @@ void main() {
 
   testWidgets('측면 왼쪽 = 측면 오른쪽 반전', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files()), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files()));
       final p = profile(acc: 'acc_glasses');
       await reg.preloadMinimi(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 0, hair: 0);
       final right = await render(minimiDrawer(p, frame: 0, registry: reg, facing: MinimiFacing.sideRight));
@@ -109,7 +109,7 @@ void main() {
 
   testWidgets('반전 불가 액세서리에 왼쪽 시트가 없으면 측면 왼쪽은 기존 그림 (섞지 않음)', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files()), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files()));
       await reg.preloadMinimi(outfitId: 'outfit_knit', accessoryId: 'acc_starpin', skin: 0, hair: 0);
       expect(
         reg.minimiLayers(outfitId: 'outfit_knit', accessoryId: 'acc_starpin', skin: 0, hair: 0),
@@ -130,7 +130,7 @@ void main() {
 
   testWidgets('비니는 앞머리를 가린다', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files()), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files()));
       await reg.preloadMinimi(outfitId: 'outfit_knit', accessoryId: 'acc_beanie', skin: 0, hair: 0);
       final layers = reg.minimiLayers(outfitId: 'outfit_knit', accessoryId: 'acc_beanie', skin: 0, hair: 0)!;
       expect(layers.map((l) => l.name), isNot(contains('hair_front')));
@@ -140,18 +140,18 @@ void main() {
 
   testWidgets('시트 크기가 틀리면 쓰지 않는다', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files(badBase: true)), showDraft: true);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files(badBase: true)));
       await reg.preloadMinimi(outfitId: 'outfit_knit', accessoryId: null, skin: 0, hair: 0);
       expect(reg.minimiLayers(outfitId: 'outfit_knit', accessoryId: null, skin: 0, hair: 0), isNull);
       expect(reg.problems.values.join(), contains('크기'));
     });
   });
 
-  testWidgets('출시 모드(draft 숨김)에서는 시트가 있어도 쓰지 않는다', (tester) async {
+  testWidgets('시트 파일이 있으면 빌드 종류와 상관없이 그대로 쓴다', (tester) async {
     await tester.runAsync(() async {
-      final reg = AssetRegistry(m, bundle: FakeBundle(await files()), showDraft: false);
+      final reg = AssetRegistry(m, bundle: FakeBundle(await files()));
       await reg.preloadMinimi(outfitId: 'outfit_knit', accessoryId: null, skin: 0, hair: 0);
-      expect(reg.minimiLayers(outfitId: 'outfit_knit', accessoryId: null, skin: 0, hair: 0), isNull);
+      expect(reg.minimiLayers(outfitId: 'outfit_knit', accessoryId: null, skin: 0, hair: 0), isNotNull);
     });
   });
 }

@@ -36,7 +36,6 @@ void main() {
       final reg = AssetRegistry(
         m,
         bundle: FakeBundle({for (final p in paths) 'assets/pixel/$p': File('assets/pixel/$p').readAsBytesSync()}),
-        showDraft: true,
       );
       final looks = <(String?, String?)>[
         (null, null),

@@ -82,36 +82,23 @@ void main() {
     expect(bed.rotations[Rot.r0], 'furniture/beds/bed_single_r0.png');
   });
 
-  test('final 에셋은 파일이 있어야 하고, 있는 파일은 모두 검증을 통과해야 한다', () async {
-    // 지금은 PNG가 하나도 없다 → 모두 draft여야 한다.
-    for (final art in m.items.values) {
-      final paths = [...art.rotations.values, ?art.path, ...art.sheets.values];
-      for (final p in paths) {
-        final f = File('${PixelManifest.assetRoot}$p');
-        if (art.isFinal) expect(f.existsSync(), isTrue, reason: '${art.id}: final인데 $p 없음');
-      }
-    }
-    for (final b in m.base.values) {
-      if (b.isFinal && b.path != null) expect(File('${PixelManifest.assetRoot}${b.path}').existsSync(), isTrue);
-    }
-    expect(m.roomBaseFinal, isFalse, reason: '바닥·벽 에셋이 아직 없으므로 draft여야 한다');
+  test('매니페스트에는 검수 상태(status) 표시가 없다', () {
+    expect(File(PixelManifest.manifestPath).readAsStringSync(), isNot(contains('"status"')));
   });
 
-  testWidgets('있는 PNG 검증: final은 통과해야 하고, draft는 문제를 경고로 남긴다', (tester) async {
+  // 에셋에 초안/최종 구분은 없다. 파일이 있으면 쓰고, 없으면 기존 그림으로 대체한다.
+  testWidgets('있는 가구 PNG는 모두 규격 검증을 통과한다', (tester) async {
     await tester.runAsync(() async {
+      final failed = <String>[];
       for (final art in m.items.values.where((a) => a.isFloor)) {
         for (final e in art.rotations.entries) {
           final f = File('${PixelManifest.assetRoot}${e.value}');
           if (!f.existsSync()) continue;
           final problems = await AssetCheck.objectSprite(art, e.key, f.readAsBytesSync());
-          if (art.isFinal) {
-            expect(problems, isEmpty, reason: '${art.id} ${e.key.name}: $problems');
-          } else if (problems.isNotEmpty) {
-            // ignore: avoid_print
-            print('[draft 경고] ${art.id} ${e.key.name}: ${problems.join(', ')}');
-          }
+          if (problems.isNotEmpty) failed.add('${art.id} ${e.key.name}: ${problems.join(', ')}');
         }
       }
+      expect(failed, isEmpty, reason: failed.join('\n'));
     });
   });
 

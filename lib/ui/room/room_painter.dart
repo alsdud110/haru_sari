@@ -770,7 +770,7 @@ class MinimiView extends StatefulWidget {
 
 class _MinimiViewState extends State<MinimiView> {
   /// 새 색·모양을 읽는 동안 기존 그림으로 잠깐 바뀌지 않게, 마지막으로 그린 레이어를 붙잡아 둔다.
-  // shortcut: 옷·액세서리가 바뀌면 버린다(그쪽만 초안일 수 있어서). 기본 레이어 일부만 초안이 되면 그것도 비교할 것.
+  // shortcut: 옷·액세서리가 바뀌면 버린다(그쪽만 그림이 없을 수 있어서). 기본 레이어 일부만 그림이 없게 되면 그것도 비교할 것.
   List<MinimiLayer>? _last;
 
   @override

@@ -33,7 +33,6 @@ void main() {
       expect(a.footprint, (1, 2));
       expect(a.spriteSpec(Rot.r0), (width: 96, height: 104, ax: 64, ay: 56));
       expect(a.spriteSpec(Rot.r1), (width: 96, height: 104, ax: 32, ay: 56));
-      expect(a.isFinal, isFalse);
     });
 
     test('더블: 2×2, 높이 56 → 128×120, 앵커 (64,56) (R0·R1 같음)', () {
@@ -44,7 +43,6 @@ void main() {
       expect(a.spriteSpec(Rot.r1), (width: 128, height: 120, ax: 64, ay: 56));
       expect(a.rotations.keys, containsAll([Rot.r0, Rot.r1]));
       expect(a.mirrorR1, isFalse, reason: '광원 때문에 반전 금지, R0·R1 따로 그림');
-      expect(a.isFinal, isFalse);
     });
 
     test('카탈로그: 더블 100코인·레벨 3, 싱글은 그대로 60코인·레벨 3', () {
@@ -113,12 +111,12 @@ void main() {
   });
 
   Future<AssetRegistry> devRegistry() async {
-    final reg = AssetRegistry(m, bundle: FakeBundle({doublePath: doubleFile.readAsBytesSync()}), showDraft: true);
+    final reg = AssetRegistry(m, bundle: FakeBundle({doublePath: doubleFile.readAsBytesSync()}));
     await reg.preload(['bed_double', 'bed_single']);
     return reg;
   }
 
-  testWidgets('개발 모드: 더블 R1은 PNG, R0과 싱글은 그림이 없어 기존 그림 / 출시 모드는 draft 미사용', (tester) async {
+  testWidgets('더블 R1은 PNG, R0과 싱글은 그림이 없어 기존 그림', (tester) async {
     await tester.runAsync(() async {
       final reg = await devRegistry();
       final r1 = reg.sprite('bed_double', Rot.r1);
@@ -128,10 +126,6 @@ void main() {
       expect(r1.opaqueAt(2, 2), isFalse);
       expect(reg.sprite('bed_double', Rot.r0), isNull);
       expect(reg.sprite('bed_single', Rot.r0), isNull);
-
-      final release = AssetRegistry(m, bundle: FakeBundle({doublePath: doubleFile.readAsBytesSync()}), showDraft: false);
-      await release.preload(['bed_double']);
-      expect(release.sprite('bed_double', Rot.r1), isNull);
     });
   });
 

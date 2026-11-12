@@ -9,10 +9,6 @@ import 'iso.dart';
 import 'manifest.dart';
 import 'palette.dart';
 
-/// draft 에셋을 화면에 쓸지. 출시 빌드는 false (final만 씀), 디버그 빌드는 기본으로 켠다.
-/// 끄고 확인: `flutter run --dart-define=SHOW_DRAFT_ASSETS=false`
-const kShowDraftAssets = bool.fromEnvironment('SHOW_DRAFT_ASSETS', defaultValue: kDebugMode);
-
 class LoadedSprite {
   LoadedSprite(this.image, this.alpha, {this.mirror = false});
   final ui.Image image;
@@ -31,15 +27,12 @@ class LoadedSprite {
 }
 
 /// 에셋 이미지 로드·캐시·누락 판정 (docs/asset-system/02 §9).
-/// 없거나 크기가 틀리거나 draft(출시 빌드)면 null을 돌려준다 → 그리는 쪽이 기존 그림으로 대체한다.
+/// 없거나 크기가 틀리면 null을 돌려준다 → 그리는 쪽이 기존 그림으로 대체한다.
 class AssetRegistry extends ChangeNotifier {
-  AssetRegistry(this.manifest, {AssetBundle? bundle, bool? showDraft})
-    : _bundle = bundle ?? rootBundle,
-      showDraft = showDraft ?? kShowDraftAssets;
+  AssetRegistry(this.manifest, {AssetBundle? bundle}) : _bundle = bundle ?? rootBundle;
 
   final PixelManifest manifest;
   final AssetBundle _bundle;
-  final bool showDraft;
 
   final Map<String, LoadedSprite> _sprites = {};
   final Map<String, ui.Image> _minimiCache = {};
@@ -51,14 +44,12 @@ class AssetRegistry extends ChangeNotifier {
   final Map<String, String> problems = {};
   final Set<String> _tried = {};
 
-  bool _usable(ItemArt art) => art.isFinal || showDraft;
-
   static String _key(String id, Rot r) => '$id#${r.name}';
 
   /// 그 아이템·방향에 쓸 스프라이트. 없으면 null (대체 그림).
   LoadedSprite? sprite(String id, Rot r) {
     final art = manifest[id];
-    if (art == null || !_usable(art)) return null;
+    if (art == null) return null;
     final s = _sprites[_key(id, r)];
     if (s != null) return s;
     // 대칭 물체: R0 한 장으로 네 방향을 그린다 (R1·R3은 좌우 반전)
@@ -74,7 +65,7 @@ class AssetRegistry extends ChangeNotifier {
     var changed = false;
     for (final id in ids) {
       final art = manifest[id];
-      if (art == null || !art.isFloor || !_usable(art)) continue;
+      if (art == null || !art.isFloor) continue;
       for (final e in art.rotations.entries) {
         final k = _key(id, e.key);
         if (!_tried.add(k)) continue;
@@ -165,7 +156,7 @@ extension MinimiAssets on AssetRegistry {
     void base(String name, String key, String? swap) {
       final b = manifest.base[key];
       final path = b?.sheets['idle'];
-      out.add((name, path ?? '', true, swap, path != null && (b!.isFinal || showDraft)));
+      out.add((name, path ?? '', true, swap, path != null));
     }
 
     void item(String name, String? id) {
@@ -173,7 +164,7 @@ extension MinimiAssets on AssetRegistry {
       final a = manifest[id];
       final left = f == MinimiFacing.sideLeft && a != null && !a.mirror;
       final path = a?.sheets[left ? 'idle_left' : 'idle'];
-      out.add((name, path ?? '', a?.mirror ?? true, null, path != null && (a!.isFinal || showDraft)));
+      out.add((name, path ?? '', a?.mirror ?? true, null, path != null));
     }
 
     final acc = accessoryId == null ? null : manifest[accessoryId];

@@ -83,14 +83,9 @@ void main() {
   });
 
   group('레지스트리 (PNG 없음 → 대체 그림)', () {
-    testWidgets('draft이거나 파일이 없으면 null, 출시 모드는 draft를 읽지 않는다', (tester) async {
+    testWidgets('파일이 없으면 null이고 이유를 남긴다', (tester) async {
       await tester.runAsync(() async {
-        final reg = PixelRegistryTestHelper.make(m, files: {}, showDraft: false);
-        await reg.preload(['bed_single']);
-        expect(reg.sprite('bed_single', Rot.r0), isNull);
-        expect(reg.problems, isEmpty, reason: '출시 모드는 draft 파일을 열어 보지도 않는다');
-
-        final dev = PixelRegistryTestHelper.make(m, files: {}, showDraft: true);
+        final dev = PixelRegistryTestHelper.make(m, files: {});
         await dev.preload(['bed_single']);
         expect(dev.sprite('bed_single', Rot.r0), isNull);
         expect(dev.problems.keys, contains('bed_single#r0'));
@@ -102,7 +97,7 @@ void main() {
         final good = await fakeSprite(96, 104, const [(10.0, 60.0), (80.0, 60.0), (60.0, 100.0)]);
         final bad = await fakeSprite(90, 90, const [(10.0, 10.0), (80.0, 10.0), (40.0, 80.0)]);
         final plant = await fakeSprite(64, 72, const [(20.0, 20.0), (44.0, 20.0), (32.0, 70.0)]);
-        final reg = PixelRegistryTestHelper.make(m, showDraft: true, files: {
+        final reg = PixelRegistryTestHelper.make(m, files: {
           'assets/pixel/furniture/beds/bed_single_r0.png': good,
           'assets/pixel/furniture/beds/bed_single_r1.png': bad,
           'assets/pixel/furniture/decorations/plant_small_r0.png': plant,
@@ -140,6 +135,6 @@ void main() {
 }
 
 class PixelRegistryTestHelper {
-  static AssetRegistry make(PixelManifest m, {required Map<String, Uint8List> files, required bool showDraft}) =>
-      AssetRegistry(m, bundle: FakeBundle(files), showDraft: showDraft);
+  static AssetRegistry make(PixelManifest m, {required Map<String, Uint8List> files}) =>
+      AssetRegistry(m, bundle: FakeBundle(files));
 }

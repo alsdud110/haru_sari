@@ -70,7 +70,7 @@ RoomViewport (가로 스크롤 · 정수배 s 계산 · 터치 → 캔버스 좌
 | `lib/room/minimi_sprite.dart` | 레이어 순서, 방향(정면·측면·반전), 프레임 | registry |
 | `lib/room/room_viewport.dart` | 정수배 크기, 가로 스크롤, 좌표 변환 | iso |
 | `lib/ui/room/room_editor_screen.dart` | 편집 화면 | room/* , motion |
-| `assets/pixel/manifest.json` | 처음엔 모든 항목 `draft`, 파일 없음 | — |
+| `assets/pixel/manifest.json` | 상태 표시 없음, 처음엔 파일 없음 | — |
 
 ### 4.2 바뀌는 파일
 | 파일 | 변경 |
@@ -92,8 +92,8 @@ RoomViewport (가로 스크롤 · 정수배 s 계산 · 터치 → 캔버스 좌
 5. `RoomViewport`(정수배·스크롤) + 보기 전용 방
 6. `RoomEditorScreen`(드래그·스냅·회전·보관) + 위젯 테스트
 7. `minimi_sprite`(정면·측면·반전, idle) — 레이어가 없으면 기존 미니미
-8. 첫 실제 PNG(침대) 적용 → 검증 테스트 → 기준 장면 검수 → `final`
-9. 바닥·벽이 `final`이 되면 렌더 모드 기본값을 아이소메트릭으로 전환
+8. 첫 실제 PNG(침대) 적용 → 검증 테스트 → 기준 장면 검수
+9. 바닥·벽 PNG가 준비되면 렌더 모드 기본값을 아이소메트릭으로 전환
 
 ## 5. Flame을 다시 검토할 조건
 - 미니미가 길을 찾아 돌아다니고, 반려동물처럼 여러 캐릭터가 동시에 움직일 때

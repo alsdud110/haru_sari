@@ -6,9 +6,6 @@ import 'iso.dart';
 
 enum ArtLayer { object, floorDecor, wall, surface, character }
 
-enum ArtStatus { draft, finalArt }
-
-ArtStatus _status(Object? v) => v == 'final' ? ArtStatus.finalArt : ArtStatus.draft;
 
 /// 아이템 하나의 그림 정보 (docs/asset-system/02 §2). 키는 ShopItem.id.
 /// 크기·앵커는 저장하지 않고 [footprint]·[height]로 계산한다.
@@ -16,7 +13,6 @@ class ItemArt {
   ItemArt({
     required this.id,
     required this.layer,
-    this.status = ArtStatus.draft,
     this.rev = 1,
     this.footprint = (1, 1),
     this.height = 0,
@@ -34,7 +30,6 @@ class ItemArt {
 
   final String id;
   final ArtLayer layer;
-  final ArtStatus status;
   final int rev;
 
   /// R0 기준 점유 (w, d)
@@ -58,8 +53,6 @@ class ItemArt {
   final Map<String, String> sheets;
   final List<String> hides;
   final bool mirror;
-
-  bool get isFinal => status == ArtStatus.finalArt;
 
   /// 바닥에 놓는 것은 모두 네 방향으로 돌릴 수 있다 (그림이 없는 방향은 대체 그림).
   bool get rotatable => isFloor;
@@ -87,7 +80,6 @@ class ItemArt {
     return ItemArt(
       id: id,
       layer: ArtLayer.values.byName(j['layer'] as String),
-      status: _status(j['status']),
       rev: (j['rev'] as num?)?.toInt() ?? 1,
       footprint: pair(j['footprint'], (1, 1)),
       height: (j['height'] as num?)?.toInt() ?? 0,
@@ -107,12 +99,10 @@ class ItemArt {
 
 /// 방 바닥·벽 기본 에셋과 미니미 기본 레이어.
 class BaseArt {
-  BaseArt({required this.key, required this.path, this.status = ArtStatus.draft, this.sheets = const {}});
+  BaseArt({required this.key, required this.path, this.sheets = const {}});
   final String key;
   final String? path;
-  final ArtStatus status;
   final Map<String, String> sheets;
-  bool get isFinal => status == ArtStatus.finalArt;
 }
 
 class PixelManifest {
@@ -129,9 +119,6 @@ class PixelManifest {
 
   ItemArt? operator [](String id) => items[id];
 
-  /// 바닥·벽이 모두 final이어야 아이소메트릭 기본 그림을 쓴다.
-  bool get roomBaseFinal => (base['floor']?.isFinal ?? false) && (base['wallL']?.isFinal ?? false);
-
   factory PixelManifest.parse(String source) {
     final j = jsonDecode(source) as Map<String, dynamic>;
     final items = <String, ItemArt>{};
@@ -144,7 +131,6 @@ class PixelManifest {
       base[k as String] = BaseArt(
         key: k,
         path: m['path'] as String?,
-        status: _status(m['status']),
         sheets: ((m['sheets'] as Map?) ?? {}).cast<String, String>(),
       );
     });

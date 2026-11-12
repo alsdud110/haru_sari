@@ -1,6 +1,6 @@
 # 검수 기록: `bed_double_r1` (2026-11-11)
 
-상태: **draft (final 아님)**
+상태: **사용 중 (사람 검수 전)**. 2026-11-12부터 초안/최종 구분이 없어져, 이 PNG는 출시 빌드에도 나온다.
 
 ## 출처
 - 사용자가 만든 침대 그림이다. 처음엔 `bed_single_r0`로 받았다.
@@ -10,7 +10,7 @@
 | 구분 | 경로 |
 |---|---|
 | 원본 (보존, 이름만 변경) | `art/source/furniture/beds/bed_double_r1_original.png` — sha256 `ca4a8a9c…c261` (재분류 전과 같음) |
-| 보정본 (draft) | `assets/pixel/furniture/beds/bed_double_r1.png` |
+| 보정본 | `assets/pixel/furniture/beds/bed_double_r1.png` |
 | 비교 이미지 | `bed_double_r1_compare.png` |
 | 수치 | `bed_double_r1_report.txt` |
 | 방 안 모습 | `bed_double_in_room_r1.png`, `bed_double_in_room_r1_footprint.png`, `bed_double_in_room_r0_fallback.png` |
@@ -39,9 +39,9 @@
 - **색감:** 연두색 체크가 세이지로 바뀌었다. 팔레트에 노란기 있는 초록이 없기 때문이다.
 - **R0이 없다.** 지금은 대체 그림으로 나온다. 광원 때문에 반전해서 쓰지 않는다.
 
-## final로 바꾸기 전 남은 일
+## 남은 검수
 1. R0을 그린다(머리판이 오른쪽 벽 쪽, 발치가 왼쪽 아래).
 2. 사람이 검수한다.
    - 크기가 점유보다 작은 것을 받아들일지, 2×2를 꽉 채우게 다시 그릴지 정한다.
    - 색감과 기둥 잘림을 확인한다.
-3. 둘 다 통과하면 `assets/pixel/manifest.json`의 `bed_double.status`를 `"final"`로 바꾼다.
+3. 통과하지 못하면 PNG를 다시 그려 교체한다. (상태 표시는 2026-11-12에 없앴다.)
