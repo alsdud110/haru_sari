@@ -43,6 +43,7 @@ dependencies:
   supabase_flutter: ^2.18.3
   sign_in_with_apple: ^8.2.0
   flutter_svg: ^2.3.4
+  path_provider: ^2.1.6
 
 dev_dependencies:
   flutter_test:

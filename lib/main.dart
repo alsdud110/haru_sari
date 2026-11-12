@@ -12,6 +12,7 @@ import 'data/supabase_auth.dart';
 import 'data/supabase_remote.dart';
 import 'room/manifest.dart';
 import 'ui/licenses.dart';
+import 'ui/routine_icon.dart';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -24,7 +25,7 @@ Future<void> main() async {
     HaruSariApp(
       kv: kv,
       auth: SupabaseAuthService(kv),
-      reminders: LocalReminders(),
+      reminders: LocalReminders(iconAssetFor: routineIconAsset),
       manifest: manifest,
       // 개발자 모드 계정은 서버와 맞추지 않는다 (이 기기에만 저장).
       remoteFor: (uid) => uid == AuthService.devUid ? null : SupabaseRemote(uid),

@@ -4,6 +4,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:haru_sari/data/badges.dart';
 import 'package:haru_sari/data/catalog.dart';
 import 'package:haru_sari/data/models.dart';
+import 'package:haru_sari/data/reminders.dart';
 import 'package:haru_sari/ui/routine_icon.dart';
 
 void main() {
@@ -40,5 +41,12 @@ void main() {
     for (final e in ['🌱', '☕', '📭', '🪙', '📦', '💌']) {
       expect(File(routineIconAsset(e)!).existsSync(), isTrue, reason: e);
     }
+  });
+
+  test('알림: 루틴 알림은 글에 이모지 없이 옆 그림으로, 마감 알림은 글 앞의 💌만', () {
+    final r = Routine(id: 'a', name: '일어나기', emoji: '🌤️');
+    expect(routineAlarmBody(r), '일어나기, 할 수 있을 때 해봐요.');
+    expect(routineIconAsset(r.emoji), 'assets/icons/sun.png'); // 알림 옆에 붙는 그림
+    expect(dayEndTitle, '💌 오늘 하루도 수고했어요');
   });
 }
