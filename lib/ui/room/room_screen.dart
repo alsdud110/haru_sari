@@ -157,8 +157,13 @@ class RoomScreen extends StatelessWidget {
   Widget _kv(TextTheme t, String k, String v) => Row(
     children: [
       SizedBox(width: 64, child: Text(k, style: t.bodySmall)),
+      // 좁은 화면에서 이름이 잘리지 않게, 칸에 안 들어가면 글자를 줄인다.
       Expanded(
-        child: Text(v, style: t.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis),
+        child: FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(v, style: t.titleMedium, maxLines: 1, softWrap: false),
+        ),
       ),
     ],
   );

@@ -240,10 +240,16 @@ class _Summary extends StatelessWidget {
                   children: [
                     AnimatedSwitcher(
                       duration: Motion.normal,
-                      child: Text(
-                        total == 0 ? '오늘은 기록할 루틴이 없어요.' : gentleLine(done, total),
+                      // 한 문장이 한 줄에 안 들어가는 좁은 화면에서는 줄을 더 나누지 않고 글자를 줄인다.
+                      child: FittedBox(
                         key: ValueKey('$done/$total'),
-                        style: t.bodyLarge?.cheer,
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          total == 0 ? '오늘은 기록할 루틴이 없어요.' : gentleLine(done, total),
+                          style: t.bodyLarge?.cheer,
+                          softWrap: false,
+                        ),
                       ),
                     ),
                     const SizedBox(height: Space.sm),
@@ -461,11 +467,12 @@ class EncouragementScreen extends StatelessWidget {
     final s = AppScope.of(context);
     final log = s.todayLog;
     final t = Theme.of(context).textTheme;
+    // 본문은 문장마다 줄을 바꾼다. 제목·본문 모두 낱말 중간에서는 끊지 않는다 (keepWords).
     final (title, body) = switch (log) {
-      _ when log.total == 0 => ('쉬어가는 하루도 하루예요', '오늘은 정해 둔 루틴이 없어요. 편하게 숨 고르는 것도 충분히 잘 사는 거예요.'),
-      _ when log.done == log.total => ('오늘을 온전히 살아냈어요', '작은 일 하나하나를 다 해낸 하루예요. 스스로를 꼭 칭찬해 주세요.'),
-      _ when log.rewarded => ('오늘 몫을 해냈어요', '남은 건 여유가 될 때만 해도 괜찮아요. 이미 충분해요.'),
-      _ => ('오늘도 충분히 잘 살아냈어요', '모든 루틴을 채우지 못해도 괜찮아요. 평범한 하루를 살아낸 것만으로도 충분해요.'),
+      _ when log.total == 0 => ('쉬어가는 하루도 하루예요', '오늘은 정해 둔 루틴이 없어요.\n편하게 숨 고르는 것도 충분히 잘 사는 거예요.'),
+      _ when log.done == log.total => ('오늘을 온전히 살아냈어요', '작은 일 하나하나를 다 해낸 하루예요.\n스스로를 꼭 칭찬해 주세요.'),
+      _ when log.rewarded => ('오늘 몫을 해냈어요', '남은 건 여유가 될 때만 해도 괜찮아요.\n이미 충분해요.'),
+      _ => ('오늘도 충분히 잘 살아냈어요', '모든 루틴을 채우지 못해도 괜찮아요.\n평범한 하루를 살아낸 것만으로도 충분해요.'),
     };
     return Scaffold(
       appBar: AppBar(),
@@ -479,7 +486,7 @@ class EncouragementScreen extends StatelessWidget {
               const SizedBox(height: Space.xl),
               Reveal(
                 index: 1,
-                child: Text(title, style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
+                child: Text(keepWords(title), style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
               ),
               const SizedBox(height: Space.md),
               Reveal(
