@@ -72,14 +72,14 @@ class _IntroScreenState extends State<IntroScreen> {
                         const SizedBox(height: Space.xl),
                         Reveal(
                           index: 1,
-                          child: Text(title, style: t.headlineMedium, textAlign: TextAlign.center),
+                          child: Text(title, style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
                         ),
                         const SizedBox(height: Space.md),
                         Reveal(
                           index: 2,
                           child: Text(
                             keepWords(body),
-                            style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
+                            style: t.bodyLarge?.copyWith(color: AppColors.textMuted).cheer,
                             textAlign: TextAlign.center,
                           ),
                         ),

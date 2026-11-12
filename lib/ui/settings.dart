@@ -8,6 +8,7 @@ import '../data/badges.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
 import 'auth_screens.dart';
+import 'licenses.dart';
 import 'onboarding.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
@@ -113,8 +114,17 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => confirmLogout(context),
             ),
           ]),
+          const SizedBox(height: Space.lg),
+          _Section('앱 정보', [
+            _Tile(
+              icon: Icons.description_outlined,
+              title: '오픈소스 라이선스',
+              subtitle: '글꼴과 오픈소스 고지',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LicensesScreen())),
+            ),
+          ]),
           const SizedBox(height: Space.xl),
-          Text('루틴을 놓친 날에도 경험치·코인·가구는 그대로예요.\n다시 시작하는 날이 곧 좋은 날이에요.', style: t.bodySmall, textAlign: TextAlign.center),
+          Text('루틴을 놓친 날에도 경험치·코인·가구는 그대로예요.\n다시 시작하는 날이 곧 좋은 날이에요.', style: t.bodySmall?.cheer, textAlign: TextAlign.center),
           if (kDebugMode) ...[
             const SizedBox(height: Space.lg),
             TextButton(onPressed: () => _confirmReset(context, auth), child: const Text('초기화 (개발용)')),

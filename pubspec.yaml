@@ -77,6 +77,7 @@ flutter:
     - assets/pixel/characters/face/
     - assets/pixel/characters/outfits/
     - assets/pixel/characters/accessories/
+    - assets/fonts/LICENSE.txt
 
   # To add assets to your application, add an assets section, like this:
   # assets:
@@ -108,3 +109,22 @@ flutter:
   #
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
+
+  # 본문: LINE Seed Sans KR / 격려 문구: 마루 부리 / 영문·숫자: Bricolage Grotesque (영문·숫자만 남긴 서브셋)
+  # 모두 SIL OFL 1.1. 저작권·라이선스 고지는 assets/fonts/LICENSE.txt
+  fonts:
+    - family: LINESeedKR
+      fonts:
+        - asset: assets/fonts/LINESeedKR-Rg.ttf
+        - asset: assets/fonts/LINESeedKR-Bd.ttf
+          weight: 700
+    - family: MaruBuri
+      fonts:
+        - asset: assets/fonts/MaruBuri-Regular.ttf
+        - asset: assets/fonts/MaruBuri-SemiBold.ttf
+          weight: 600
+    - family: BricolageLatin
+      fonts:
+        - asset: assets/fonts/BricolageLatin-Regular.ttf
+        - asset: assets/fonts/BricolageLatin-Bold.ttf
+          weight: 700

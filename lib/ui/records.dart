@@ -116,7 +116,7 @@ class RecordsScreen extends StatelessWidget {
                 ),
               },
               const SizedBox(height: Space.xl),
-              Text('기록이 적은 날도 괜찮아요. 오늘 하나만 다시 해보면 돼요.', style: t.bodySmall, textAlign: TextAlign.center),
+              Text('기록이 적은 날도 괜찮아요. 오늘 하나만 다시 해보면 돼요.', style: t.bodySmall?.cheer, textAlign: TextAlign.center),
             ],
           ),
         );

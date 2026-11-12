@@ -53,12 +53,29 @@ class Motion {
 }
 
 /// 애플 기기면 iOS(HIG) 모양, 그 밖에는 머티리얼 3 모양을 쓴다.
+/// 글꼴. 본문은 LINE Seed Sans KR, 영문·숫자는 Bricolage Grotesque, 격려 문구는 마루 부리 (pubspec.yaml fonts).
+class AppFonts {
+  static const body = 'LINESeedKR';
+
+  /// 영문 A-Z a-z, 숫자, % / : + 만 들어 있는 글꼴. 맨 앞에 두면 영문·숫자만 이 글꼴로, 한글과 문장 부호는 [fallback]으로 그려진다.
+  static const latin = 'BricolageLatin';
+  static const fallback = [body];
+  static const cheer = 'MaruBuri';
+}
+
+/// 격려 문구용: 같은 크기·색에 글꼴만 마루 부리로 바꾼다. 부리 글꼴이라 자간을 풀고 줄 간격을 조금 넓힌다.
+extension CheerText on TextStyle {
+  TextStyle get cheer => copyWith(fontFamily: AppFonts.cheer, letterSpacing: 0, height: (height ?? 1.3) + 0.1);
+}
+
 bool get isApple => defaultTargetPlatform == TargetPlatform.iOS || defaultTargetPlatform == TargetPlatform.macOS;
 
 ThemeData buildTheme() {
   final ios = isApple;
   final base = ThemeData(
     useMaterial3: true,
+    fontFamily: AppFonts.latin,
+    fontFamilyFallback: AppFonts.fallback,
     colorScheme: ColorScheme.fromSeed(
       seedColor: AppColors.primary,
       primary: AppColors.primary,
@@ -89,7 +106,7 @@ ThemeData buildTheme() {
   // iOS 글자 단계: Title1 28 · Title2 22 · Headline/Body 17 · Subheadline 15 · Footnote 13
   // 머티리얼 3 글자 단계: 28 · 22 · 16 · 16 · 14 · 12
   final up = ios ? 1.0 : 0.0;
-  final t = TextStyle(color: AppColors.text, letterSpacing: ios ? -0.3 : -0.2);
+  final t = TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, letterSpacing: ios ? -0.3 : -0.2);
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
       headlineMedium: t.copyWith(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25),
@@ -107,8 +124,8 @@ ThemeData buildTheme() {
       scrolledUnderElevation: 0,
       centerTitle: ios,
       titleTextStyle: ios
-          ? const TextStyle(color: AppColors.text, fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4)
-          : const TextStyle(color: AppColors.text, fontSize: 22, fontWeight: FontWeight.w700),
+          ? const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4)
+          : const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, fontSize: 22, fontWeight: FontWeight.w700),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
@@ -116,7 +133,7 @@ ThemeData buildTheme() {
         foregroundColor: Colors.white,
         minimumSize: Size.fromHeight(ios ? 50 : 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
-        textStyle: TextStyle(fontSize: 16 + up, fontWeight: ios ? FontWeight.w600 : FontWeight.w700),
+        textStyle: TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, fontSize: 16 + up, fontWeight: ios ? FontWeight.w600 : FontWeight.w700),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
@@ -159,7 +176,7 @@ ThemeData buildTheme() {
               ),
             ),
             labelTextStyle: WidgetStateProperty.resolveWith(
-              (st) => TextStyle(
+              (st) => TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, 
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
                 color: st.contains(WidgetState.selected) ? AppColors.primary : AppColors.textMuted,
@@ -172,7 +189,7 @@ ThemeData buildTheme() {
             surfaceTintColor: Colors.transparent,
             indicatorColor: AppColors.primarySoft,
             labelTextStyle: WidgetStateProperty.all(
-              const TextStyle(fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
+              const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
             ),
           ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),

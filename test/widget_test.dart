@@ -171,4 +171,29 @@ void main() {
     expect(tester.getCenter(find.text('보관함이 비어 있어요')).dx, 195);
     expect(tester.takeException(), isNull);
   }, variant: const TargetPlatformVariant({TargetPlatform.android, TargetPlatform.iOS}));
+
+  testWidgets('설정의 오픈소스 라이선스: 글꼴 세 개의 저작권과 라이선스 전문을 볼 수 있다', (tester) async {
+    final kv = MemoryKeyValue();
+    final auth = DeviceAuthService(kv);
+    await auth.signIn(SocialProvider.kakao);
+    final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
+    s.finishOnboarding(name: '민', minimi: s.profile.minimi, picked: []);
+    await pump(tester, kv, auth);
+
+    await tester.tap(find.text('나'));
+    await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(find.textContaining('다시 시작하는 날이 곧 좋은 날이에요'), 200);
+    await tester.tap(find.text('오픈소스 라이선스'));
+    await tester.pumpAndSettle();
+    expect(find.text('LINE Seed Sans KR'), findsOneWidget);
+    expect(find.text('MaruBuri (마루 부리)'), findsOneWidget);
+    expect(find.text('Bricolage Grotesque'), findsOneWidget);
+    expect(find.text('© LY Corporation'), findsOneWidget);
+
+    await tester.tap(find.text('글꼴 라이선스 전문 보기'));
+    await tester.runAsync(() => Future<void>.delayed(const Duration(milliseconds: 100)));
+    await tester.pumpAndSettle();
+    expect(find.textContaining('SIL OPEN FONT LICENSE Version 1.1'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
 }

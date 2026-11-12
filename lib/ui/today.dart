@@ -17,14 +17,14 @@ import 'widgets.dart';
 /// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
 String keepWords(String s) => s.replaceAllMapped(RegExp(r'\S(?=\S)'), (m) => '${m[0]}\u200D');
 
-/// 달성률에 따라 고르는 부드러운 한마디. 실패라는 말은 쓰지 않는다.
+/// 달성률에 따라 고르는 부드러운 한마디. 실패라는 말은 쓰지 않는다. 문장마다 줄을 바꾼다.
 String gentleLine(int done, int total) {
   if (total == 0) return '';
   return keepWords(switch (done) {
-    0 => '천천히 시작해도 괜찮아요. 하나만 해봐도 충분해요.',
-    _ when done == total => '오늘을 온전히 살아냈어요. 정말 수고했어요.',
-    _ when done / total >= RewardRules.threshold => '오늘 몫의 하루를 해냈어요. 남은 건 여유가 되면요.',
-    _ => '벌써 $done개나 했어요. 이대로도 잘하고 있어요.',
+    0 => '천천히 시작해도 괜찮아요.\n하나만 해봐도 충분해요.',
+    _ when done == total => '오늘을 온전히 살아냈어요.\n정말 수고했어요.',
+    _ when done / total >= RewardRules.threshold => '오늘 몫의 하루를 해냈어요.\n남은 건 여유가 되면요.',
+    _ => '벌써 $done개나 했어요.\n이대로도 잘하고 있어요.',
   });
 }
 
@@ -243,7 +243,7 @@ class _Summary extends StatelessWidget {
                       child: Text(
                         total == 0 ? '오늘은 기록할 루틴이 없어요.' : gentleLine(done, total),
                         key: ValueKey('$done/$total'),
-                        style: t.bodyLarge,
+                        style: t.bodyLarge?.cheer,
                       ),
                     ),
                     const SizedBox(height: Space.sm),
@@ -479,14 +479,14 @@ class EncouragementScreen extends StatelessWidget {
               const SizedBox(height: Space.xl),
               Reveal(
                 index: 1,
-                child: Text(title, style: t.headlineMedium, textAlign: TextAlign.center),
+                child: Text(title, style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
               ),
               const SizedBox(height: Space.md),
               Reveal(
                 index: 2,
                 child: Text(
                   keepWords(body),
-                  style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
+                  style: t.bodyLarge?.copyWith(color: AppColors.textMuted).cheer,
                   textAlign: TextAlign.center,
                 ),
               ),
@@ -537,14 +537,14 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
                 index: 1,
                 child: Text(
                   r.perfect ? '오늘을 온전히 살아냈어요' : '오늘 하루도 잘 해냈어요',
-                  style: t.titleLarge,
+                  style: t.titleLarge?.cheer,
                   textAlign: TextAlign.center,
                 ),
               ),
               const SizedBox(height: Space.xs),
               Reveal(
                 index: 2,
-                child: Text('평범한 하루를 살아낸 것만으로도 충분해요.', style: t.bodyMedium?.copyWith(color: AppColors.textMuted)),
+                child: Text('평범한 하루를 살아낸 것만으로도 충분해요.', style: t.bodyMedium?.copyWith(color: AppColors.textMuted).cheer),
               ),
               const SizedBox(height: Space.md),
               Reveal(

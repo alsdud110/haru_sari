@@ -50,7 +50,7 @@ class RoomScreen extends StatelessWidget {
             const SizedBox(height: Space.sm),
             Text(
               placed.isEmpty ? '아직 텅 빈 방이에요. 하루를 살아낼 때마다 조금씩 채워져요.' : '지금까지 살아낸 하루들이 이 방을 만들었어요.',
-              style: t.bodySmall,
+              style: t.bodySmall?.cheer,
             ),
             const SizedBox(height: Space.lg),
             OutlinedButton.icon(
