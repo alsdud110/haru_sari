@@ -9,6 +9,7 @@ import '../../room/registry.dart';
 import '../../room/scene.dart';
 import 'iso_boxes.dart';
 import 'room_painter.dart';
+import 'surfaces.dart';
 
 Color px(int rgb) => Color(0xFF000000 | rgb);
 
@@ -81,32 +82,12 @@ class IsoRoomPainter extends CustomPainter {
 
   // ───────── 벽 ─────────
 
-  (Color, Color) _wallColors() {
-    final base = switch (layout.wallSurface) {
-      'wall_sage' => PixelPalette.sage[0],
-      'wall_sky' => PixelPalette.sky[0],
-      _ => PixelPalette.cream[1],
-    };
-    final shade = switch (layout.wallSurface) {
-      'wall_sage' => PixelPalette.sage[1],
-      'wall_sky' => PixelPalette.sky[1],
-      _ => PixelPalette.cream[2],
-    };
-    return (px(base), px(shade)); // 왼쪽 벽은 기본, 오른쪽 벽은 한 단계 어둡게 (01 §5)
-  }
-
   void _walls(Canvas c) {
-    final (left, right) = _wallColors();
     const h = IsoGrid.wallH;
     final o = IsoGrid.toCanvas(0, 0), l = IsoGrid.toCanvas(0, 8), r = IsoGrid.toCanvas(8, 0);
-    Path quad(Offset a, Offset b) => Path()
-      ..moveTo(a.dx, a.dy)
-      ..lineTo(b.dx, b.dy)
-      ..lineTo(b.dx, b.dy - h)
-      ..lineTo(a.dx, a.dy - h)
-      ..close();
-    c.drawPath(quad(o, l), Paint()..color = left);
-    c.drawPath(quad(o, r), Paint()..color = right);
+    final style = wallStyleOf(layout.wallSurface);
+    drawWall(c, style, (u, z) => IsoGrid.toCanvas(0, u).translate(0, -z));
+    drawWall(c, style, (u, z) => IsoGrid.toCanvas(u, 0).translate(0, -z), shaded: true);
     // 걸레받이 8px + 모서리선
     final base = Paint()..color = px(PixelPalette.wood[1]);
     final baseDark = Paint()..color = px(PixelPalette.wood[2]);
@@ -132,35 +113,7 @@ class IsoRoomPainter extends CustomPainter {
 
   // ───────── 바닥 ─────────
 
-  void _floor(Canvas c) {
-    final fill = Paint()..color = px(PixelPalette.floor[1]);
-    final alt = Paint()..color = px(PixelPalette.floor[0]);
-    final line = Paint()
-      ..color = px(PixelPalette.floor[2])
-      ..strokeWidth = 1;
-    for (var y = 0; y < IsoGrid.size; y++) {
-      for (var x = 0; x < IsoGrid.size; x++) {
-        final d = RoomScene.footprintDiamond((x, y, 1, 1));
-        final path = Path()..addPolygon(d, true);
-        c.drawPath(path, (x + y).isEven ? fill : alt);
-        // 마루 결: gx 방향으로 두 줄
-        for (final t in [1 / 3, 2 / 3]) {
-          final a = IsoGrid.toCanvas(x, y + t), b = IsoGrid.toCanvas(x + 1, y + t);
-          c.drawLine(a, b, line);
-        }
-      }
-    }
-    // 바닥 판 두께 (앞쪽 두 변)
-    final l = IsoGrid.toCanvas(0, 8), f = IsoGrid.toCanvas(8, 8), r = IsoGrid.toCanvas(8, 0);
-    Path slab(Offset a, Offset b) => Path()
-      ..moveTo(a.dx, a.dy)
-      ..lineTo(b.dx, b.dy)
-      ..lineTo(b.dx, b.dy + 8)
-      ..lineTo(a.dx, a.dy + 8)
-      ..close();
-    c.drawPath(slab(l, f), Paint()..color = px(PixelPalette.floor[2]));
-    c.drawPath(slab(f, r), Paint()..color = px(PixelPalette.floor[3]));
-  }
+  void _floor(Canvas c) => drawFloor(c, floorStyleOf(layout.floorSurface));
 
   // ───────── 아이템 ─────────
 
@@ -216,16 +169,7 @@ class IsoRoomPainter extends CustomPainter {
     final item = itemById(e.id);
     if (item == null) return;
     if (e.kind == EntryKind.floorDecor) {
-      // 러그: 바닥 마름모 모양으로
-      final d = RoomScene.footprintDiamond(e.footprint!);
-      final center = d.reduce((a, b) => a + b) / 4;
-      final outer = Path()..addPolygon([for (final p in d) center + (p - center) * 0.92], true);
-      final inner = Path()..addPolygon([for (final p in d) center + (p - center) * 0.7], true);
-      final (a, b) = item.variant == 1
-          ? (px(PixelPalette.cream[0]), px(PixelPalette.sky[1]))
-          : (px(PixelPalette.terracotta[0]), px(PixelPalette.terracotta[1]));
-      c.drawPath(outer, Paint()..color = a);
-      c.drawPath(inner, Paint()..color = b);
+      drawRug(c, rugStyleOf(item.id), e.footprint!);
       return;
     }
     // 방향이 있는 가구(침대·책상·의자): 상자를 쌓아 네 방향 입체로 그린다

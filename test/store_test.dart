@@ -210,6 +210,19 @@ void main() {
       expect(s.storedItems.map((e) => e.id), ['wall_sage']);
     });
 
+    test('바닥재는 벽지와 따로 깔린다', () {
+      s.profile
+        ..level = 6
+        ..coins = 500;
+      s.buy(itemById('wall_sage')!);
+      s.buy(itemById('floor_checker')!);
+      expect(s.room.wallSurface, 'wall_sage');
+      expect(s.room.floorSurface, 'floor_checker');
+      s.putAway(itemById('floor_checker')!);
+      expect(s.room.floorSurface, isNull);
+      expect(s.room.wallSurface, 'wall_sage');
+    });
+
     test('방이 꽉 차면 사도 보관함으로 가고, 코인은 정상 차감된다', () {
       // 테스트용 매니페스트: 침대가 방 전체(8×8)를 차지한다
       final tm = PixelManifest.parse(
@@ -296,9 +309,16 @@ void main() {
       s.buy(pin);
       expect(s.profile.outfitId, knit.id);
       expect(s.profile.accessoryId, pin.id);
+      // 귀고리는 액세서리와 따로 찬다
+      final hoop = itemById('acc_ear_hoop')!;
+      s.buy(hoop);
+      expect((s.profile.accessoryId, s.profile.earringId), (pin.id, hoop.id));
+      expect(s.isInUse(pin) && s.isInUse(hoop), isTrue);
+      s.putAway(hoop);
+      expect((s.profile.accessoryId, s.profile.earringId), (pin.id, null));
       s.putAway(knit);
       expect(s.profile.outfitId, isNull);
-      expect(s.storedItems, [knit]);
+      expect(s.storedItems, unorderedEquals([knit, hoop]));
     });
   });
 

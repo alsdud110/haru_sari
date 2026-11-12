@@ -7,6 +7,7 @@ import '../theme/tokens.dart';
 import 'motion.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
+import 'today.dart' show keepWords;
 import 'widgets.dart';
 
 /// 가입 직후 첫 설정: 미니미 → 루틴 템플릿과 알림
@@ -156,7 +157,7 @@ class _StepScaffold extends StatelessWidget {
           const SizedBox(height: Space.sm),
           Reveal(
             index: 1,
-            child: Text(body, style: t.bodyLarge?.copyWith(color: AppColors.textMuted)),
+            child: Text(keepWords(body), style: t.bodyLarge?.copyWith(color: AppColors.textMuted)),
           ),
           const SizedBox(height: Space.xl),
           Expanded(child: content),
@@ -182,9 +183,11 @@ class _MinimiStep extends StatelessWidget {
     content: SingleChildScrollView(
       child: Column(
         children: [
-          SizedBox(width: 140, height: 170, child: CustomPaint(painter: MinimiPainter(minimi, happy: true))),
+          Breathing(
+            child: MinimiView(profile: Profile(minimi: minimi), happy: true, width: 140),
+          ),
           const SizedBox(height: Space.xl),
-          MinimiPicker(minimi: minimi, onChanged: onChanged),
+          MinimiPicker(minimi: minimi, onChanged: onChanged, basic: true),
         ],
       ),
     ),
@@ -192,46 +195,114 @@ class _MinimiStep extends StatelessWidget {
   );
 }
 
-/// 피부·머리·옷 색 고르기. 설정 화면에서도 쓴다.
+/// 피부·머리·얼굴·옷 색 고르기. 설정 화면에서도 쓴다.
 class MinimiPicker extends StatelessWidget {
-  const MinimiPicker({super.key, required this.minimi, required this.onChanged});
+  const MinimiPicker({super.key, required this.minimi, required this.onChanged, this.basic = false});
   final Minimi minimi;
   final ValueChanged<Minimi> onChanged;
+
+  /// 첫 설정에서는 피부·머리·눈·입만 고른다 (염색·옷 색은 설정 화면에서)
+  final bool basic;
 
   @override
   Widget build(BuildContext context) => Column(
     children: [
-      _row(context, '피부', skinTones, minimi.skin, (i) => onChanged(minimi.copyWith(skin: i))),
-      _row(context, '머리', hairColors, minimi.hair, (i) => onChanged(minimi.copyWith(hair: i))),
-      _row(context, '옷 색', outfitColors, minimi.outfit, (i) => onChanged(minimi.copyWith(outfit: i))),
+      _row(context, '피부', skinTones, minimi.skin, (i) => onChanged(minimi.copyWith(skin: i)), Minimi.skinNames),
+      _chips(context, '머리', Minimi.hairStyleNames, minimi.hairStyle, (i) => onChanged(minimi.copyWith(hairStyle: i))),
+      if (!basic) _row(context, '염색', hairColors, minimi.hair, (i) => onChanged(minimi.copyWith(hair: i))),
+      _chips(context, '눈', Minimi.eyeNames, minimi.eyes, (i) => onChanged(minimi.copyWith(eyes: i))),
+      _chips(context, '입', Minimi.mouthNames, minimi.mouth, (i) => onChanged(minimi.copyWith(mouth: i))),
+      if (!basic) _row(context, '옷 색', outfitColors, minimi.outfit, (i) => onChanged(minimi.copyWith(outfit: i))),
     ],
   );
 
-  Widget _row(BuildContext context, String label, List<Color> colors, int sel, ValueChanged<int> on) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: Space.xs),
+  Widget _chips(BuildContext context, String label, List<String> names, int sel, ValueChanged<int> on) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: Space.md),
     child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        SizedBox(width: 56, child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
-        for (var i = 0; i < colors.length; i++)
-          Semantics(
-            button: true,
-            selected: i == sel,
-            label: '$label ${i + 1}번',
-            child: GestureDetector(
-              onTap: () => on(i),
-              child: AnimatedContainer(
-                duration: Motion.fast,
-                margin: const EdgeInsets.only(right: Space.sm),
-                width: 44,
-                height: 44,
-                decoration: BoxDecoration(
-                  color: colors[i],
-                  shape: BoxShape.circle,
-                  border: Border.all(color: i == sel ? AppColors.text : Colors.transparent, width: 2.5),
+        Padding(
+          padding: const EdgeInsets.only(top: Space.md),
+          child: SizedBox(width: 64, child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: Space.sm,
+            runSpacing: Space.xs,
+            children: [
+              for (var i = 0; i < names.length; i++)
+                ChoiceChip(
+                  label: Text(names[i]),
+                  selected: i == sel,
+                  onSelected: (_) => on(i),
+                  showCheckmark: false,
+                  backgroundColor: AppColors.surface,
+                  selectedColor: AppColors.primarySoft,
+                  side: const BorderSide(color: AppColors.line),
                 ),
-              ),
+            ],
+          ),
+        ),
+      ],
+    ),
+  );
+
+  Widget _row(
+    BuildContext context,
+    String label,
+    List<Color> colors,
+    int sel,
+    ValueChanged<int> on, [
+    List<String>? names,
+  ]) => Padding(
+    padding: const EdgeInsets.symmetric(vertical: Space.md),
+    child: Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(top: Space.sm),
+          child: SizedBox(
+            width: 64,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label, style: Theme.of(context).textTheme.titleMedium),
+                if (names != null) Text(names[sel % names.length], style: Theme.of(context).textTheme.bodySmall),
+              ],
             ),
           ),
+        ),
+        Expanded(
+          child: Wrap(
+            spacing: Space.md,
+            runSpacing: Space.md,
+            children: [
+              for (var i = 0; i < colors.length; i++)
+                Semantics(
+                  button: true,
+                  selected: i == sel,
+                  label: names != null ? '${names[i]} $label' : '$label ${i + 1}번',
+                  child: GestureDetector(
+                    onTap: () => on(i),
+                    child: AnimatedContainer(
+                      duration: Motion.fast,
+                      width: 44,
+                      height: 44,
+                      decoration: BoxDecoration(
+                        color: colors[i],
+                        shape: BoxShape.circle,
+                        // 밝은 피부색도 바탕과 구분되게 옅은 테두리를 둔다
+                        border: Border.all(
+                          color: i == sel ? AppColors.text : AppColors.line,
+                          width: i == sel ? 2.5 : 1,
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
       ],
     ),
   );

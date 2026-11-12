@@ -4,7 +4,12 @@ import 'package:flutter/material.dart';
 
 import '../../data/catalog.dart';
 import '../../data/models.dart';
+import '../../room/iso.dart';
+import '../../room/palette.dart';
+import '../../room/registry.dart';
 import '../../theme/tokens.dart';
+import 'iso_boxes.dart';
+import 'surfaces.dart';
 
 /// 방 안에서 각 자리가 차지하는 영역 (방 크기 대비 비율).
 Rect slotRect(RoomSlot slot, Size s) {
@@ -30,6 +35,9 @@ Rect slotRect(RoomSlot slot, Size s) {
       return f(0.86, 0.66, 1.0, 0.92);
     case RoomSlot.rug:
       return f(0.22, 0.76, 0.80, 0.96);
+    // 새 자리는 정면 2D 방에 없다. 썸네일 비율로만 쓴다.
+    case RoomSlot.sofa || RoomSlot.table || RoomSlot.storage || RoomSlot.decor || RoomSlot.floor:
+      return f(0, 0, 0.3, 0.3);
   }
 }
 
@@ -137,7 +145,12 @@ void drawFurniture(Canvas c, ShopItem item, Rect r) {
   Rect f(double l, double t, double rr, double b) =>
       Rect.fromLTRB(r.left + l * w, r.top + t * h, r.left + rr * w, r.top + b * h);
 
+  if (_drawWallExtra(c, item, f)) return;
   switch (item.slot!) {
+    // 상자·무늬로만 그리는 자리 (iso_boxes.dart, surfaces.dart)
+    case RoomSlot.sofa || RoomSlot.table || RoomSlot.storage || RoomSlot.decor || RoomSlot.floor:
+      break;
+
     case RoomSlot.wallpaper:
       drawWallpaper(c, r, item.variant);
 
@@ -361,9 +374,88 @@ void drawFurniture(Canvas c, ShopItem item, Rect r) {
 
 // ───────── 미니미 ─────────
 
-const skinTones = [Color(0xFFFBE3D0), Color(0xFFF1CBAA), Color(0xFFD9A57E), Color(0xFFA9714D)];
-const hairColors = [Color(0xFF3B2E28), Color(0xFF7A5236), Color(0xFFC99A5E), Color(0xFF9A9AA6)];
+final skinTones = [for (final r in PixelPalette.skin) Color(0xFF000000 | r[1])];
+final hairColors = [for (final r in PixelPalette.hair) Color(0xFF000000 | r[1])];
 const outfitColors = [AppColors.primary, AppColors.sage, AppColors.sky, Color(0xFFC9A3C9)];
+
+/// 벽에 거는 2차 아이템 (id로 구분). 그렸으면 true.
+bool _drawWallExtra(Canvas c, ShopItem item, Rect Function(double, double, double, double) f) {
+  Color px(int rgb) => Color(0xFF000000 | rgb);
+  final all = f(0, 0, 1, 1), w = all.width;
+  void frame(Color inner) {
+    c.drawRect(all, _p(AppColors.woodDark));
+    c.drawRect(f(0.1, 0.1, 0.9, 0.9), _p(inner));
+  }
+
+  switch (item.id) {
+    case 'frame_sea':
+      frame(px(PixelPalette.sky[0]));
+      c.drawRect(f(0.1, 0.55, 0.9, 0.9), _p(px(PixelPalette.sky[2])));
+      c.drawCircle(f(0.6, 0.2, 0.8, 0.4).center, w * 0.09, _p(px(PixelPalette.butter[1])));
+    case 'frame_flower':
+      frame(px(PixelPalette.cream[0]));
+      c.drawRect(f(0.48, 0.5, 0.52, 0.85), _p(px(PixelPalette.sage[2])));
+      for (final (x, y) in [(0.5, 0.28), (0.36, 0.42), (0.64, 0.42), (0.5, 0.52)]) {
+        c.drawCircle(f(x, y, x, y).topLeft, w * 0.1, _p(px(PixelPalette.hair[4][1])));
+      }
+      c.drawCircle(f(0.5, 0.41, 0.5, 0.41).topLeft, w * 0.07, _p(px(PixelPalette.butter[1])));
+    case 'clock_round':
+      c.drawOval(all, _p(AppColors.woodDark));
+      c.drawOval(f(0.1, 0.1, 0.9, 0.9), _p(px(PixelPalette.cream[0])));
+      final hand = Paint()
+        ..color = px(PixelPalette.ink[0])
+        ..strokeWidth = math.max(1.5, w * 0.05)
+        ..strokeCap = StrokeCap.round;
+      c.drawLine(all.center, f(0.5, 0.24, 0.5, 0.24).topLeft, hand);
+      c.drawLine(all.center, f(0.68, 0.58, 0.68, 0.58).topLeft, hand);
+    case 'mirror_round':
+      c.drawOval(all, _p(px(PixelPalette.butter[2])));
+      c.drawOval(f(0.08, 0.06, 0.92, 0.94), _p(px(PixelPalette.sky[0])));
+      c.drawOval(f(0.5, 0.2, 0.72, 0.5), _p(px(PixelPalette.cream[0])));
+    case 'poster_night':
+      c.drawRect(all, _p(px(PixelPalette.hair[5][2])));
+      c.drawCircle(f(0.66, 0.28, 0.66, 0.28).topLeft, w * 0.14, _p(px(PixelPalette.butter[1])));
+      for (final (x, y) in [(0.2, 0.2), (0.35, 0.5), (0.8, 0.6), (0.25, 0.78), (0.6, 0.82)]) {
+        c.drawCircle(f(x, y, x, y).topLeft, w * 0.035, _p(px(PixelPalette.cream[0])));
+      }
+    case 'window_round':
+      c.drawOval(all, _p(Colors.white));
+      final glass = f(0.07, 0.07, 0.93, 0.93);
+      c.drawOval(glass, _p(px(PixelPalette.sky[1])));
+      c.drawRect(Rect.fromCenter(center: all.center, width: w * 0.04, height: glass.height), _p(Colors.white));
+      c.drawRect(Rect.fromCenter(center: all.center, width: glass.width, height: w * 0.04), _p(Colors.white));
+    case 'window_blind' || 'window_night':
+      final night = item.id == 'window_night';
+      c.drawRRect(_rr(all, 6), _p(Colors.white));
+      final glass = f(0.06, 0.06, 0.94, 0.94);
+      c.drawRect(glass, _p(px(night ? PixelPalette.hair[5][2] : PixelPalette.sky[1])));
+      if (night) {
+        c.drawCircle(f(0.7, 0.3, 0.7, 0.3).topLeft, w * 0.09, _p(px(PixelPalette.butter[1])));
+        for (final (x, y) in [(0.2, 0.25), (0.4, 0.6), (0.82, 0.7), (0.25, 0.8)]) {
+          c.drawCircle(f(x, y, x, y).topLeft, w * 0.02, _p(px(PixelPalette.cream[0])));
+        }
+        c.drawRect(Rect.fromCenter(center: all.center, width: w * 0.04, height: glass.height), _p(Colors.white));
+      } else {
+        for (var y = 0.06; y < 0.6; y += 0.09) {
+          c.drawRect(f(0.06, y, 0.94, y + 0.06), _p(px(PixelPalette.cream[1])));
+        }
+      }
+      c.drawRect(f(-0.04, 0.94, 1.04, 1.02), _p(Colors.white));
+    case 'shelf_plant':
+      c.drawRect(f(0, 0.82, 1, 0.92), _p(AppColors.wood));
+      for (final (x, leaf) in [
+        (0.12, PixelPalette.sage[2]),
+        (0.44, PixelPalette.sage[1]),
+        (0.76, PixelPalette.sage[3]),
+      ]) {
+        c.drawRRect(_rr(f(x, 0.55, x + 0.14, 0.82), 2), _p(px(PixelPalette.terracotta[1])));
+        c.drawOval(f(x - 0.04, 0.2, x + 0.18, 0.6), _p(px(leaf)));
+      }
+    default:
+      return false;
+  }
+  return true;
+}
 
 /// 미니미. [outfit]·[accessory]는 아이템 variant (0이면 기본 옷 / 없음).
 class MinimiPainter extends CustomPainter {
@@ -666,25 +758,102 @@ class MinimiPainter extends CustomPainter {
 }
 
 /// 프로필의 옷·액세서리를 입은 미니미.
-class MinimiView extends StatelessWidget {
+class MinimiView extends StatefulWidget {
   const MinimiView({super.key, required this.profile, this.happy = false, this.width = 96});
   final Profile profile;
   final bool happy;
   final double width;
 
   @override
-  Widget build(BuildContext context) => SizedBox(
-    width: width,
-    height: width * 1.2,
-    child: CustomPaint(
-      painter: MinimiPainter(
-        profile.minimi,
-        happy: happy,
-        outfit: itemById(profile.outfitId)?.variant ?? 0,
-        accessory: itemById(profile.accessoryId)?.variant ?? 0,
+  State<MinimiView> createState() => _MinimiViewState();
+}
+
+class _MinimiViewState extends State<MinimiView> {
+  /// 새 색·모양을 읽는 동안 기존 그림으로 잠깐 바뀌지 않게, 마지막으로 그린 레이어를 붙잡아 둔다.
+  // shortcut: 옷·액세서리가 바뀌면 버린다(그쪽만 초안일 수 있어서). 기본 레이어 일부만 초안이 되면 그것도 비교할 것.
+  List<MinimiLayer>? _last;
+
+  @override
+  void didUpdateWidget(MinimiView old) {
+    super.didUpdateWidget(old);
+    final a = old.profile, b = widget.profile;
+    if (a.outfitId != b.outfitId || a.accessoryId != b.accessoryId || a.earringId != b.earringId) _last = null;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final profile = widget.profile, happy = widget.happy, width = widget.width;
+    // 픽셀 레이어가 모두 있으면 스프라이트(정면 0번 프레임), 하나라도 없으면 기존 그림 (01 §8)
+    final reg = RegistryScope.of(context);
+    final m = profile.minimi;
+    reg?.preloadMinimi(
+      outfitId: profile.outfitId,
+      accessoryId: profile.accessoryId,
+      earringId: profile.earringId,
+      skin: m.skin,
+      hair: m.hair,
+      outfit: m.outfit,
+      hairStyle: m.hairStyle,
+      eyes: m.eyes,
+      mouth: m.mouth,
+    );
+    final layers =
+        reg?.minimiLayers(
+          outfitId: profile.outfitId,
+          accessoryId: profile.accessoryId,
+          earringId: profile.earringId,
+          skin: m.skin,
+          hair: m.hair,
+          outfit: m.outfit,
+          hairStyle: m.hairStyle,
+          eyes: m.eyes,
+          mouth: m.mouth,
+        ) ??
+        _last;
+    _last = layers;
+    return SizedBox(
+      width: width,
+      height: width * 1.2,
+      child: CustomPaint(
+        painter: layers != null
+            ? _MinimiSpritePainter(layers)
+            : MinimiPainter(
+                m,
+                happy: happy,
+                outfit: itemById(profile.outfitId)?.variant ?? 0,
+                accessory: itemById(profile.accessoryId)?.variant ?? 0,
+              ),
       ),
-    ),
-  );
+    );
+  }
+}
+
+class _MinimiSpritePainter extends CustomPainter {
+  _MinimiSpritePainter(this.layers);
+  final List<MinimiLayer> layers;
+
+  /// 프레임 64×96 중 그림이 있는 부분 (머리 장식 y 4 ~ 발 y 88)
+  static const _src = Rect.fromLTWH(10, 4, 44, 85);
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final k = math.min(size.width / _src.width, size.height / _src.height);
+    final dst = Rect.fromLTWH(
+      (size.width - _src.width * k) / 2,
+      size.height - _src.height * k,
+      _src.width * k,
+      _src.height * k,
+    );
+    final paint = Paint()..filterQuality = FilterQuality.none;
+    for (final l in layers) {
+      canvas.drawImageRect(l.sheet, _src, dst, paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(_MinimiSpritePainter old) =>
+      old.layers.length != layers.length ||
+      [for (var i = 0; i < layers.length; i++) old.layers[i].sheet != layers[i].sheet].contains(true);
 }
 
 /// 아이템 썸네일 (가구는 가구만, 옷·액세서리는 입은 미니미).
@@ -697,21 +866,25 @@ class ItemThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (item.assetPath != null) {
-      return Image.asset(item.assetPath!, width: size, height: size, fit: BoxFit.contain, filterQuality: FilterQuality.none);
+      return Image.asset(
+        item.assetPath!,
+        width: size,
+        height: size,
+        fit: BoxFit.contain,
+        filterQuality: FilterQuality.none,
+      );
     }
     if (!item.isFurniture) {
       return SizedBox.square(
         dimension: size,
         child: Center(
-          child: SizedBox(
+          child: MinimiView(
             width: size * 0.66,
-            height: size * 0.8,
-            child: CustomPaint(
-              painter: MinimiPainter(
-                minimi,
-                outfit: item.kind == ItemKind.outfit ? item.variant : 0,
-                accessory: item.kind == ItemKind.accessory ? item.variant : 0,
-              ),
+            profile: Profile(
+              minimi: minimi,
+              outfitId: item.kind == ItemKind.outfit ? item.id : null,
+              accessoryId: item.kind == ItemKind.accessory && !item.isEarring ? item.id : null,
+              earringId: item.isEarring ? item.id : null,
             ),
           ),
         ),
@@ -719,17 +892,41 @@ class ItemThumb extends StatelessWidget {
     }
     return SizedBox.square(
       dimension: size,
-      child: CustomPaint(painter: _ThumbPainter(item)),
+      child: CustomPaint(
+        painter: _ThumbPainter(item, RegistryScope.of(context)?.manifest[item.id]?.footprint ?? (1, 1)),
+      ),
     );
   }
 }
 
 class _ThumbPainter extends CustomPainter {
-  _ThumbPainter(this.item);
+  _ThumbPainter(this.item, this.footprint);
   final ShopItem item;
+  final (int, int) footprint;
 
   @override
   void paint(Canvas canvas, Size size) {
+    // 방에서 상자·무늬로 그리는 것은 썸네일도 같은 그림을 줄여서 쓴다.
+    final (fw, fd) = footprint;
+    void iso(int w, int d, double h, VoidCallback draw) {
+      final left = IsoGrid.toCanvas(0, d).dx, right = IsoGrid.toCanvas(w, 0).dx;
+      final top = IsoGrid.toCanvas(0, 0).dy - h, bottom = IsoGrid.toCanvas(w, d).dy;
+      final k = math.min(size.width / (right - left), size.height / (bottom - top)) * 0.86;
+      canvas.save();
+      canvas.translate(size.width / 2, size.height / 2);
+      canvas.scale(k);
+      canvas.translate(-(left + right) / 2, -(top + bottom) / 2);
+      draw();
+      canvas.restore();
+    }
+
+    if (item.slot == RoomSlot.rug) return iso(fw, fd, 0, () => drawRug(canvas, rugStyleOf(item.id), (0, 0, fw, fd)));
+    if (item.slot == RoomSlot.floor) return iso(2, 2, -8, () => drawFloor(canvas, floorStyleOf(item.id), 2));
+    final boxes = isoBoxesFor(item, footprint);
+    if (boxes != null) {
+      final h = boxes.map((b) => b.z1).reduce(math.max);
+      return iso(fw, fd, h, () => drawIsoBoxes(canvas, boxes, footprint, Rot.r0, 0, 0));
+    }
     // 자리의 가로세로 비율을 유지해서 가운데 그린다.
     final ref = slotRect(item.slot!, const Size(300, 300));
     final ratio = ref.width / math.max(ref.height, 1);
@@ -741,10 +938,13 @@ class _ThumbPainter extends CustomPainter {
     final r = Rect.fromCenter(center: size.center(Offset.zero), width: w, height: h);
     if (item.slot == RoomSlot.wallpaper) {
       canvas.clipRRect(_rr(r, 8));
+      // 벽 두 칸 너비를 펼쳐서
+      final k = r.width / (2 * 64);
+      return drawWall(canvas, wallStyleOf(item.id), (u, z) => Offset(r.left + u * 64 * k, r.bottom - z * k), span: 2);
     }
     drawFurniture(canvas, item, r);
   }
 
   @override
-  bool shouldRepaint(_ThumbPainter old) => old.item != item;
+  bool shouldRepaint(_ThumbPainter old) => old.item != item || old.footprint != footprint;
 }

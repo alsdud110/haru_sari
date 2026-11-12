@@ -123,21 +123,50 @@ class DayLog {
   );
 }
 
-/// 미니미 기본 외형 (색).
+/// 미니미 기본 외형. 값은 모두 번호다 (색은 PixelPalette, 모양은 tool/draw_minimi.dart와 같은 순서).
 class Minimi {
-  const Minimi({this.skin = 0, this.hair = 0, this.outfit = 0});
+  const Minimi({this.skin = 0, this.hair = 0, this.outfit = 0, this.hairStyle = 0, this.eyes = 0, this.mouth = 0});
   final int skin;
+
+  /// 머리색
   final int hair;
 
   /// 옷 색
   final int outfit;
+  final int hairStyle;
+  final int eyes;
+  final int mouth;
 
-  Minimi copyWith({int? skin, int? hair, int? outfit}) =>
-      Minimi(skin: skin ?? this.skin, hair: hair ?? this.hair, outfit: outfit ?? this.outfit);
+  static const skinNames = ['크림', '헬시', '태닝', '브론즈', '밀키', '스산', '창백', '노블레스'];
+  static const hairStyleNames = ['단발', '짧은 머리', '긴 머리', '스크래치', '포니테일', '양갈래', '똥머리', '곱슬', '가르마', '삐죽'];
+  static const eyeNames = ['기본', '반짝', '감은 눈', '웃는 눈', '윙크', '졸린 눈'];
+  static const mouthNames = ['미소', '활짝', '시무룩', '놀람', '무표정', '고양이'];
 
-  Map<String, dynamic> toJson() => {'skin': skin, 'hair': hair, 'outfit': outfit};
-  factory Minimi.fromJson(Map<String, dynamic> j) =>
-      Minimi(skin: j['skin'] as int? ?? 0, hair: j['hair'] as int? ?? 0, outfit: j['outfit'] as int? ?? 0);
+  Minimi copyWith({int? skin, int? hair, int? outfit, int? hairStyle, int? eyes, int? mouth}) => Minimi(
+    skin: skin ?? this.skin,
+    hair: hair ?? this.hair,
+    outfit: outfit ?? this.outfit,
+    hairStyle: hairStyle ?? this.hairStyle,
+    eyes: eyes ?? this.eyes,
+    mouth: mouth ?? this.mouth,
+  );
+
+  Map<String, dynamic> toJson() => {
+    'skin': skin,
+    'hair': hair,
+    'outfit': outfit,
+    'hairStyle': hairStyle,
+    'eyes': eyes,
+    'mouth': mouth,
+  };
+  factory Minimi.fromJson(Map<String, dynamic> j) => Minimi(
+    skin: j['skin'] as int? ?? 0,
+    hair: j['hair'] as int? ?? 0,
+    outfit: j['outfit'] as int? ?? 0,
+    hairStyle: j['hairStyle'] as int? ?? 0,
+    eyes: j['eyes'] as int? ?? 0,
+    mouth: j['mouth'] as int? ?? 0,
+  );
 }
 
 /// 알림 설정. 미완료를 재촉하는 알림은 두지 않는다 (PRD 원칙).
@@ -179,6 +208,7 @@ class Profile {
     this.minimi = const Minimi(),
     this.outfitId,
     this.accessoryId,
+    this.earringId,
     Set<String>? owned,
     Map<String, String>? placed,
     Map<String, String>? badges,
@@ -202,9 +232,10 @@ class Profile {
   int coins;
   Minimi minimi;
 
-  /// 입고 있는 옷 / 액세서리 아이템 id (없으면 기본 옷)
+  /// 입고 있는 옷 / 액세서리 / 귀고리 아이템 id (없으면 기본 옷). 귀고리는 액세서리와 따로 찬다.
   String? outfitId;
   String? accessoryId;
+  String? earringId;
 
   /// 산 아이템 id.
   final Set<String> owned;
@@ -232,6 +263,7 @@ class Profile {
     'minimi': minimi.toJson(),
     'outfitId': outfitId,
     'accessoryId': accessoryId,
+    'earringId': earringId,
     'owned': owned.toList(),
     'placed': placed,
     'badges': badges,
@@ -249,6 +281,7 @@ class Profile {
     minimi: Minimi.fromJson((j['minimi'] as Map?)?.cast<String, dynamic>() ?? {}),
     outfitId: j['outfitId'] as String?,
     accessoryId: j['accessoryId'] as String?,
+    earringId: j['earringId'] as String?,
     owned: ((j['owned'] as List?) ?? []).cast<String>().toSet(),
     placed: ((j['placed'] as Map?) ?? {}).cast<String, String>(),
     badges: ((j['badges'] as Map?) ?? {}).cast<String, String>(),

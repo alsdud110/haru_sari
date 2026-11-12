@@ -34,8 +34,8 @@ class LoadedSprite {
 /// 없거나 크기가 틀리거나 draft(출시 빌드)면 null을 돌려준다 → 그리는 쪽이 기존 그림으로 대체한다.
 class AssetRegistry extends ChangeNotifier {
   AssetRegistry(this.manifest, {AssetBundle? bundle, bool? showDraft})
-      : _bundle = bundle ?? rootBundle,
-        showDraft = showDraft ?? kShowDraftAssets;
+    : _bundle = bundle ?? rootBundle,
+      showDraft = showDraft ?? kShowDraftAssets;
 
   final PixelManifest manifest;
   final AssetBundle _bundle;
@@ -130,19 +130,37 @@ class MinimiSheet {
   static const width = frameW * frames, height = frameH * rows;
 
   /// 그리는 순서 (01 §8.4). 정면·측면 같음.
-  static const order = ['hair_back', 'base', 'outfit', 'hair_front', 'acc_head', 'acc_face'];
+  static const order = [
+    'hair_back',
+    'base',
+    'eyes',
+    'mouth',
+    'outfit',
+    'hair_front',
+    'acc_ear',
+    'acc_head',
+    'acc_face',
+  ];
 
   static ui.Rect src(int frame, MinimiFacing f) => ui.Rect.fromLTWH(
-        (frame % frames) * frameW.toDouble(),
-        (f == MinimiFacing.front ? 0 : 1) * frameH.toDouble(),
-        frameW.toDouble(),
-        frameH.toDouble(),
-      );
+    (frame % frames) * frameW.toDouble(),
+    (f == MinimiFacing.front ? 0 : 1) * frameH.toDouble(),
+    frameW.toDouble(),
+    frameH.toDouble(),
+  );
 }
 
 extension MinimiAssets on AssetRegistry {
   /// 필요한 레이어 경로들 (이름 → (경로, 반전 가능, 색 바꾸기 대상, 쓸 수 있는지))
-  List<(String, String, bool, String?, bool)> _minimiPaths(String? outfitId, String? accessoryId, MinimiFacing f) {
+  List<(String, String, bool, String?, bool)> _minimiPaths(
+    String? outfitId,
+    String? accessoryId,
+    MinimiFacing f, [
+    int hairStyle = 0,
+    int eyes = 0,
+    int mouth = 0,
+    String? earringId,
+  ]) {
     final out = <(String, String, bool, String?, bool)>[];
     void base(String name, String key, String? swap) {
       final b = manifest.base[key];
@@ -159,24 +177,56 @@ extension MinimiAssets on AssetRegistry {
     }
 
     final acc = accessoryId == null ? null : manifest[accessoryId];
-    base('hair_back', 'minimi_hair_back', 'hair');
+    // 머리 모양 0번은 번호 없는 키, 그 밖에는 `_번호`가 붙는다
+    final style = hairStyle == 0 ? '' : '_$hairStyle';
+    base('hair_back', 'minimi_hair_back$style', 'hair');
     base('base', 'minimi_base', 'skin');
+    if (manifest.base.containsKey('minimi_eyes_0')) {
+      base('eyes', 'minimi_eyes_$eyes', null);
+      base('mouth', 'minimi_mouth_$mouth', null);
+    }
+    // 옷을 안 입었으면 기본 옷 (Minimi.outfit 색으로 바꿔 칠한다)
+    if (outfitId == null && manifest.base.containsKey('minimi_outfit')) base('outfit', 'minimi_outfit', 'outfit');
     item('outfit', outfitId);
-    if (!(acc?.hides.contains('hair_front') ?? false)) base('hair_front', 'minimi_hair_front', 'hair');
+    if (!(acc?.hides.contains('hair_front') ?? false)) base('hair_front', 'minimi_hair_front$style', 'hair');
+    item('acc_ear', earringId);
     if (acc != null) item(acc.slot == 'face' ? 'acc_face' : 'acc_head', accessoryId);
     return out;
   }
 
-  static String _sheetKey(String path, String? swap, int skin, int hair) =>
-      '$path|${swap == 'skin' ? skin : swap == 'hair' ? hair : '-'}';
+  static String _sheetKey(String path, String? swap, int skin, int hair, int outfit) =>
+      '$path|${switch (swap) {
+        'skin' => skin,
+        'hair' => hair,
+        'outfit' => outfit,
+        _ => '-',
+      }}';
 
-  /// 미니미 레이어 시트를 읽고 피부·머리 색을 바꿔 캐시한다.
-  Future<void> preloadMinimi({required String? outfitId, required String? accessoryId, required int skin, required int hair}) async {
+  /// 미니미 레이어 시트를 읽고 피부·머리·기본 옷 색을 바꿔 캐시한다.
+  Future<void> preloadMinimi({
+    required String? outfitId,
+    required String? accessoryId,
+    required int skin,
+    required int hair,
+    int outfit = 0,
+    int hairStyle = 0,
+    int eyes = 0,
+    int mouth = 0,
+    String? earringId,
+  }) async {
     var changed = false;
     for (final f in [MinimiFacing.front, MinimiFacing.sideLeft]) {
-      for (final (_, path, _, swap, usable) in _minimiPaths(outfitId, accessoryId, f)) {
+      for (final (_, path, _, swap, usable) in _minimiPaths(
+        outfitId,
+        accessoryId,
+        f,
+        hairStyle,
+        eyes,
+        mouth,
+        earringId,
+      )) {
         if (!usable) continue;
-        final key = _sheetKey(path, swap, skin, hair);
+        final key = _sheetKey(path, swap, skin, hair, outfit);
         if (_minimiCache.containsKey(key) || !_minimiTried.add(key)) continue;
         try {
           final data = await _bundleOf(this).load('${PixelManifest.assetRoot}$path');
@@ -187,9 +237,11 @@ extension MinimiAssets on AssetRegistry {
             continue;
           }
           if (swap != null) {
-            final table = swap == 'skin'
-                ? PixelPalette.swapFor(skinIndex: skin, hairIndex: 0)
-                : PixelPalette.swapFor(skinIndex: 0, hairIndex: hair);
+            final table = switch (swap) {
+              'skin' => PixelPalette.swapFor(skinIndex: skin, hairIndex: 0),
+              'hair' => PixelPalette.swapFor(skinIndex: 0, hairIndex: hair),
+              _ => PixelPalette.outfitSwap(outfit),
+            };
             img = await paletteSwap(img, table);
           }
           _minimiCache[key] = img;
@@ -208,12 +260,25 @@ extension MinimiAssets on AssetRegistry {
     required String? accessoryId,
     required int skin,
     required int hair,
+    int outfit = 0,
+    int hairStyle = 0,
+    int eyes = 0,
+    int mouth = 0,
+    String? earringId,
     MinimiFacing facing = MinimiFacing.front,
   }) {
     final out = <MinimiLayer>[];
-    for (final (name, path, mirrorable, swap, usable) in _minimiPaths(outfitId, accessoryId, facing)) {
+    for (final (name, path, mirrorable, swap, usable) in _minimiPaths(
+      outfitId,
+      accessoryId,
+      facing,
+      hairStyle,
+      eyes,
+      mouth,
+      earringId,
+    )) {
       if (!usable) return null;
-      final img = _minimiCache[_sheetKey(path, swap, skin, hair)];
+      final img = _minimiCache[_sheetKey(path, swap, skin, hair, outfit)];
       if (img == null) return null;
       final isLeftSheet = path.contains('_left');
       out.add(MinimiLayer(name, img, mirror: facing == MinimiFacing.sideLeft && mirrorable && !isLeftSheet));

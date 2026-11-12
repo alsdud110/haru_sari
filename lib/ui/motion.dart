@@ -476,3 +476,34 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
     ),
   );
 }
+
+/// 숨 쉬듯 위아래로 살짝 움직인다. '동작 줄이기'가 켜져 있으면 가만히 있는다.
+class Breathing extends StatefulWidget {
+  const Breathing({super.key, required this.child});
+  final Widget child;
+
+  @override
+  State<Breathing> createState() => _BreathingState();
+}
+
+class _BreathingState extends State<Breathing> with SingleTickerProviderStateMixin {
+  late final _breath = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
+    ..repeat(reverse: true);
+
+  @override
+  void dispose() {
+    _breath.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final reduceMotion = MediaQuery.of(context).disableAnimations;
+    return AnimatedBuilder(
+      animation: _breath,
+      builder: (_, child) =>
+          Transform.translate(offset: Offset(0, reduceMotion ? 0 : -2 * _breath.value), child: child),
+      child: widget.child,
+    );
+  }
+}

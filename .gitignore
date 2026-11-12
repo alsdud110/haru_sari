@@ -46,3 +46,7 @@ app.*.map.json
 
 # Widget Preview related
 .widget_preview/
+
+# Claude 스킬 (각자 설치)
+.claude/skills/
+skills-lock.json

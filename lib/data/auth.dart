@@ -152,6 +152,14 @@ class AuthService extends ChangeNotifier {
     return null;
   }
 
+  /// 개발용: 이 기기의 모든 계정과 기록을 지워 첫 실행 상태로 돌린다.
+  Future<void> debugReset() async {
+    await _kv.removePrefix('');
+    _accounts.clear();
+    current = null;
+    notifyListeners();
+  }
+
   String? changePassword({required String oldPassword, required String newPassword}) {
     final a = current;
     if (a == null) return '로그인이 필요해요';

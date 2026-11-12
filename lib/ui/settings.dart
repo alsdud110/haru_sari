@@ -1,7 +1,9 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart';
 
 import '../app.dart';
+import '../data/auth.dart';
 import '../data/badges.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
@@ -113,9 +115,28 @@ class ProfileScreen extends StatelessWidget {
           ]),
           const SizedBox(height: Space.xl),
           Text('루틴을 놓친 날에도 경험치·코인·가구는 그대로예요.\n다시 시작하는 날이 곧 좋은 날이에요.', style: t.bodySmall, textAlign: TextAlign.center),
+          if (kDebugMode) ...[
+            const SizedBox(height: Space.lg),
+            TextButton(onPressed: () => _confirmReset(context, auth), child: const Text('초기화 (개발용)')),
+          ],
         ],
       ),
     );
+  }
+
+  Future<void> _confirmReset(BuildContext context, AuthService auth) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('전부 초기화할까요?'),
+        content: const Text('이 기기의 모든 계정과 기록이 지워지고 첫 화면으로 돌아가요.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('초기화')),
+        ],
+      ),
+    );
+    if (ok == true) await auth.debugReset();
   }
 
   void _editMinimi(BuildContext context) {
@@ -132,7 +153,11 @@ class ProfileScreen extends StatelessWidget {
               children: [
                 MinimiView(profile: s.profile),
                 const SizedBox(height: Space.lg),
-                MinimiPicker(minimi: s.profile.minimi, onChanged: s.updateMinimi),
+                Flexible(
+                  child: SingleChildScrollView(
+                    child: MinimiPicker(minimi: s.profile.minimi, onChanged: s.updateMinimi),
+                  ),
+                ),
               ],
             ),
           ),
@@ -307,11 +332,12 @@ class BadgesScreen extends StatelessWidget {
       appBar: AppBar(title: const Text('받은 배지')),
       body: GridView.builder(
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
-        gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-          maxCrossAxisExtent: 170,
+        gridDelegate: SliverGridDelegateWithMaxCrossAxisExtent(
+          maxCrossAxisExtent: 220,
           mainAxisSpacing: Space.sm,
           crossAxisSpacing: Space.sm,
-          childAspectRatio: 0.9,
+          // 칸 높이는 글자 크기를 따라간다 (비율로 잡으면 좁은 화면·큰 글씨에서 넘친다)
+          mainAxisExtent: MediaQuery.textScalerOf(context).scale(176),
         ),
         itemCount: badgeDefs.length,
         itemBuilder: (context, i) {

@@ -49,7 +49,7 @@ Future<Uint8List> fakeSprite(
 void main() {
   final m = loadManifest();
 
-  test('상점 아이템 26개가 모두 매니페스트에 있고 종류가 맞다', () {
+  test('상점 아이템이 모두 매니페스트에 있고 종류가 맞다', () {
     for (final item in shopCatalog) {
       final art = m[item.id];
       expect(art, isNotNull, reason: item.id);
@@ -60,7 +60,7 @@ void main() {
         case ItemKind.outfit:
           expect(art!.slot, 'outfit', reason: item.id);
         case ItemKind.accessory:
-          expect(['head', 'face'], contains(art!.slot), reason: item.id);
+          expect(art!.slot, item.isEarring ? 'ear' : isIn(['head', 'face']), reason: item.id);
       }
     }
     expect(m.items.keys.toSet(), shopCatalog.map((e) => e.id).toSet());
@@ -142,8 +142,8 @@ void main() {
     });
   });
 
-  test('팔레트: 57색, 앱 토큰 색 포함, 스왑 표', () {
-    expect(PixelPalette.all.length, 57);
+  test('팔레트: 81색, 앱 토큰 색 포함, 스왑 표', () {
+    expect(PixelPalette.all.length, 81);
     expect(PixelPalette.all, containsAll([0xF2E6D8 == 0 ? 0 : 0xD9B993, 0xB98559, 0x8FAE8B, 0xE08A5B]));
     final swap = PixelPalette.swapFor(skinIndex: 2, hairIndex: 0);
     expect(swap[0xFBE3D0], 0xD9A57E);

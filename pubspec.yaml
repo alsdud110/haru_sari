@@ -69,6 +69,11 @@ flutter:
     - assets/pixel/
     - assets/pixel/furniture/beds/
     - assets/pixel/furniture/decorations/
+    - assets/pixel/characters/base/
+    - assets/pixel/characters/hair/
+    - assets/pixel/characters/face/
+    - assets/pixel/characters/outfits/
+    - assets/pixel/characters/accessories/
 
   # To add assets to your application, add an assets section, like this:
   # assets:

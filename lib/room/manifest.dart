@@ -60,6 +60,7 @@ class ItemArt {
   final bool mirror;
 
   bool get isFinal => status == ArtStatus.finalArt;
+
   /// 바닥에 놓는 것은 모두 네 방향으로 돌릴 수 있다 (그림이 없는 방향은 대체 그림).
   bool get rotatable => isFloor;
   bool get isFloor => layer == ArtLayer.object || layer == ArtLayer.floorDecor;
@@ -120,7 +121,7 @@ class PixelManifest {
   final int version;
   final Map<String, ItemArt> items;
 
-  /// 'floor', 'wallL', 'minimi_base', 'minimi_hair_front', 'minimi_hair_back'
+  /// 'floor', 'wallL', 'minimi_base', 'minimi_outfit'(기본 옷), 'minimi_hair_front', 'minimi_hair_back'
   final Map<String, BaseArt> base;
 
   static const assetRoot = 'assets/pixel/';

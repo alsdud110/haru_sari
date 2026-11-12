@@ -23,7 +23,7 @@ class RoomScreen extends StatelessWidget {
     final t = Theme.of(context).textTheme;
     final placed = s.placedFurniture;
     final outfit = itemById(p.outfitId);
-    final acc = itemById(p.accessoryId);
+    final acc = [itemById(p.accessoryId)?.name, itemById(p.earringId)?.name].nonNulls.join(', ');
     final storedFurniture = s.storedItems.where((i) => i.isFurniture).length;
 
     return Scaffold(
@@ -96,7 +96,7 @@ class RoomScreen extends StatelessWidget {
                       children: [
                         _kv(t, '입은 옷', outfit?.name ?? '기본 티셔츠'),
                         const SizedBox(height: Space.xs),
-                        _kv(t, '액세서리', acc?.name ?? '없음'),
+                        _kv(t, '액세서리', acc.isEmpty ? '없음' : acc),
                       ],
                     ),
                   ),
@@ -236,20 +236,10 @@ class RoomView extends StatefulWidget {
   State<RoomView> createState() => _RoomViewState();
 }
 
-class _RoomViewState extends State<RoomView> with SingleTickerProviderStateMixin {
-  late final _breath = AnimationController(vsync: this, duration: const Duration(milliseconds: 2600))
-    ..repeat(reverse: true);
-
-  @override
-  void dispose() {
-    _breath.dispose();
-    super.dispose();
-  }
-
+class _RoomViewState extends State<RoomView> {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final reduceMotion = MediaQuery.of(context).disableAnimations;
     return ClipRRect(
       borderRadius: BorderRadius.circular(Radii.lg),
       child: AspectRatio(
@@ -277,10 +267,7 @@ class _RoomViewState extends State<RoomView> with SingleTickerProviderStateMixin
                   height: mw * 1.25,
                   child: Semantics(
                     label: '내 미니미',
-                    child: AnimatedBuilder(
-                      animation: _breath,
-                      builder: (_, child) =>
-                          Transform.translate(offset: Offset(0, reduceMotion ? 0 : -2 * _breath.value), child: child),
+                    child: Breathing(
                       child: MinimiView(profile: s.profile, width: mw),
                     ),
                   ),
@@ -341,7 +328,9 @@ class _ShopScreenState extends State<ShopScreen> {
           ),
           Expanded(
             child: items.isEmpty
-                ? const EmptyHint(emoji: '🪙', title: '지금 살 수 있는 게 없어요', body: '하루를 살아내면 코인이 쌓여요.')
+                ? const Center(
+                    child: EmptyHint(emoji: '🪙', title: '지금 살 수 있는 게 없어요', body: '하루를 살아내면 코인이 쌓여요.'),
+                  )
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
                     gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
@@ -492,10 +481,12 @@ class _StorageScreenState extends State<StorageScreen> {
           _CategoryBar(value: _cat, onChanged: (c) => setState(() => _cat = c)),
           Expanded(
             child: items.isEmpty
-                ? EmptyHint(
-                    emoji: '📦',
-                    title: '보관함이 비어 있어요',
-                    body: s.profile.owned.isEmpty ? '상점에서 첫 아이템을 들여볼까요?' : '가진 아이템을 모두 쓰고 있어요.',
+                ? Center(
+                    child: EmptyHint(
+                      emoji: '📦',
+                      title: '보관함이 비어 있어요',
+                      body: s.profile.owned.isEmpty ? '상점에서 첫 아이템을 들여볼까요?' : '가진 아이템을 모두 쓰고 있어요.',
+                    ),
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
@@ -534,7 +525,7 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
       final current = switch (item.kind) {
         ItemKind.furniture => itemById(p.placed[item.slot!.name]),
         ItemKind.outfit => itemById(p.outfitId),
-        ItemKind.accessory => itemById(p.accessoryId),
+        ItemKind.accessory => itemById(item.isEarring ? p.earringId : p.accessoryId),
       };
       final useVerb = item.isFurniture ? '방에 놓기' : '입기';
       final awayVerb = item.isFurniture ? '보관함에 넣기' : '벗기';

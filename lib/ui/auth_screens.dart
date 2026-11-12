@@ -6,6 +6,7 @@ import '../data/models.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
 import 'room/room_painter.dart';
+import 'today.dart' show keepWords;
 
 /// 소개 (온보딩 캐러셀) → 회원가입 / 로그인
 class IntroScreen extends StatefulWidget {
@@ -19,9 +20,17 @@ class _IntroScreenState extends State<IntroScreen> {
   int _i = 0;
 
   static const _slides = [
-    ('🌤️', '평범한 하루도\n충분히 소중해요', '기상, 식사, 산책 — 작은 루틴을 기록하며\n오늘 하루를 살아낸 나를 응원해 보세요'),
-    ('✅', '부담 없이,\n나만의 속도로', '완벽하지 않아도 괜찮아요.\n체크 하나로 오늘을 완성하세요'),
-    ('🛋️', '작은 성취가 쌓여\n나만의 공간이 돼요', '루틴을 이어갈수록 미니미 방이 따뜻하게 채워져요.\n오늘도 한 걸음이면 충분해요'),
+    (
+      (Icons.wb_sunny_rounded, AppColors.coin, AppColors.coinSoft),
+      '평범한 하루도\n충분히 소중해요',
+      '기상, 식사, 산책 — 작은 루틴을 기록하며\n오늘 하루를 살아낸 나를 응원해 보세요',
+    ),
+    ((Icons.check_rounded, AppColors.sage, AppColors.sageSoft), '부담 없이,\n나만의 속도로', '완벽하지 않아도 괜찮아요.\n체크 하나로 오늘을 완성하세요'),
+    (
+      (Icons.home_rounded, AppColors.primary, AppColors.primarySoft),
+      '작은 성취가 쌓여\n나만의 공간이 돼요',
+      '루틴을 이어갈수록 미니미 방이 따뜻하게 채워져요.\n오늘도 한 걸음이면 충분해요',
+    ),
   ];
 
   @override
@@ -43,7 +52,7 @@ class _IntroScreenState extends State<IntroScreen> {
                 itemCount: _slides.length,
                 onPageChanged: (i) => setState(() => _i = i),
                 itemBuilder: (context, i) {
-                  final (emoji, title, body) = _slides[i];
+                  final ((icon, color, soft), title, body) = _slides[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                     child: Column(
@@ -52,8 +61,12 @@ class _IntroScreenState extends State<IntroScreen> {
                         Reveal(
                           index: 0,
                           child: i == 2
-                              ? const SizedBox(width: 120, height: 144, child: CustomPaint(painter: _IntroMinimi()))
-                              : Text(emoji, style: const TextStyle(fontSize: 72)),
+                              ? Breathing(child: MinimiView(profile: Profile(), happy: true, width: 120))
+                              : CircleAvatar(
+                                  radius: 60,
+                                  backgroundColor: soft,
+                                  child: Icon(icon, size: 64, color: color),
+                                ),
                         ),
                         const SizedBox(height: Space.xl),
                         Reveal(
@@ -64,7 +77,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         Reveal(
                           index: 2,
                           child: Text(
-                            body,
+                            keepWords(body),
                             style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
                             textAlign: TextAlign.center,
                           ),
@@ -112,14 +125,6 @@ class _IntroScreenState extends State<IntroScreen> {
       ),
     );
   }
-}
-
-class _IntroMinimi extends CustomPainter {
-  const _IntroMinimi();
-  @override
-  void paint(Canvas canvas, Size size) => MinimiPainter(const Minimi(), happy: true).paint(canvas, size);
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
 class SignUpScreen extends StatefulWidget {

@@ -42,7 +42,7 @@ void main() {
     test('모든 자리를 기준 장면 위치로 옮기고 아무것도 잃지 않는다', () {
       final legacy = {
         'bed': 'bed_single',
-        'lamp': 'lamp_stand',
+        'lamp': 'lamp_floor',
         'desk': 'desk_wood',
         'chair': 'chair_wood',
         'plant': 'plant_small',

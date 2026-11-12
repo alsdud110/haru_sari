@@ -41,8 +41,13 @@ MinimiDraw minimiDrawer(
   final layers = registry?.minimiLayers(
     outfitId: p.outfitId,
     accessoryId: p.accessoryId,
+    earringId: p.earringId,
     skin: p.minimi.skin,
     hair: p.minimi.hair,
+    outfit: p.minimi.outfit,
+    hairStyle: p.minimi.hairStyle,
+    eyes: p.minimi.eyes,
+    mouth: p.minimi.mouth,
     facing: facing,
   );
   if (layers != null) {
@@ -83,8 +88,13 @@ MinimiDraw minimiDrawer(
 
 /// 미니미 레이어 시트를 미리 읽는다 (없으면 아무 일도 없음)
 void preloadMinimi(AssetRegistry? reg, Profile p) => reg?.preloadMinimi(
-      outfitId: p.outfitId,
-      accessoryId: p.accessoryId,
-      skin: p.minimi.skin,
-      hair: p.minimi.hair,
-    );
+  outfitId: p.outfitId,
+  accessoryId: p.accessoryId,
+  earringId: p.earringId,
+  skin: p.minimi.skin,
+  hair: p.minimi.hair,
+  outfit: p.minimi.outfit,
+  hairStyle: p.minimi.hairStyle,
+  eyes: p.minimi.eyes,
+  mouth: p.minimi.mouth,
+);

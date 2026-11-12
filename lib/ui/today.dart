@@ -14,14 +14,18 @@ import 'settings.dart';
 import 'shell.dart';
 import 'widgets.dart';
 
+/// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
+String keepWords(String s) => s.replaceAllMapped(RegExp(r'\S(?=\S)'), (m) => '${m[0]}\u200D');
+
 /// 달성률에 따라 고르는 부드러운 한마디. 실패라는 말은 쓰지 않는다.
 String gentleLine(int done, int total) {
   if (total == 0) return '';
-  if (done == 0) return '천천히 시작해도 괜찮아요. 하나만 해봐도 충분해요.';
-  if (done == total) return '오늘을 온전히 살아냈어요. 정말 수고했어요.';
-  final rate = done / total;
-  if (rate >= RewardRules.threshold) return '오늘 몫의 하루를 해냈어요. 남은 건 여유가 되면요.';
-  return '벌써 $done개나 했어요. 이대로도 잘하고 있어요.';
+  return keepWords(switch (done) {
+    0 => '천천히 시작해도 괜찮아요. 하나만 해봐도 충분해요.',
+    _ when done == total => '오늘을 온전히 살아냈어요. 정말 수고했어요.',
+    _ when done / total >= RewardRules.threshold => '오늘 몫의 하루를 해냈어요. 남은 건 여유가 되면요.',
+    _ => '벌써 $done개나 했어요. 이대로도 잘하고 있어요.',
+  });
 }
 
 class TodayScreen extends StatefulWidget {
@@ -71,11 +75,15 @@ class _TodayScreenState extends State<TodayScreen> {
                       index: 0,
                       child: Row(
                         children: [
-                          Text(
-                            DateFormat('M월 d일 EEEE', 'ko_KR').format(s.today),
-                            style: t.bodyMedium?.copyWith(color: AppColors.textMuted),
+                          Expanded(
+                            child: Text(
+                              DateFormat('M월 d일 EEEE', 'ko_KR').format(s.today),
+                              style: t.bodyMedium?.copyWith(color: AppColors.textMuted),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
                           ),
-                          const Spacer(),
+                          const SizedBox(width: Space.sm),
                           const LevelChip(),
                           const SizedBox(width: Space.sm),
                           const CoinChip(),
@@ -425,15 +433,19 @@ class _ShortcutCard extends StatelessWidget {
     child: InkWell(
       borderRadius: BorderRadius.circular(Radii.md),
       onTap: onTap,
-      child: SizedBox(
-        height: 112,
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            SizedBox(height: 56, child: Center(child: child)),
-            const SizedBox(height: Space.sm),
-            Text(label, style: Theme.of(context).textTheme.labelLarge),
-          ],
+      // 큰 글씨에서는 칸이 글자만큼 늘어난다
+      child: ConstrainedBox(
+        constraints: const BoxConstraints(minHeight: 112),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(vertical: Space.sm),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              SizedBox(height: 56, child: Center(child: child)),
+              const SizedBox(height: Space.sm),
+              Text(label, style: Theme.of(context).textTheme.labelLarge),
+            ],
+          ),
         ),
       ),
     ),
@@ -473,7 +485,7 @@ class EncouragementScreen extends StatelessWidget {
               Reveal(
                 index: 2,
                 child: Text(
-                  body,
+                  keepWords(body),
                   style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
                   textAlign: TextAlign.center,
                 ),

@@ -55,6 +55,8 @@ void main() {
           : await sheet(const [(Rect.fromLTWH(16, 20, 32, 68), skin0)]),
       p(m.base['minimi_hair_back']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(12, 8, 40, 32), hair0)]),
       p(m.base['minimi_hair_front']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(18, 8, 28, 12), hair0light)]),
+      p(m.base['minimi_eyes_0']!.sheets['idle']!): await sheet(const []),
+      p(m.base['minimi_mouth_0']!.sheets['idle']!): await sheet(const []),
       p(m['outfit_knit']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(16, 50, 32, 30), sage)]),
       p(m['acc_glasses']!.sheets['idle']!): await sheet(const [], sideMarker: (const Rect.fromLTWH(50, 30, 4, 4), sky)),
       p(m['acc_starpin']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(40, 4, 8, 6), butter)]),
@@ -83,7 +85,7 @@ void main() {
       final p = profile(acc: 'acc_glasses', skin: 2);
       await reg.preloadMinimi(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0);
       final layers = reg.minimiLayers(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0)!;
-      expect(layers.map((l) => l.name), ['hair_back', 'base', 'outfit', 'hair_front', 'acc_face']);
+      expect(layers.map((l) => l.name), ['hair_back', 'base', 'eyes', 'mouth', 'outfit', 'hair_front', 'acc_face']);
 
       final get = await render(minimiDrawer(p, frame: 1, registry: reg));
       expect(get(30, 14), hair0light, reason: '앞머리가 뒷머리 위');

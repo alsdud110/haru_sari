@@ -357,7 +357,7 @@ class AppState extends ChangeNotifier {
         profile.outfitId = item.id;
         return true;
       case ItemKind.accessory:
-        profile.accessoryId = item.id;
+        item.isEarring ? profile.earringId = item.id : profile.accessoryId = item.id;
         return true;
       case ItemKind.furniture:
         final art = manifest[item.id];
@@ -365,7 +365,7 @@ class AppState extends ChangeNotifier {
         final r = room;
         switch (art.layer) {
           case ArtLayer.surface:
-            r.wallSurface = item.id;
+            item.slot == RoomSlot.floor ? r.floorSurface = item.id : r.wallSurface = item.id;
             return true;
           case ArtLayer.wall:
             final spot = occupancy.findWallSpot(r, item.id, prefer: r.lastWall[item.id]);
@@ -405,6 +405,7 @@ class AppState extends ChangeNotifier {
         if (profile.outfitId == item.id) profile.outfitId = null;
       case ItemKind.accessory:
         if (profile.accessoryId == item.id) profile.accessoryId = null;
+        if (profile.earringId == item.id) profile.earringId = null;
     }
     _commit();
   }
@@ -412,7 +413,7 @@ class AppState extends ChangeNotifier {
   bool isInUse(ShopItem item) => switch (item.kind) {
     ItemKind.furniture => room.contains(item.id),
     ItemKind.outfit => profile.outfitId == item.id,
-    ItemKind.accessory => profile.accessoryId == item.id,
+    ItemKind.accessory => profile.accessoryId == item.id || profile.earringId == item.id,
   };
 
   List<ShopItem> get ownedItems => shopCatalog.where((i) => profile.owned.contains(i.id)).toList();

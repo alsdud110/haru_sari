@@ -27,7 +27,7 @@ class FakeBundle extends CachingAssetBundle {
 RoomLayout referenceScene() => RoomLayout(
       floor: {
         'bed_single': const FloorPos(0, 1),
-        'lamp_stand': const FloorPos(1, 1),
+        'lamp_floor': const FloorPos(1, 1),
         'desk_wood': const FloorPos(5, 1),
         'chair_wood': const FloorPos(5, 2),
         'plant_small': const FloorPos(7, 3),
@@ -50,7 +50,7 @@ void main() {
       'window_curtain',
       'shelf_book',
       'bed_single',
-      'lamp_stand',
+      'lamp_floor',
       'desk_wood',
       'chair_wood',
       RoomScene.minimiId,

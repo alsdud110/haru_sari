@@ -126,7 +126,12 @@ class CoinChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    final chip = StatChip(icon: Icons.circle, label: '${s.profile.coins}', color: AppColors.coin, bg: AppColors.coinSoft);
+    final chip = StatChip(
+      icon: Icons.circle,
+      label: '${s.profile.coins}',
+      color: AppColors.coin,
+      bg: AppColors.coinSoft,
+    );
     // 디버그 빌드에서만: 길게 누르면 테스트용 코인·레벨 충전
     return kDebugMode ? GestureDetector(onLongPress: s.debugTopUp, child: chip) : chip;
   }
@@ -181,6 +186,7 @@ class EmptyHint extends StatelessWidget {
   Widget build(BuildContext context) => Padding(
     padding: const EdgeInsets.symmetric(vertical: Space.xxl, horizontal: Space.xl),
     child: Column(
+      mainAxisSize: MainAxisSize.min,
       children: [
         Text(emoji, style: const TextStyle(fontSize: 44)),
         const SizedBox(height: Space.md),
