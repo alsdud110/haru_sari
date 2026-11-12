@@ -30,6 +30,17 @@ class AuthScope extends InheritedNotifier<AuthService> {
   static AuthService read(BuildContext context) => context.getInheritedWidgetOfExactType<AuthScope>()!.notifier!;
 }
 
+/// 끝까지 스크롤했을 때 고무줄처럼 늘어나거나 튕기지 않고 그 자리에서 멈춘다.
+class _NoBounceScrollBehavior extends MaterialScrollBehavior {
+  const _NoBounceScrollBehavior();
+
+  @override
+  ScrollPhysics getScrollPhysics(BuildContext context) => const ClampingScrollPhysics();
+
+  @override
+  Widget buildOverscrollIndicator(BuildContext context, Widget child, ScrollableDetails details) => child;
+}
+
 class HaruSariApp extends StatefulWidget {
   const HaruSariApp({
     super.key,
@@ -124,6 +135,7 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
         title: '하루살이',
         debugShowCheckedModeBanner: false,
         theme: buildTheme(),
+        scrollBehavior: const _NoBounceScrollBehavior(),
         // 시간 휠의 오전·오후, 기본 창의 버튼 글 등을 한국어로
         locale: const Locale('ko', 'KR'),
         supportedLocales: const [Locale('ko', 'KR')],
