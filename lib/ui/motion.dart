@@ -187,7 +187,7 @@ class _SnackHostState extends State<_SnackHost> with SingleTickerProviderStateMi
 OverlayEntry? _toastEntry;
 
 /// 제자리에서 페이드로 나타났다 사라지는 짧은 알림.
-void showAppToast(BuildContext context, String message, {Duration hold = const Duration(milliseconds: 1600)}) {
+void showAppToast(BuildContext context, String message, {Duration hold = const Duration(milliseconds: 800)}) {
   final overlay = Overlay.of(context, rootOverlay: true);
   _toastEntry?.remove();
   late OverlayEntry entry;
