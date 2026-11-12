@@ -32,18 +32,22 @@ void main() {
     }
   }
 
-  testWidgets('소개 → 가입 → 첫 설정 → 체크해서 보상 → 내 방 → 상점', (tester) async {
+  testWidgets('소개 → 카카오 로그인 → 닉네임 → 첫 설정 → 체크해서 보상 → 내 방 → 상점', (tester) async {
     final kv = MemoryKeyValue();
-    await pump(tester, kv, AuthService(kv));
+    await pump(tester, kv, DeviceAuthService(kv));
 
-    await tester.tap(find.text('시작하기'));
+    // 로그인은 소개 마지막 장에서만 나온다
+    expect(find.text('카카오로 시작하기'), findsNothing);
+    await tester.tap(find.text('다음'));
     await tester.pumpAndSettle();
-    final fields = find.byType(TextField);
-    await tester.enterText(fields.at(0), '민');
-    await tester.enterText(fields.at(1), 'min@test.com');
-    await tester.enterText(fields.at(2), '12345678');
-    await tester.enterText(fields.at(3), '12345678');
-    await tester.tap(find.text('가입하고 시작하기'));
+    await tester.tap(find.text('다음'));
+    await settleish(tester); // 마지막 장의 미니미가 계속 숨 쉰다
+    await tester.tap(find.text('카카오로 시작하기'));
+    await settleish(tester);
+    expect(find.text('뭐라고 불러드릴까요?'), findsOneWidget);
+    await tester.enterText(find.byType(TextField), '민');
+    await tester.pump();
+    await tester.tap(find.text('다음'));
     await settleish(tester); // 미니미가 계속 숨 쉰다
 
     expect(find.text('민님을 닮은\n미니미를 만들어요'), findsOneWidget);
@@ -81,10 +85,10 @@ void main() {
 
   testWidgets('로그아웃했다가 다시 로그인하면 기록이 이어진다', (tester) async {
     final kv = MemoryKeyValue();
-    final auth = AuthService(kv);
-    auth.signUp(email: 'a@b.com', password: '12345678', nickname: '하루');
+    final auth = DeviceAuthService(kv);
+    await auth.signIn(SocialProvider.kakao);
     final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
-    s.finishOnboarding(minimi: s.profile.minimi, picked: []);
+    s.finishOnboarding(name: '하루', minimi: s.profile.minimi, picked: []);
 
     await pump(tester, kv, auth);
     expect(find.text('하루의 오늘'), findsOneWidget);
@@ -97,13 +101,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, '로그아웃'));
     await tester.pumpAndSettle();
-    expect(find.text('이미 계정이 있어요'), findsOneWidget);
+    await tester.tap(find.text('건너뛰기'));
+    await settleish(tester);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
 
-    await tester.tap(find.text('이미 계정이 있어요'));
-    await tester.pumpAndSettle();
-    await tester.enterText(find.byType(TextField).at(0), 'a@b.com');
-    await tester.enterText(find.byType(TextField).at(1), '12345678');
-    await tester.tap(find.text('로그인'));
+    // 로그인이 실패하면 안내가 보이고, 다시 누르면 들어간다
+    auth.nextError = '로그인에 실패했어요. 잠시 뒤 다시 시도해 주세요';
+    await tester.tap(find.text('카카오로 시작하기'));
+    await settleish(tester);
+    expect(find.text('로그인에 실패했어요. 잠시 뒤 다시 시도해 주세요'), findsOneWidget);
+    await tester.tap(find.text('카카오로 시작하기'));
     await tester.pumpAndSettle();
     expect(find.text('하루의 오늘'), findsOneWidget);
 
@@ -115,15 +122,16 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.widgetWithText(TextButton, '초기화'));
     await tester.pumpAndSettle();
-    expect(find.text('시작하기'), findsOneWidget);
-    expect(AuthService(kv).login(email: 'a@b.com', password: '12345678'), isNotNull);
+    expect(find.text('건너뛰기'), findsOneWidget);
+    expect(kv.read('${userPrefix('dev-kakao')}routines'), isNull);
   });
 
   testWidgets('기록 탭: 일간·주간·월간이 그려진다', (tester) async {
     final kv = MemoryKeyValue();
-    final auth = AuthService(kv)..signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+    final auth = DeviceAuthService(kv);
+    await auth.signIn(SocialProvider.kakao);
     final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
-    s.finishOnboarding(minimi: s.profile.minimi, picked: []);
+    s.finishOnboarding(name: '민', minimi: s.profile.minimi, picked: []);
     await pump(tester, kv, auth);
 
     await tester.tap(find.text('기록'));
@@ -140,9 +148,10 @@ void main() {
 
   testWidgets('받은 배지는 넘치지 않고, 빈 보관함 안내는 가운데에 온다', (tester) async {
     final kv = MemoryKeyValue();
-    final auth = AuthService(kv)..signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+    final auth = DeviceAuthService(kv);
+    await auth.signIn(SocialProvider.kakao);
     final s = AppState(PrefixedKeyValue(kv, userPrefix(auth.current!.uid)), clock: clock, manifest: manifest);
-    s.finishOnboarding(minimi: s.profile.minimi, picked: []);
+    s.finishOnboarding(name: '민', minimi: s.profile.minimi, picked: []);
     await pump(tester, kv, auth);
 
     await tester.tap(find.text('나'));

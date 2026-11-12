@@ -1,174 +1,106 @@
-import 'dart:convert';
-import 'dart:math';
-
-import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 
 import 'store.dart';
 
-class Account {
-  Account({required this.uid, required this.email, required this.nickname, required this.salt, required this.hash});
-  final String uid;
-  String email;
-  String nickname;
-  String salt;
-  String hash;
+/// 로그인 수단. 이메일·비밀번호 가입은 두지 않는다.
+enum SocialProvider {
+  kakao('카카오'),
+  google('구글'),
+  apple('Apple');
 
-  Map<String, dynamic> toJson() => {'uid': uid, 'email': email, 'nickname': nickname, 'salt': salt, 'hash': hash};
-  factory Account.fromJson(Map<String, dynamic> j) => Account(
-    uid: j['uid'] as String,
-    email: j['email'] as String,
-    nickname: j['nickname'] as String,
-    salt: j['salt'] as String,
-    hash: j['hash'] as String,
-  );
+  const SocialProvider(this.label);
+  final String label;
+}
+
+class AuthUser {
+  const AuthUser({required this.uid, required this.nickname, this.provider, this.email});
+  final String uid;
+  final String nickname;
+  final SocialProvider? provider;
+  final String? email;
 }
 
 /// 계정 관리.
 ///
-/// 지금은 **기기 안에만** 계정을 저장한다 (비밀번호는 솔트+SHA-256 해시).
-/// 서버 계정(Firebase 등)으로 바꿀 때는 이 클래스와 같은 메서드를 가진
-/// 구현으로 갈아 끼우면 된다.
-class AuthService extends ChangeNotifier {
-  AuthService(this._kv) {
-    final raw = _kv.read(_kAccounts);
-    if (raw != null) {
-      for (final e in (jsonDecode(raw) as List)) {
-        final a = Account.fromJson((e as Map).cast<String, dynamic>());
-        _accounts[a.email] = a;
-      }
-    }
+/// 실제 앱은 [SupabaseAuthService](supabase_auth.dart)를 쓴다.
+/// 테스트는 서버 없이 도는 [DeviceAuthService]를 쓴다.
+abstract class AuthService extends ChangeNotifier {
+  AuthUser? get current;
+  bool get signedIn => current != null;
+
+  /// 이 기기에서 보여줄 로그인 버튼 (Apple 은 iOS 에서만).
+  List<SocialProvider> get providers;
+
+  /// 성공하면 null, 실패하면 안내 문구. 취소는 '' (안내 없이 조용히 끝낸다).
+  Future<String?> signIn(SocialProvider provider);
+
+  Future<void> logout();
+
+  /// 계정 삭제. 서버의 계정·기록과 이 기기의 기록을 함께 지운다.
+  /// 성공하면 null, 실패하면 안내 문구 (계정은 그대로 둔다).
+  Future<String?> deleteAccount();
+
+  /// 개발용: 이 기기의 기록을 지우고 로그아웃한다.
+  Future<void> debugReset();
+}
+
+/// 서버 없이 기기 안에서만 도는 로그인. 테스트용.
+class DeviceAuthService extends AuthService {
+  DeviceAuthService(this._kv, {List<SocialProvider>? providers})
+    : providers = providers ?? SocialProvider.values {
     final uid = _kv.read(_kSession);
-    if (uid != null && uid.isNotEmpty) {
-      current = _accounts.values.where((a) => a.uid == uid).firstOrNull;
-    }
+    if (uid != null && uid.isNotEmpty) _current = _user(uid);
   }
 
   final KeyValue _kv;
-  static const _kAccounts = 'accounts';
   static const _kSession = 'session';
-  final Map<String, Account> _accounts = {};
-  Account? current;
 
-  bool get signedIn => current != null;
+  @override
+  final List<SocialProvider> providers;
 
-  static String _norm(String email) => email.trim().toLowerCase();
+  AuthUser? _current;
+  @override
+  AuthUser? get current => _current;
 
-  static String? validateEmail(String email) {
-    final e = email.trim();
-    if (e.isEmpty) return '이메일을 입력해 주세요';
-    if (!RegExp(r'^[^@\s]+@[^@\s]+\.[^@\s]+$').hasMatch(e)) return '이메일 형식이 맞지 않아요';
-    return null;
+  /// 다음 signIn 이 돌려줄 결과 (테스트에서 실패·취소를 흉내 낸다).
+  String? nextError;
+
+  static AuthUser _user(String uid) {
+    final p = SocialProvider.values.where((p) => uid == 'dev-${p.name}').firstOrNull;
+    return AuthUser(uid: uid, nickname: '', provider: p);
   }
 
-  static String? validatePassword(String pw) {
-    if (pw.length < 8) return '비밀번호는 8자 이상이에요';
-    return null;
-  }
-
-  String _hash(String salt, String pw) => sha256.convert(utf8.encode('$salt:$pw')).toString();
-
-  String _salt() {
-    final r = Random.secure();
-    return base64UrlEncode(List.generate(16, (_) => r.nextInt(256)));
-  }
-
-  Future<void> _save() async {
-    await _kv.write(_kAccounts, jsonEncode(_accounts.values.map((a) => a.toJson()).toList()));
-    await _kv.write(_kSession, current?.uid ?? '');
-  }
-
-  /// 성공하면 null, 실패하면 안내 문구.
-  String? signUp({required String email, required String password, required String nickname}) {
-    final ee = validateEmail(email);
-    if (ee != null) return ee;
-    final pe = validatePassword(password);
-    if (pe != null) return pe;
-    if (nickname.trim().isEmpty) return '닉네임을 입력해 주세요';
-    final key = _norm(email);
-    if (_accounts.containsKey(key)) return '이미 가입된 이메일이에요. 로그인해 주세요';
-    final salt = _salt();
-    final a = Account(
-      uid: 'u${DateTime.now().microsecondsSinceEpoch}',
-      email: key,
-      nickname: nickname.trim(),
-      salt: salt,
-      hash: _hash(salt, password),
-    );
-    _accounts[key] = a;
-    current = a;
-    _save();
+  @override
+  Future<String?> signIn(SocialProvider provider) async {
+    final err = nextError;
+    nextError = null;
+    if (err != null) return err;
+    _current = _user('dev-${provider.name}');
+    await _kv.write(_kSession, _current!.uid);
     notifyListeners();
     return null;
   }
 
-  String? login({required String email, required String password}) {
-    final a = _accounts[_norm(email)];
-    if (a == null || a.hash != _hash(a.salt, password)) return '이메일 또는 비밀번호가 맞지 않아요';
-    current = a;
-    _save();
+  @override
+  Future<void> logout() async {
+    _current = null;
+    await _kv.write(_kSession, '');
     notifyListeners();
+  }
+
+  @override
+  Future<String?> deleteAccount() async {
+    final u = _current;
+    if (u == null) return '로그인이 필요해요';
+    await _kv.removePrefix(userPrefix(u.uid));
+    await logout();
     return null;
   }
 
-  void logout() {
-    current = null;
-    _save();
-    notifyListeners();
-  }
-
-  String? updateAccount({String? nickname, String? email}) {
-    final a = current;
-    if (a == null) return '로그인이 필요해요';
-    if (email != null && _norm(email) != a.email) {
-      final ee = validateEmail(email);
-      if (ee != null) return ee;
-      if (_accounts.containsKey(_norm(email))) return '이미 쓰고 있는 이메일이에요';
-      _accounts.remove(a.email);
-      a.email = _norm(email);
-      _accounts[a.email] = a;
-    }
-    if (nickname != null && nickname.trim().isNotEmpty) a.nickname = nickname.trim();
-    _save();
-    notifyListeners();
-    return null;
-  }
-
-  /// 계정 삭제. 비밀번호를 다시 확인하고, 이 계정의 루틴과 기록도 함께 지운다.
-  /// (기능명세서 F-ZZZULL의 추천안: 함께 삭제 · 확인 화면과 재인증 · 실패 시 계정 유지)
-  Future<String?> deleteAccount({required String password}) async {
-    final a = current;
-    if (a == null) return '로그인이 필요해요';
-    if (a.hash != _hash(a.salt, password)) return '비밀번호가 맞지 않아요';
-    try {
-      await _kv.removePrefix(userPrefix(a.uid));
-    } catch (_) {
-      return '지우지 못했어요. 계정은 그대로 있어요. 잠시 뒤 다시 시도해 주세요';
-    }
-    _accounts.remove(a.email);
-    current = null;
-    await _save();
-    notifyListeners();
-    return null;
-  }
-
-  /// 개발용: 이 기기의 모든 계정과 기록을 지워 첫 실행 상태로 돌린다.
+  @override
   Future<void> debugReset() async {
     await _kv.removePrefix('');
-    _accounts.clear();
-    current = null;
+    _current = null;
     notifyListeners();
-  }
-
-  String? changePassword({required String oldPassword, required String newPassword}) {
-    final a = current;
-    if (a == null) return '로그인이 필요해요';
-    if (a.hash != _hash(a.salt, oldPassword)) return '지금 비밀번호가 맞지 않아요';
-    final pe = validatePassword(newPassword);
-    if (pe != null) return pe;
-    a.salt = _salt();
-    a.hash = _hash(a.salt, newPassword);
-    _save();
-    return null;
   }
 }

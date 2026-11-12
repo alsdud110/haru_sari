@@ -10,7 +10,7 @@ import 'routines.dart';
 import 'today.dart' show keepWords;
 import 'widgets.dart';
 
-/// 가입 직후 첫 설정: 미니미 → 루틴 템플릿과 알림
+/// 가입 직후 첫 설정: 닉네임 → 미니미 → 루틴 템플릿과 알림
 class SetupFlow extends StatefulWidget {
   const SetupFlow({super.key});
   @override
@@ -27,10 +27,12 @@ class _SetupFlowState extends State<SetupFlow> {
   bool _routineAlarm = true;
   bool _dayEnd = false;
   bool _busy = false;
+  late final _name = TextEditingController(text: AppScope.read(context).profile.name);
 
   @override
   void dispose() {
     _page.dispose();
+    _name.dispose();
     super.dispose();
   }
 
@@ -47,6 +49,7 @@ class _SetupFlowState extends State<SetupFlow> {
     final routines = [for (final k in keys) _picked[k]!..alarmOn = _routineAlarm && _picked[k]!.minuteOfDay != null];
     if (_routineAlarm || _dayEnd) await s.reminders.requestPermission();
     s.finishOnboarding(
+      name: _name.text,
       minimi: _minimi,
       picked: routines,
       alarms: AlarmSettings(allOn: true, routineStart: _routineAlarm, dayEnd: _dayEnd),
@@ -72,7 +75,7 @@ class _SetupFlowState extends State<SetupFlow> {
                   else
                     const SizedBox(height: 48, width: 48),
                   const Spacer(),
-                  _Dots(step: _step, count: 2),
+                  _Dots(step: _step, count: 3),
                   const Spacer(),
                   const SizedBox(width: 48),
                 ],
@@ -83,11 +86,12 @@ class _SetupFlowState extends State<SetupFlow> {
                 controller: _page,
                 physics: const NeverScrollableScrollPhysics(),
                 children: [
+                  _NameStep(controller: _name, onNext: () => _go(1)),
                   _MinimiStep(
-                    name: AppScope.of(context).profile.name,
+                    name: _name.text.trim(),
                     minimi: _minimi,
                     onChanged: (m) => setState(() => _minimi = m),
-                    onNext: () => _go(1),
+                    onNext: () => _go(2),
                   ),
                   _TemplateStep(
                     picked: _picked,
@@ -167,6 +171,40 @@ class _StepScaffold extends StatelessWidget {
       ),
     );
   }
+}
+
+class _NameStep extends StatelessWidget {
+  const _NameStep({required this.controller, required this.onNext});
+  final TextEditingController controller;
+  final VoidCallback onNext;
+
+  @override
+  Widget build(BuildContext context) => _StepScaffold(
+    title: '뭐라고 불러드릴까요?',
+    body: '앱 안에서만 쓰는 이름이에요. 나중에 계정 정보에서 바꿀 수 있어요.',
+    content: Align(
+      alignment: Alignment.topCenter,
+      child: TextField(
+        controller: controller,
+        maxLength: 10,
+        autofocus: controller.text.isEmpty,
+        textInputAction: TextInputAction.next,
+        decoration: const InputDecoration(labelText: '닉네임', counterText: ''),
+      ),
+    ),
+    bottom: ListenableBuilder(
+      listenable: controller,
+      builder: (context, _) => FilledButton(
+        onPressed: controller.text.trim().isEmpty
+            ? null
+            : () {
+                FocusScope.of(context).unfocus();
+                onNext();
+              },
+        child: const Text('다음'),
+      ),
+    ),
+  );
 }
 
 class _MinimiStep extends StatelessWidget {

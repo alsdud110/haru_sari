@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
 import '../app.dart';
 import '../data/auth.dart';
@@ -8,7 +9,7 @@ import 'motion.dart';
 import 'room/room_painter.dart';
 import 'today.dart' show keepWords;
 
-/// 소개 (온보딩 캐러셀) → 회원가입 / 로그인
+/// 소개 (온보딩 캐러셀) → 소셜 로그인
 class IntroScreen extends StatefulWidget {
   const IntroScreen({super.key});
   @override
@@ -104,203 +105,180 @@ class _IntroScreenState extends State<IntroScreen> {
                 ),
               ),
             ),
+            // 소개를 다 본 마지막 장에서만 로그인을 권한다. 앞 장에서는 '다음'과 '건너뛰기'.
             Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.lg),
-              child: Column(
-                children: [
-                  FilledButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
-                    child: const Text('시작하기'),
+              // 장마다 높이가 같아야 넘길 때 위쪽 그림과 글이 움직이지 않는다.
+              child: SizedBox(
+                height: AuthScope.of(context).providers.length * 60 + 32,
+                child: AnimatedSwitcher(
+                  duration: Motion.normal,
+                  layoutBuilder: (current, previous) => Stack(
+                    alignment: Alignment.bottomCenter,
+                    children: [...previous, ?current],
                   ),
-                  const SizedBox(height: Space.sm),
-                  TextButton(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-                    child: const Text('이미 계정이 있어요'),
+                  child: _i == _slides.length - 1
+                      ? const SocialButtons(key: ValueKey('login'))
+                      : Column(
+                          key: const ValueKey('next'),
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            FilledButton(onPressed: () => _to(_i + 1), child: const Text('다음')),
+                            const SizedBox(height: Space.xs),
+                            TextButton(onPressed: () => _to(_slides.length - 1), child: const Text('건너뛰기')),
+                          ],
+                        ),
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _to(int i) => _page.animateToPage(i, duration: Motion.normal, curve: Motion.curve);
+}
+
+/// 공식 로고 (각 회사 로그인 버튼 가이드의 심볼).
+const _kakaoSymbol =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><path fill="#000000" d="M9 .6C4.03.6 0 3.713 0 7.552c0 2.388 1.558 4.493 3.932 5.745l-.999 3.648c-.088.322.28.579.563.392l4.377-2.889c.37.036.745.057 1.127.057 4.97 0 9-3.113 9-6.953C18 3.713 13.97.6 9 .6"/></svg>';
+const _googleG =
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
+    '<path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/>'
+    '<path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/>'
+    '<path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/>'
+    '<path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.15 1.45-4.92 2.3-8.16 2.3-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/>'
+    '</svg>';
+
+/// 카카오 · 구글 · Apple 로그인 버튼.
+///
+/// 색과 문구는 각 회사의 로그인 버튼 가이드를 따른다 (앱 색 토큰 대신 브랜드 색).
+class SocialButtons extends StatefulWidget {
+  const SocialButtons({super.key});
+  @override
+  State<SocialButtons> createState() => _SocialButtonsState();
+}
+
+class _SocialButtonsState extends State<SocialButtons> {
+  SocialProvider? _busy;
+  String? _error;
+
+  static const _kakaoYellow = Color(0xFFFEE500);
+  static const _kakaoText = Color(0xD9000000);
+  static const _googleText = Color(0xFF1F1F1F);
+  static const _googleBorder = Color(0xFF747775);
+
+  Future<void> _go(SocialProvider p) async {
+    setState(() {
+      _busy = p;
+      _error = null;
+    });
+    final err = await AuthScope.read(context).signIn(p);
+    if (!mounted) return;
+    setState(() {
+      _busy = null;
+      _error = (err == null || err.isEmpty) ? null : err;
+    });
+    // 성공하면 앱이 첫 설정 화면(또는 홈)으로 바뀐다.
+  }
+
+  /// 로고는 왼쪽, 문구는 가운데 (세 회사 가이드 공통 배치).
+  Widget _button(SocialProvider p) {
+    final (bg, fg, border, logo, label) = switch (p) {
+      SocialProvider.kakao => (
+        _kakaoYellow,
+        _kakaoText,
+        null,
+        SvgPicture.string(_kakaoSymbol, width: 20, height: 20),
+        '카카오로 시작하기',
+      ),
+      SocialProvider.google => (
+        Colors.white,
+        _googleText,
+        _googleBorder,
+        SvgPicture.string(_googleG, width: 20, height: 20),
+        'Google로 시작하기',
+      ),
+      SocialProvider.apple => (
+        Colors.black,
+        Colors.white,
+        null,
+        const Icon(Icons.apple, size: 24, color: Colors.white),
+        'Apple로 계속하기',
+      ),
+    };
+    final busy = _busy == p;
+    final enabled = _busy == null;
+    return Semantics(
+      button: true,
+      enabled: enabled,
+      label: label,
+      excludeSemantics: true,
+      child: AnimatedOpacity(
+        duration: Motion.fast,
+        opacity: enabled || busy ? 1 : 0.5,
+        child: Material(
+          color: bg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(Radii.md),
+            side: border == null ? BorderSide.none : BorderSide(color: border),
+          ),
+          clipBehavior: Clip.antiAlias,
+          child: InkWell(
+            onTap: enabled ? () => _go(p) : null,
+            child: SizedBox(
+              height: 52,
+              width: double.infinity,
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  Positioned(
+                    left: 20,
+                    child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Center(child: busy ? AppSpinner(size: 18, color: fg) : logo),
+                    ),
+                  ),
+                  Text(
+                    label,
+                    style: TextStyle(color: fg, fontSize: 16, fontWeight: FontWeight.w600, letterSpacing: -0.2),
                   ),
                 ],
               ),
             ),
-          ],
+          ),
         ),
       ),
     );
   }
-}
-
-class SignUpScreen extends StatefulWidget {
-  const SignUpScreen({super.key});
-  @override
-  State<SignUpScreen> createState() => _SignUpScreenState();
-}
-
-class _SignUpScreenState extends State<SignUpScreen> {
-  final _nick = TextEditingController();
-  final _email = TextEditingController();
-  final _pw = TextEditingController();
-  final _pw2 = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    for (final c in [_nick, _email, _pw, _pw2]) {
-      c.dispose();
-    }
-    super.dispose();
-  }
-
-  void _submit() {
-    if (_pw.text != _pw2.text) {
-      setState(() => _error = '비밀번호가 서로 달라요');
-      return;
-    }
-    final err = AuthScope.read(context).signUp(email: _email.text, password: _pw.text, nickname: _nick.text);
-    setState(() => _error = err);
-    // 성공하면 앱이 첫 설정 화면으로 바뀐다.
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _AuthScaffold(
-      title: '반가워요',
-      subtitle: '기록은 이 계정에 담겨요.',
-      error: _error,
-      fields: [
-        TextField(
-          controller: _nick,
-          maxLength: 10,
-          decoration: const InputDecoration(labelText: '닉네임', counterText: ''),
-        ),
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const [AutofillHints.email],
-          decoration: const InputDecoration(labelText: '이메일'),
-        ),
-        TextField(
-          controller: _pw,
-          obscureText: true,
-          decoration: const InputDecoration(labelText: '비밀번호', helperText: '8자 이상'),
-        ),
-        TextField(
-          controller: _pw2,
-          obscureText: true,
-          onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(labelText: '비밀번호 확인'),
-        ),
-      ],
-      action: FilledButton(onPressed: _submit, child: const Text('가입하고 시작하기')),
-      footer: TextButton(
-        onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const LoginScreen())),
-        child: const Text('이미 계정이 있어요'),
-      ),
-    );
-  }
-}
-
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({super.key});
-  @override
-  State<LoginScreen> createState() => _LoginScreenState();
-}
-
-class _LoginScreenState extends State<LoginScreen> {
-  final _email = TextEditingController();
-  final _pw = TextEditingController();
-  String? _error;
-
-  @override
-  void dispose() {
-    _email.dispose();
-    _pw.dispose();
-    super.dispose();
-  }
-
-  void _submit() {
-    final err = AuthScope.read(context).login(email: _email.text, password: _pw.text);
-    setState(() => _error = err);
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return _AuthScaffold(
-      title: '다시 만나서 반가워요',
-      subtitle: '오늘도 천천히 시작해요.',
-      error: _error,
-      fields: [
-        TextField(
-          controller: _email,
-          keyboardType: TextInputType.emailAddress,
-          autofillHints: const [AutofillHints.email],
-          decoration: const InputDecoration(labelText: '이메일'),
-        ),
-        TextField(
-          controller: _pw,
-          obscureText: true,
-          onSubmitted: (_) => _submit(),
-          decoration: const InputDecoration(labelText: '비밀번호'),
-        ),
-      ],
-      action: FilledButton(onPressed: _submit, child: const Text('로그인')),
-      footer: TextButton(
-        onPressed: () => Navigator.pushReplacement(context, MaterialPageRoute(builder: (_) => const SignUpScreen())),
-        child: const Text('처음이에요, 가입할게요'),
-      ),
-    );
-  }
-}
-
-class _AuthScaffold extends StatelessWidget {
-  const _AuthScaffold({
-    required this.title,
-    required this.subtitle,
-    required this.fields,
-    required this.action,
-    required this.footer,
-    this.error,
-  });
-  final String title;
-  final String subtitle;
-  final List<Widget> fields;
-  final Widget action;
-  final Widget footer;
-  final String? error;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
-    return Scaffold(
-      appBar: AppBar(),
-      body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xl),
-          children: [
-            Reveal(index: 0, child: Text(title, style: t.headlineMedium)),
-            const SizedBox(height: Space.xs),
-            Reveal(
-              index: 1,
-              child: Text(subtitle, style: t.bodyLarge?.copyWith(color: AppColors.textMuted)),
-            ),
-            const SizedBox(height: Space.xl),
-            for (final f in fields) ...[f, const SizedBox(height: Space.md)],
-            if (error != null)
-              Padding(
-                padding: const EdgeInsets.only(bottom: Space.md),
-                child: Text(error!, style: t.bodyMedium?.copyWith(color: AppColors.primary)),
-              ),
-            const SizedBox(height: Space.sm),
-            action,
-            const SizedBox(height: Space.sm),
-            Center(child: footer),
-            const SizedBox(height: Space.lg),
-            Text('계정과 기록은 이 기기에 저장돼요.', style: t.bodySmall, textAlign: TextAlign.center),
-          ],
+    final providers = AuthScope.of(context).providers;
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (final p in providers) ...[_button(p), const SizedBox(height: Space.sm)],
+        const SizedBox(height: Space.xs),
+        // 실패 안내는 아래 한 줄 자리에 대신 보여준다 (버튼 자리가 밀리지 않게).
+        Text(
+          _error ?? '가입 절차 없이 쓰던 계정으로 바로 시작해요.',
+          style: _error == null ? t.bodySmall : t.bodySmall?.copyWith(color: AppColors.primary),
+          textAlign: TextAlign.center,
+          maxLines: 1,
+          overflow: TextOverflow.ellipsis,
         ),
-      ),
+      ],
     );
   }
 }
 
-/// 계정 정보 수정 (닉네임·이메일·비밀번호)
+/// 계정 정보 (닉네임 · 로그인 수단 · 계정 삭제)
 class AccountScreen extends StatefulWidget {
   const AccountScreen({super.key});
   @override
@@ -308,42 +286,36 @@ class AccountScreen extends StatefulWidget {
 }
 
 class _AccountScreenState extends State<AccountScreen> {
-  late final AuthService auth = AuthScope.read(context);
   late final _nick = TextEditingController(text: AppScope.read(context).profile.name);
-  late final _email = TextEditingController(text: auth.current?.email ?? '');
-  final _old = TextEditingController();
-  final _new = TextEditingController();
   String? _msg;
   bool _ok = false;
 
   @override
   void dispose() {
-    for (final c in [_nick, _email, _old, _new]) {
-      c.dispose();
-    }
+    _nick.dispose();
     super.dispose();
   }
 
   void _save() {
-    final s = AppScope.read(context);
-    var err = auth.updateAccount(nickname: _nick.text, email: _email.text);
-    if (err == null && (_old.text.isNotEmpty || _new.text.isNotEmpty)) {
-      err = auth.changePassword(oldPassword: _old.text, newPassword: _new.text);
+    final name = _nick.text.trim();
+    if (name.isEmpty) {
+      setState(() {
+        _ok = false;
+        _msg = '닉네임을 입력해 주세요';
+      });
+      return;
     }
-    if (err == null) {
-      s.updateProfileName(_nick.text);
-      _old.clear();
-      _new.clear();
-    }
+    AppScope.read(context).updateProfileName(name);
     setState(() {
-      _ok = err == null;
-      _msg = err ?? '저장했어요';
+      _ok = true;
+      _msg = '저장했어요';
     });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final user = AuthScope.of(context).current;
     return Scaffold(
       appBar: AppBar(title: const Text('계정 정보')),
       body: ListView(
@@ -355,25 +327,9 @@ class _AccountScreenState extends State<AccountScreen> {
             decoration: const InputDecoration(labelText: '닉네임', counterText: ''),
           ),
           const SizedBox(height: Space.md),
-          TextField(
-            controller: _email,
-            keyboardType: TextInputType.emailAddress,
-            decoration: const InputDecoration(labelText: '이메일'),
-          ),
-          const SizedBox(height: Space.xl),
-          Text('비밀번호 변경', style: t.titleMedium),
-          const SizedBox(height: Space.sm),
-          TextField(
-            controller: _old,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: '지금 비밀번호'),
-          ),
-          const SizedBox(height: Space.md),
-          TextField(
-            controller: _new,
-            obscureText: true,
-            decoration: const InputDecoration(labelText: '새 비밀번호', helperText: '8자 이상'),
-          ),
+          Text('로그인 수단', style: t.titleMedium),
+          const SizedBox(height: Space.xs),
+          Text(accountLabel(user), style: t.bodyMedium?.copyWith(color: AppColors.textMuted)),
           const SizedBox(height: Space.lg),
           if (_msg != null)
             Padding(
@@ -396,7 +352,6 @@ class _AccountScreenState extends State<AccountScreen> {
   }
 
   Future<void> _confirmDelete(BuildContext context) async {
-    final pw = TextEditingController();
     String? error;
     var busy = false;
     final auth = AuthScope.read(context);
@@ -410,13 +365,11 @@ class _AccountScreenState extends State<AccountScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('이 계정의 루틴, 기록, 방, 배지가 모두 함께 지워지고 되돌릴 수 없어요.\n계속하려면 비밀번호를 입력해 주세요.'),
-              const SizedBox(height: Space.md),
-              TextField(
-                controller: pw,
-                obscureText: true,
-                decoration: InputDecoration(labelText: '비밀번호', errorText: error),
-              ),
+              const Text('이 계정의 루틴, 기록, 레벨과 코인, 방, 배지가 모두 함께 지워지고 되돌릴 수 없어요.'),
+              if (error != null) ...[
+                const SizedBox(height: Space.md),
+                Text(error!, style: const TextStyle(color: AppColors.primary)),
+              ],
             ],
           ),
           actions: [
@@ -426,7 +379,7 @@ class _AccountScreenState extends State<AccountScreen> {
                   ? null
                   : () async {
                       setLocal(() => busy = true);
-                      final err = await auth.deleteAccount(password: pw.text);
+                      final err = await auth.deleteAccount();
                       if (err != null) {
                         if (ctx.mounted) {
                           setLocal(() {
@@ -446,9 +399,14 @@ class _AccountScreenState extends State<AccountScreen> {
         ),
       ),
     );
-    pw.dispose();
   }
 }
+
+/// '카카오 계정 · a@b.com' 같은 로그인 수단 표시.
+String accountLabel(AuthUser? user) => [
+  if (user?.provider case final p?) '${p.label} 계정',
+  if (user?.email case final e? when e.isNotEmpty) e,
+].join(' · ');
 
 /// 로그아웃 확인
 Future<void> confirmLogout(BuildContext context) async {
@@ -464,5 +422,6 @@ Future<void> confirmLogout(BuildContext context) async {
       ],
     ),
   );
-  if (ok == true && context.mounted) AuthScope.read(context).logout();
+  if (ok == true && context.mounted) await AuthScope.read(context).logout();
 }
+

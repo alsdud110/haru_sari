@@ -103,7 +103,7 @@ class ProfileScreen extends StatelessWidget {
             _Tile(
               icon: Icons.badge_outlined,
               title: '계정 정보',
-              subtitle: auth.current?.email ?? '',
+              subtitle: accountLabel(auth.current),
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AccountScreen())),
             ),
             _Tile(

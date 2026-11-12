@@ -82,6 +82,7 @@ void main() {
       expect(s.profile.coins, RewardRules.baseCoins);
     });
 
+
     test('완료를 취소해도 보상은 회수하지 않는다', () {
       s.completeMany(['a', 'b', 'c']);
       final coins = s.profile.coins;
@@ -372,61 +373,29 @@ void main() {
     expect(again.profile.badges, s.profile.badges);
   });
 
-  group('계정', () {
-    late AuthService auth;
-    setUp(() => auth = AuthService(MemoryKeyValue()));
-
-    test('가입하면 바로 로그인되고, 같은 이메일로는 다시 가입할 수 없다', () {
-      expect(auth.signUp(email: 'A@b.com', password: '12345678', nickname: '민'), isNull);
-      expect(auth.current!.email, 'a@b.com');
-      expect(auth.signUp(email: 'a@b.com', password: '12345678', nickname: '또'), isNotNull);
-    });
-
-    test('입력 검사', () {
-      expect(auth.signUp(email: 'nope', password: '12345678', nickname: '민'), isNotNull);
-      expect(auth.signUp(email: 'a@b.com', password: '123', nickname: '민'), isNotNull);
-      expect(auth.signUp(email: 'a@b.com', password: '12345678', nickname: ' '), isNotNull);
-    });
-
-    test('로그아웃 후 맞는 비밀번호로만 로그인된다', () {
-      auth.signUp(email: 'a@b.com', password: '12345678', nickname: '민');
-      auth.logout();
-      expect(auth.signedIn, isFalse);
-      expect(auth.login(email: 'a@b.com', password: 'wrongpass'), isNotNull);
-      expect(auth.login(email: 'a@b.com', password: '12345678'), isNull);
-    });
-
-    test('비밀번호 변경', () {
-      auth.signUp(email: 'a@b.com', password: '12345678', nickname: '민');
-      expect(auth.changePassword(oldPassword: 'x', newPassword: 'abcdefgh'), isNotNull);
-      expect(auth.changePassword(oldPassword: '12345678', newPassword: 'abcdefgh'), isNull);
-      auth.logout();
-      expect(auth.login(email: 'a@b.com', password: 'abcdefgh'), isNull);
-    });
-
-    test('계정 삭제: 비밀번호를 확인하고 그 계정의 기록만 함께 지운다', () async {
+  group('계정 (기기용 로그인)', () {
+    test('계정 삭제는 그 계정의 기록만 지우고 로그아웃한다', () async {
       final kv = MemoryKeyValue();
-      final a = AuthService(kv)..signUp(email: 'a@b.com', password: '12345678', nickname: '민');
+      final a = DeviceAuthService(kv);
+      expect(await a.signIn(SocialProvider.kakao), isNull);
       final uid = a.current!.uid;
+      expect(a.current!.provider, SocialProvider.kakao);
       await kv.write('${userPrefix(uid)}routines', '[]');
       await kv.write('${userPrefix('other')}routines', '[]');
 
-      expect(await a.deleteAccount(password: 'wrongpass'), isNotNull);
-      expect(a.signedIn, isTrue);
-      expect(await a.deleteAccount(password: '12345678'), isNull);
+      expect(await a.deleteAccount(), isNull);
       expect(a.signedIn, isFalse);
       expect(kv.read('${userPrefix(uid)}routines'), isNull);
       expect(kv.read('${userPrefix('other')}routines'), '[]');
-      expect(a.login(email: 'a@b.com', password: '12345678'), isNotNull);
-      // 같은 이메일로 다시 가입할 수 있다
-      expect(a.signUp(email: 'a@b.com', password: '12345678', nickname: '민'), isNull);
     });
 
-    test('세션은 다시 열어도 유지된다', () async {
+    test('세션은 다시 열어도 유지되고, 로그아웃하면 풀린다', () async {
       final kv = MemoryKeyValue();
-      AuthService(kv).signUp(email: 'a@b.com', password: '12345678', nickname: '민');
-      await Future<void>.delayed(Duration.zero);
-      expect(AuthService(kv).current?.nickname, '민');
+      await DeviceAuthService(kv).signIn(SocialProvider.google);
+      final again = DeviceAuthService(kv);
+      expect(again.current?.provider, SocialProvider.google);
+      await again.logout();
+      expect(DeviceAuthService(kv).signedIn, isFalse);
     });
   });
 
