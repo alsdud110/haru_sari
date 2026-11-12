@@ -49,7 +49,7 @@ class RoomScreen extends StatelessWidget {
             ),
             const SizedBox(height: Space.sm),
             Text(
-              placed.isEmpty ? '아직 텅 빈 방이에요. 하루를 살아낼 때마다 조금씩 채워져요.' : '지금까지 살아낸 하루들이 이 방을 만들었어요.',
+              placed.isEmpty ? '아직 텅 빈 방이에요. 하루를 살아낼 때마다 조금씩 채워져요.' : '지금까지 살아낸 하루들이 이 방을 만들었어요',
               style: t.bodySmall?.cheer,
             ),
             const SizedBox(height: Space.lg),
@@ -114,7 +114,7 @@ class RoomScreen extends StatelessWidget {
             Text('방 꾸밈 현황', style: t.titleMedium),
             const SizedBox(height: Space.sm),
             if (placed.isEmpty)
-              Text('아직 놓인 가구가 없어요.', style: t.bodySmall)
+              Text('아직 놓인 가구가 없어요', style: t.bodySmall)
             else
               SizedBox(
                 height: 112,
@@ -327,14 +327,14 @@ class _ShopScreenState extends State<ShopScreen> {
               selected: _affordableOnly,
               onSelected: (v) => setState(() => _affordableOnly = v),
               backgroundColor: AppColors.surface,
-              selectedColor: AppColors.primarySoft,
+              selectedColor: AppColors.selected,
               side: const BorderSide(color: AppColors.line),
             ),
           ),
           Expanded(
             child: items.isEmpty
                 ? const Center(
-                    child: EmptyHint(emoji: '🪙', title: '지금 살 수 있는 게 없어요', body: '하루를 살아내면 코인이 쌓여요.'),
+                    child: EmptyHint(emoji: '🪙', title: '지금 살 수 있는 게 없어요', body: '하루를 살아내면 코인이 쌓여요'),
                   )
                 : GridView.builder(
                     padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
@@ -381,7 +381,7 @@ class _CategoryBar extends StatelessWidget {
             onSelected: (_) => onChanged(c),
             showCheckmark: false,
             backgroundColor: AppColors.surface,
-            selectedColor: AppColors.primarySoft,
+            selectedColor: AppColors.selected,
             side: const BorderSide(color: AppColors.line),
           ),
           const SizedBox(width: Space.sm),
@@ -490,7 +490,7 @@ class _StorageScreenState extends State<StorageScreen> {
                     child: EmptyHint(
                       emoji: '📦',
                       title: '보관함이 비어 있어요',
-                      body: s.profile.owned.isEmpty ? '상점에서 첫 아이템을 들여볼까요?' : '가진 아이템을 모두 쓰고 있어요.',
+                      body: s.profile.owned.isEmpty ? '상점에서 첫 아이템을 들여볼까요?' : '가진 아이템을 모두 쓰고 있어요',
                     ),
                   )
                 : GridView.builder(
@@ -535,7 +535,7 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
       final useVerb = item.isFurniture ? '방에 놓기' : '입기';
       final awayVerb = item.isFurniture ? '보관함에 넣기' : '벗기';
       final replaceHint = current != null && current.id != item.id
-          ? '지금 ${item.isFurniture ? '놓인' : '쓰고 있는'} ${current.name}은(는) 보관함으로 가요.'
+          ? '지금 ${item.isFurniture ? '놓인' : '쓰고 있는'} ${current.name}은(는) 보관함으로 가요'
           : null;
 
       final rows = <(String, String)>[];

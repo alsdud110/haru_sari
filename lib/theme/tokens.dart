@@ -4,17 +4,20 @@ import 'package:flutter/material.dart';
 
 /// 하루살이 디자인 토큰. 위젯에서 색·간격을 직접 쓰지 말고 여기서 가져온다.
 class AppColors {
-  static const background = Color(0xFFFBF6EF); // 따뜻한 크림
+  static const background = Color(0xFFF7F0E6); // 크림색 종이. 테두리 없는 흰 면이 떠 보이게 한 단계 짙다
   static const surface = Color(0xFFFFFFFF);
   static const surfaceMuted = Color(0xFFF3EBE0);
   static const line = Color(0xFFE8DDCF);
+  static const selected = Color(0xFFEBE1D3); // 탭·칸 선택 표시. 노을빛은 달성률에만 쓴다
 
   static const text = Color(0xFF3B3129);
-  static const textMuted = Color(0xFF8C7F72);
+  static const textMuted = Color(0xFF7B7266); // 흰 바탕에서 4.7:1
 
   static const primary = Color(0xFFE08A5B); // 노을빛 테라코타
+  static const primaryInk = Color(0xFFA8552B); // 글자로 쓸 때 (흰 바탕 5.2:1)
   static const primarySoft = Color(0xFFF8DCCB);
   static const sage = Color(0xFF8FAE8B); // 완료·성장
+  static const sageInk = Color(0xFF4F7A4B); // 글자로 쓸 때 (흰 바탕 5.0:1)
   static const sageSoft = Color(0xFFDCE8D8);
   static const coin = Color(0xFFE5B547);
   static const coinSoft = Color(0xFFFBEFCB);
@@ -109,13 +112,13 @@ ThemeData buildTheme() {
   final t = TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, letterSpacing: ios ? -0.3 : -0.2);
   return base.copyWith(
     textTheme: base.textTheme.copyWith(
-      headlineMedium: t.copyWith(fontSize: 28, fontWeight: FontWeight.w700, height: 1.25),
-      titleLarge: t.copyWith(fontSize: 22, fontWeight: FontWeight.w700),
+      headlineMedium: t.copyWith(fontFamily: AppFonts.cheer, fontSize: 30, fontWeight: FontWeight.w600, height: 1.3, letterSpacing: 0),
+      titleLarge: t.copyWith(fontSize: 22, fontWeight: FontWeight.w600),
       titleMedium: t.copyWith(fontSize: 16 + up, fontWeight: FontWeight.w600),
       bodyLarge: t.copyWith(fontSize: 16 + up, height: 1.45),
-      bodyMedium: t.copyWith(fontSize: 14 + up, height: 1.45),
-      bodySmall: t.copyWith(fontSize: 12 + up, color: AppColors.textMuted),
-      labelLarge: t.copyWith(fontSize: 15, fontWeight: FontWeight.w600),
+      bodyMedium: t.copyWith(fontSize: 14 + up, height: 1.45, letterSpacing: 0),
+      bodySmall: t.copyWith(fontSize: 12 + up, color: AppColors.textMuted, letterSpacing: 0),
+      labelLarge: t.copyWith(fontSize: 15, fontWeight: FontWeight.w600, letterSpacing: 0),
     ),
     appBarTheme: AppBarTheme(
       backgroundColor: AppColors.background,
@@ -124,18 +127,19 @@ ThemeData buildTheme() {
       scrolledUnderElevation: 0,
       centerTitle: ios,
       titleTextStyle: ios
-          ? const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, fontSize: 17, fontWeight: FontWeight.w600, letterSpacing: -0.4)
-          : const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, color: AppColors.text, fontSize: 22, fontWeight: FontWeight.w700),
+          ? const TextStyle(fontFamily: AppFonts.cheer, color: AppColors.text, fontSize: 18, fontWeight: FontWeight.w600)
+          : const TextStyle(fontFamily: AppFonts.cheer, color: AppColors.text, fontSize: 24, fontWeight: FontWeight.w600),
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: FilledButton.styleFrom(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.text, // 버튼은 먹색. 노을빛은 달성률 링에만 남긴다
+        foregroundColor: AppColors.background,
         minimumSize: Size.fromHeight(ios ? 50 : 52),
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)),
-        textStyle: TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, fontSize: 16 + up, fontWeight: ios ? FontWeight.w600 : FontWeight.w700),
+        textStyle: TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, fontSize: 16 + up, fontWeight: FontWeight.w600),
       ),
     ),
+    textButtonTheme: TextButtonThemeData(style: TextButton.styleFrom(foregroundColor: AppColors.primaryInk)),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
@@ -157,7 +161,7 @@ ThemeData buildTheme() {
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(Radii.md),
-        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
+        borderSide: const BorderSide(color: AppColors.text, width: 1.5),
       ),
     ),
     navigationBarTheme: ios
@@ -172,14 +176,14 @@ ThemeData buildTheme() {
             iconTheme: WidgetStateProperty.resolveWith(
               (st) => IconThemeData(
                 size: 26,
-                color: st.contains(WidgetState.selected) ? AppColors.primary : AppColors.textMuted,
+                color: st.contains(WidgetState.selected) ? AppColors.text : AppColors.textMuted,
               ),
             ),
             labelTextStyle: WidgetStateProperty.resolveWith(
               (st) => TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, 
                 fontSize: 11,
                 fontWeight: FontWeight.w600,
-                color: st.contains(WidgetState.selected) ? AppColors.primary : AppColors.textMuted,
+                color: st.contains(WidgetState.selected) ? AppColors.text : AppColors.textMuted,
               ),
             ),
           )
@@ -187,7 +191,7 @@ ThemeData buildTheme() {
         : NavigationBarThemeData(
             backgroundColor: AppColors.surface,
             surfaceTintColor: Colors.transparent,
-            indicatorColor: AppColors.primarySoft,
+            indicatorColor: AppColors.selected,
             labelTextStyle: WidgetStateProperty.all(
               const TextStyle(fontFamily: AppFonts.latin, fontFamilyFallback: AppFonts.fallback, fontSize: 12, fontWeight: FontWeight.w600, color: AppColors.text),
             ),

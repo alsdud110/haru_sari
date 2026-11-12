@@ -123,7 +123,7 @@ class _TodayScreenState extends State<TodayScreen> {
                 child: EmptyHint(
                   emoji: s.routines.isEmpty ? '🌱' : '☕',
                   title: s.routines.isEmpty ? '아직 기록할 루틴이 없어요' : '오늘은 쉬어가는 날이에요',
-                  body: s.routines.isEmpty ? '물 한 잔 마시기처럼 아주 작은 것부터 시작해봐요.' : '오늘 요일에 정해둔 루틴이 없어요. 편하게 보내세요.',
+                  body: s.routines.isEmpty ? '물 한 잔 마시기처럼 아주 작은 것부터 시작해봐요' : '오늘 요일에 정해둔 루틴이 없어요. 편하게 보내세요.',
                   action: OutlinedButton(onPressed: () => addRoutineFlow(context), child: const Text('루틴 추가하기')),
                 ),
               )
@@ -215,26 +215,12 @@ class _Summary extends StatelessWidget {
     final s = AppScope.of(context);
     final rate = total == 0 ? 0.0 : done / total;
     final need = (total * RewardRules.threshold).ceil();
-    return Panel(
-      child: Column(
+    // 면 없이 종이 위에 바로 놓는다: 격려 한마디가 화면의 주인공, 링은 그 옆에서 받친다.
+    return Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
-              ProgressRing(
-                value: rate,
-                size: 96,
-                child: total == 0
-                    ? Text('–', style: t.titleLarge?.copyWith(color: AppColors.textMuted))
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('$done/$total', style: t.titleLarge),
-                          Text('${(rate * 100).round()}%', style: t.bodySmall),
-                        ],
-                      ),
-              ),
-              const SizedBox(width: Space.lg),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -247,8 +233,8 @@ class _Summary extends StatelessWidget {
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
                         child: Text(
-                          total == 0 ? '오늘은 기록할 루틴이 없어요.' : gentleLine(done, total),
-                          style: t.bodyLarge?.cheer,
+                          total == 0 ? '오늘은 기록할 루틴이 없어요' : gentleLine(done, total),
+                          style: t.titleLarge?.copyWith(fontWeight: FontWeight.w400).cheer,
                           softWrap: false,
                         ),
                       ),
@@ -257,6 +243,20 @@ class _Summary extends StatelessWidget {
                     if (total > 0 && !rewarded) Text('$need개를 마치면 경험치와 코인을 받아요', style: t.bodySmall),
                   ],
                 ),
+              ),
+              const SizedBox(width: Space.lg),
+              ProgressRing(
+                value: rate,
+                size: 104,
+                child: total == 0
+                    ? Text('–', style: t.titleLarge?.copyWith(color: AppColors.textMuted))
+                    : Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text('$done/$total', style: t.titleLarge),
+                          Text('${(rate * 100).round()}%', style: t.bodySmall),
+                        ],
+                      ),
               ),
             ],
           ),
@@ -267,7 +267,7 @@ class _Summary extends StatelessWidget {
                 const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.sage),
                 const SizedBox(width: Space.xs),
                 Expanded(
-                  child: Text('오늘의 보상을 받았어요', style: t.bodyMedium?.copyWith(color: AppColors.sage)),
+                  child: Text('오늘의 보상을 받았어요', style: t.bodyMedium?.copyWith(color: AppColors.sageInk)),
                 ),
                 TextButton(
                   onPressed: () {
@@ -279,10 +279,9 @@ class _Summary extends StatelessWidget {
               ],
             ),
           ],
-          const SizedBox(height: Space.md),
+          const SizedBox(height: Space.lg),
           const XpBar(),
         ],
-      ),
     );
   }
 }
@@ -315,12 +314,10 @@ class _RoutineRow extends StatelessWidget {
         duration: Motion.normal,
         curve: Motion.curve,
         decoration: BoxDecoration(
-          color: done ? AppColors.sageSoft.withValues(alpha: 0.55) : AppColors.surface,
+          // 마친 루틴은 종이 속으로 물러나고, 남은 것만 흰 쪽지로 떠 있다
+          color: done ? Colors.transparent : AppColors.surface,
           borderRadius: BorderRadius.circular(Radii.md),
-          border: Border.all(
-            color: selectable && selected ? AppColors.primary : AppColors.line.withValues(alpha: 0.7),
-            width: selectable && selected ? 1.5 : 1,
-          ),
+          border: Border.all(color: selectable && selected ? AppColors.text : Colors.transparent, width: 1.5),
         ),
         child: Material(
           type: MaterialType.transparency,
@@ -352,14 +349,14 @@ class _RoutineRow extends StatelessWidget {
                       height: 32,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: highlight ? (selectable ? AppColors.primary : AppColors.sage) : Colors.transparent,
+                        color: highlight ? AppColors.sage : Colors.transparent,
                         border: Border.all(
                           color: highlight ? Colors.transparent : (done ? AppColors.sage : AppColors.line),
                           width: 2,
                         ),
                       ),
                       child: (highlight || done)
-                          ? Icon(Icons.check_rounded, size: 20, color: highlight ? Colors.white : AppColors.sage)
+                          ? Icon(Icons.check_rounded, size: 20, color: highlight ? AppColors.text : AppColors.sage)
                           : null,
                     ),
                   ),
@@ -552,7 +549,7 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
               const SizedBox(height: Space.xs),
               Reveal(
                 index: 2,
-                child: Text('평범한 하루를 살아낸 것만으로도 충분해요.', style: t.bodyMedium?.copyWith(color: AppColors.textMuted).cheer),
+                child: Text('평범한 하루를 살아낸 것만으로도 충분해요', style: t.bodyMedium?.copyWith(color: AppColors.textMuted).cheer),
               ),
               const SizedBox(height: Space.md),
               Reveal(

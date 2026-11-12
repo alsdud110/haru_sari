@@ -152,7 +152,6 @@ class _IntroRoutinesDemoState extends _DemoState<IntroRoutinesDemo> {
     decoration: BoxDecoration(
       color: done ? Color.alphaBlend(AppColors.sageSoft.withValues(alpha: 0.55), AppColors.surface) : AppColors.surface,
       borderRadius: BorderRadius.circular(Radii.md),
-      border: Border.all(color: AppColors.line.withValues(alpha: 0.7)),
     ),
     foregroundDecoration: BoxDecoration(
       color: AppColors.text.withValues(alpha: dim),
@@ -182,7 +181,7 @@ class _IntroRoutinesDemoState extends _DemoState<IntroRoutinesDemo> {
               color: done ? AppColors.sage : Colors.transparent,
               border: Border.all(color: done ? Colors.transparent : AppColors.line, width: 2),
             ),
-            child: done ? const Icon(Icons.check_rounded, size: 20, color: Colors.white) : null,
+            child: done ? const Icon(Icons.check_rounded, size: 20, color: AppColors.text) : null,
           ),
         ),
       ],
@@ -259,7 +258,7 @@ class _IntroRoomDemoState extends _DemoState<IntroRoomDemo> {
   /// 제자리에서 뽁 하고 튀어나온다 (조금 넘쳤다가 제자리).
   Widget _furniture(String asset, double w, double h, double from) => IgnorePointer(
     child: Transform.scale(
-      scale: Curves.easeOutBack.transform(part(from, 0.22)),
+      scale: Motion.curve.transform(part(from, 0.22)),
       child: SizedBox(
         child: Image.asset(
           asset,

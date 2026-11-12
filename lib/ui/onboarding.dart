@@ -130,7 +130,7 @@ class _Dots extends StatelessWidget {
       count,
       (i) => AnimatedContainer(
         duration: Motion.normal,
-        margin: const EdgeInsets.symmetric(horizontal: 3),
+        margin: const EdgeInsets.symmetric(horizontal: Space.xs),
         width: i == step ? 22 : 8,
         height: 8,
         decoration: BoxDecoration(
@@ -237,7 +237,7 @@ class _MinimiStep extends StatelessWidget {
                       Reveal(
                         index: 1,
                         child: Text(
-                          keepWords('이 친구가 앞으로 지낼 방을 함께 꾸며갈 거예요.'),
+                          keepWords('이 친구가 앞으로 지낼 방을 함께 꾸며갈 거예요'),
                           style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
                         ),
                       ),
@@ -337,7 +337,7 @@ class MinimiPicker extends StatelessWidget {
                   onSelected: (_) => on(i),
                   showCheckmark: false,
                   backgroundColor: AppColors.surface,
-                  selectedColor: AppColors.primarySoft,
+                  selectedColor: AppColors.selected,
                   side: const BorderSide(color: AppColors.line),
                 ),
             ],
@@ -472,7 +472,7 @@ class _TemplateStep extends StatelessWidget {
             ),
           ),
           const SizedBox(height: Space.sm),
-          Text('알림은 나중에 \'나\' 탭에서 바꿀 수 있어요.', style: t.bodySmall),
+          Text('알림은 나중에 \'나\' 탭에서 바꿀 수 있어요', style: t.bodySmall),
           const SizedBox(height: Space.md),
         ],
       ),
@@ -503,9 +503,9 @@ class _TemplateRow extends StatelessWidget {
     return AnimatedContainer(
       duration: Motion.fast,
       decoration: BoxDecoration(
-        color: on ? AppColors.primarySoft.withValues(alpha: 0.5) : AppColors.surface,
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(Radii.md),
-        border: Border.all(color: on ? AppColors.primary : AppColors.line),
+        border: Border.all(color: on ? AppColors.text : Colors.transparent, width: 1.5),
       ),
       child: Material(
         type: MaterialType.transparency,
@@ -538,7 +538,7 @@ class _TemplateRow extends StatelessWidget {
                   ),
                 Icon(
                   on ? Icons.check_circle_rounded : Icons.circle_outlined,
-                  color: on ? AppColors.primary : AppColors.line,
+                  color: on ? AppColors.sage : AppColors.line,
                 ),
                 const SizedBox(width: Space.sm),
               ],

@@ -58,7 +58,8 @@ class _IntroScreenState extends State<IntroScreen> {
                 itemBuilder: (context, i) {
                   final (title, body) = _slides[i];
                   return Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+                    // 앞 장은 화면 전체로 봐도 가운데에 오도록 조금 내린다 (마지막 장은 로그인 버튼 자리 때문에 그대로).
+                    padding: EdgeInsets.fromLTRB(Space.gutter, i == _slides.length - 1 ? 0 : 64, Space.gutter, 0),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -89,12 +90,19 @@ class _IntroScreenState extends State<IntroScreen> {
             // 소개를 다 본 마지막 장에서만 로그인을 권한다. 앞 장에서는 '다음'과 '건너뛰기'.
             Padding(
               padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.lg),
-              // 장마다 높이가 같아야 넘길 때 위쪽 그림과 글이 움직이지 않는다.
-              // 그 안에서 쪽 표시(점)는 늘 버튼 바로 위에 붙고, 버튼 묶음 높이가 바뀌면 함께 미끄러진다.
-              child: SizedBox(
-                height: AuthScope.of(context).providers.length * 60 + 32 + 8 + Space.lg,
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.end,
+              // 버튼 묶음만큼만 자리를 잡아 그림과 글이 남은 화면 한가운데에 온다.
+              // 로그인 버튼이 나오는 마지막 장에서는 자리가 커지며 그림과 글이 부드럽게 올라간다.
+              child: AnimatedContainer(
+                duration: Motion.normal,
+                curve: Motion.curve,
+                // 앞 장: 점 8 + 간격 16 + '다음' 52 + 간격 4 + '건너뛰기' 48
+                height: _i == _slides.length - 1 ? AuthScope.of(context).providers.length * 60 + 32 + 8 + Space.lg : 128,
+                // 자리가 줄어드는 동안 버튼 묶음이 잠깐 더 커도 넘침 경고 없이 아래에 붙어 있게 한다.
+                child: SingleChildScrollView(
+                  reverse: true,
+                  physics: const NeverScrollableScrollPhysics(),
+                  child: Column(
+                  mainAxisSize: MainAxisSize.min,
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
                     Row(
@@ -103,7 +111,7 @@ class _IntroScreenState extends State<IntroScreen> {
                         _slides.length,
                         (i) => AnimatedContainer(
                           duration: Motion.normal,
-                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          margin: const EdgeInsets.symmetric(horizontal: Space.xs),
                           width: i == _i ? 22 : 8,
                           height: 8,
                           decoration: BoxDecoration(
@@ -142,6 +150,7 @@ class _IntroScreenState extends State<IntroScreen> {
                       ),
                     ),
                   ],
+                  ),
                 ),
               ),
             ),
@@ -280,8 +289,8 @@ class _SocialButtonsState extends State<SocialButtons> {
         const SizedBox(height: Space.xs),
         // 실패 안내는 아래 한 줄 자리에 대신 보여준다 (버튼 자리가 밀리지 않게).
         Text(
-          _error ?? '가입 절차 없이 쓰던 계정으로 바로 시작해요.',
-          style: _error == null ? t.bodySmall : t.bodySmall?.copyWith(color: AppColors.primary),
+          _error ?? '가입 절차 없이 쓰던 계정으로 바로 시작해요',
+          style: _error == null ? t.bodySmall : t.bodySmall?.copyWith(color: AppColors.primaryInk),
           textAlign: TextAlign.center,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
@@ -378,10 +387,10 @@ class _AccountScreenState extends State<AccountScreen> {
             mainAxisSize: MainAxisSize.min,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('이 계정의 루틴, 기록, 레벨과 코인, 방, 배지가 모두 함께 지워지고 되돌릴 수 없어요.'),
+              const Text('이 계정의 루틴, 기록, 레벨과 코인, 방, 배지가 모두 함께 지워지고 되돌릴 수 없어요'),
               if (error != null) ...[
                 const SizedBox(height: Space.md),
-                Text(error!, style: const TextStyle(color: AppColors.primary)),
+                Text(error!, style: const TextStyle(color: AppColors.primaryInk)),
               ],
             ],
           ),
@@ -405,8 +414,8 @@ class _AccountScreenState extends State<AccountScreen> {
                       }
                     },
               child: busy
-                  ? const AppSpinner(size: 18, color: AppColors.primary)
-                  : const Text('삭제', style: TextStyle(color: AppColors.primary)),
+                  ? const AppSpinner(size: 18, color: AppColors.primaryInk)
+                  : const Text('삭제', style: TextStyle(color: AppColors.primaryInk)),
             ),
           ],
         ),

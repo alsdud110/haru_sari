@@ -8,7 +8,7 @@ import '../data/rewards.dart';
 import '../theme/tokens.dart';
 import 'routine_icon.dart';
 
-/// 흰 바탕의 기본 면.
+/// 흰 바탕의 기본 면. 테두리 없이 종이 위에 놓인 쪽지처럼 보이게 한다.
 class Panel extends StatelessWidget {
   const Panel({super.key, required this.child, this.padding = const EdgeInsets.all(Space.lg), this.color});
   final Widget child;
@@ -21,7 +21,6 @@ class Panel extends StatelessWidget {
     clipBehavior: Clip.antiAlias,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(Radii.lg),
-      side: BorderSide(color: AppColors.line.withValues(alpha: 0.6)),
     ),
     child: Padding(padding: padding, child: child),
   );
@@ -96,20 +95,16 @@ class StatChip extends StatelessWidget {
   final Color bg;
 
   @override
-  Widget build(BuildContext context) => Container(
-    padding: const EdgeInsets.symmetric(horizontal: Space.md, vertical: 6),
-    decoration: BoxDecoration(color: bg, borderRadius: BorderRadius.circular(99)),
-    child: Row(
+  Widget build(BuildContext context) => Row(
       mainAxisSize: MainAxisSize.min,
       children: [
         Icon(icon, size: 16, color: color),
         const SizedBox(width: 4),
         Text(
           label,
-          style: const TextStyle(fontWeight: FontWeight.w700, fontSize: 13, color: AppColors.text),
+          style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 13, color: AppColors.text),
         ),
       ],
-    ),
   );
 }
 
@@ -155,7 +150,7 @@ class XpBar extends StatelessWidget {
             Text('${p.xp} / $need XP', style: Theme.of(context).textTheme.bodySmall),
           ],
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: Space.sm),
         ClipRRect(
           borderRadius: BorderRadius.circular(99),
           child: TweenAnimationBuilder<double>(

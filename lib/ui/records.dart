@@ -57,7 +57,7 @@ class RecordsScreen extends StatelessWidget {
                   backgroundColor: AppColors.surfaceMuted,
                   thumbColor: AppColors.surface,
                   children: const {
-                    RecordRange.day: Padding(padding: EdgeInsets.symmetric(vertical: 6), child: Text('일간')),
+                    RecordRange.day: Padding(padding: EdgeInsets.symmetric(vertical: Space.sm), child: Text('일간')),
                     RecordRange.week: Text('주간'),
                     RecordRange.month: Text('월간'),
                   },
@@ -69,7 +69,7 @@ class RecordsScreen extends StatelessWidget {
                 SegmentedButton<RecordRange>(
                   showSelectedIcon: false,
                   style: SegmentedButton.styleFrom(
-                    selectedBackgroundColor: AppColors.primarySoft,
+                    selectedBackgroundColor: AppColors.selected,
                     side: const BorderSide(color: AppColors.line),
                   ),
                   segments: const [
@@ -145,7 +145,7 @@ class _DayView extends StatelessWidget {
             EmptyHint(
               emoji: '📭',
               title: log == null ? '기록이 없는 날이에요' : '루틴이 없던 날이에요',
-              body: log == null ? '이 날은 앱을 열지 않았어요.' : '쉬어간 날도 하루예요.',
+              body: log == null ? '이 날은 앱을 열지 않았어요' : '쉬어간 날도 하루예요',
             ),
             if (log != null) _Memo(log: log, editable: isToday),
           ],
@@ -178,7 +178,7 @@ class _DayView extends StatelessWidget {
           const SizedBox(height: Space.lg),
           for (final e in log.scheduled.entries)
             Padding(
-              padding: const EdgeInsets.symmetric(vertical: 6),
+              padding: const EdgeInsets.symmetric(vertical: Space.sm),
               child: Row(
                 children: [
                   Icon(
@@ -361,7 +361,7 @@ class _Bar extends StatelessWidget {
         children: [
           Expanded(
             child: Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
+              padding: const EdgeInsets.symmetric(horizontal: Space.sm),
               child: Stack(
                 alignment: Alignment.bottomCenter,
                 children: [
@@ -436,8 +436,8 @@ class _MonthView extends StatelessWidget {
                 crossAxisCount: 7,
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                mainAxisSpacing: 6,
-                crossAxisSpacing: 6,
+                mainAxisSpacing: Space.sm,
+                crossAxisSpacing: Space.sm,
                 children: [
                   for (var i = 0; i < lead; i++) const SizedBox(),
                   for (var d = 1; d <= daysInMonth; d++) _cell(context, DateTime(month.year, month.month, d)),
@@ -477,7 +477,7 @@ class _MonthView extends StatelessWidget {
               children: [
                 for (final r in perRoutine)
                   Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
+                    padding: const EdgeInsets.symmetric(vertical: Space.sm),
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
@@ -494,7 +494,7 @@ class _MonthView extends StatelessWidget {
                           borderRadius: BorderRadius.circular(99),
                           child: LinearProgressIndicator(
                             value: r.total == 0 ? 0 : r.done / r.total,
-                            minHeight: 6,
+                            minHeight: 8,
                             backgroundColor: AppColors.surfaceMuted,
                             color: AppColors.sage,
                           ),
@@ -562,7 +562,7 @@ class _MonthView extends StatelessWidget {
             style: TextStyle(
               fontSize: 12,
               fontWeight: FontWeight.w600,
-              color: future ? AppColors.line : (has && l.rate >= RewardRules.threshold ? Colors.white : AppColors.text),
+              color: future ? AppColors.line : (has && l.rate >= RewardRules.threshold ? AppColors.text : AppColors.text),
             ),
           ),
         ),

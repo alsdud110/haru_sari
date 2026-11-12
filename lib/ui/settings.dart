@@ -84,7 +84,7 @@ class ProfileScreen extends StatelessWidget {
           const SizedBox(height: Space.lg),
           _Section('알림', [
             SwitchListTile.adaptive(
-              secondary: const Icon(Icons.notifications_none_rounded, color: AppColors.primary),
+              secondary: const Icon(Icons.notifications_none_rounded, color: AppColors.textMuted),
               title: Text('알림 전체 허용', style: t.titleMedium),
               subtitle: Text('앱의 모든 알림을 켜거나 꺼요', style: t.bodySmall),
               value: p.alarms.allOn,
@@ -141,7 +141,7 @@ class ProfileScreen extends StatelessWidget {
       context: context,
       builder: (ctx) => AlertDialog(
         title: const Text('전부 초기화할까요?'),
-        content: const Text('이 기기의 모든 계정과 기록이 지워지고 첫 화면으로 돌아가요.'),
+        content: const Text('이 기기의 모든 계정과 기록이 지워지고 첫 화면으로 돌아가요'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
           TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('초기화')),
@@ -217,7 +217,7 @@ class _Tile extends StatelessWidget {
   @override
   Widget build(BuildContext context) => ListTile(
     minTileHeight: 64,
-    leading: Icon(icon, color: AppColors.primary),
+    leading: Icon(icon, color: AppColors.textMuted),
     title: Text(title, style: Theme.of(context).textTheme.titleMedium),
     subtitle: Text(subtitle, style: Theme.of(context).textTheme.bodySmall),
     trailing: isApple
@@ -244,7 +244,7 @@ class AlarmSettingsScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
         children: [
-          Text('원하는 시간에만, 살며시 알려드려요.', style: t.bodyMedium?.copyWith(color: AppColors.textMuted)),
+          Text('원하는 시간에만, 살며시 알려드려요', style: t.bodyMedium?.copyWith(color: AppColors.textMuted)),
           if (!enabled)
             Padding(
               padding: const EdgeInsets.only(top: Space.md),
@@ -252,7 +252,7 @@ class AlarmSettingsScreen extends StatelessWidget {
                 color: AppColors.coinSoft,
                 child: Row(
                   children: [
-                    const Expanded(child: Text('알림 전체가 꺼져 있어요.')),
+                    const Expanded(child: Text('알림 전체가 꺼져 있어요')),
                     TextButton(
                       onPressed: () async {
                         await s.reminders.requestPermission();
@@ -368,7 +368,7 @@ class BadgesScreen extends StatelessWidget {
                 Text(b.desc, style: t.bodySmall, textAlign: TextAlign.center, maxLines: 2),
                 if (got != null) ...[
                   const SizedBox(height: 4),
-                  Text(got.replaceAll('-', '.'), style: t.bodySmall?.copyWith(color: AppColors.sage)),
+                  Text(got.replaceAll('-', '.'), style: t.bodySmall?.copyWith(color: AppColors.sageInk)),
                 ],
               ],
             ),
@@ -382,10 +382,9 @@ class BadgesScreen extends StatelessWidget {
 /// 새로 받은 배지를 보여준다.
 void showNewBadges(BuildContext context, List<String> ids) {
   if (ids.isEmpty) return;
-  final names = ids.map(badgeById).nonNulls.map((b) => b.name).join(', ');
   showAppSnack(
     context,
-    '새 배지를 받았어요  $names',
+    '새 배지를 받았어요',
     actionLabel: '보기',
     onAction: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const BadgesScreen())),
   );

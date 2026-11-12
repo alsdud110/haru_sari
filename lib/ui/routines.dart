@@ -46,8 +46,8 @@ class RoutineManageScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton.extended(
         onPressed: () => addRoutineFlow(context),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.text,
+        foregroundColor: AppColors.background,
         icon: const Icon(Icons.add_rounded),
         label: const Text('새 루틴 추가하기'),
       ),
@@ -55,7 +55,7 @@ class RoutineManageScreen extends StatelessWidget {
           ? EmptyHint(
               emoji: '🌱',
               title: '아직 루틴이 없어요',
-              body: '물 한 잔 마시기처럼 아주 작은 것부터 시작해도 충분해요.',
+              body: '물 한 잔 마시기처럼 아주 작은 것부터 시작해도 충분해요',
               action: OutlinedButton(onPressed: () => addRoutineFlow(context), child: const Text('첫 루틴 만들기')),
             )
           : ListView.separated(
@@ -133,7 +133,7 @@ class RoutineManageScreen extends StatelessWidget {
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('그대로 둘게요')),
           TextButton(
             onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('지우기', style: TextStyle(color: AppColors.primary)),
+            child: const Text('지우기', style: TextStyle(color: AppColors.primaryInk)),
           ),
         ],
       ),
@@ -231,7 +231,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                           children: [
                             if (routineCategoryEmoji[c] case final e?) ...[
                               RoutineIcon(e, size: 22),
-                              const SizedBox(width: 6),
+                              const SizedBox(width: Space.sm),
                             ],
                             Text(c, style: t.labelLarge),
                           ],
@@ -297,7 +297,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             if (r.weekdays.isEmpty)
               Padding(
                 padding: const EdgeInsets.only(top: Space.xs),
-                child: Text('요일을 하나 이상 골라주세요', style: t.bodySmall?.copyWith(color: AppColors.primary)),
+                child: Text('요일을 하나 이상 골라주세요', style: t.bodySmall?.copyWith(color: AppColors.primaryInk)),
               ),
             const SizedBox(height: Space.xl),
             Text('시간과 알림', style: t.titleMedium),
@@ -393,9 +393,9 @@ class _Choice extends StatelessWidget {
         constraints: const BoxConstraints(minWidth: 48),
         alignment: Alignment.center,
         decoration: BoxDecoration(
-          color: selected ? AppColors.primarySoft : AppColors.surface,
+          color: selected ? AppColors.selected : AppColors.surface,
           borderRadius: BorderRadius.circular(Radii.sm),
-          border: Border.all(color: selected ? AppColors.primary : AppColors.line, width: selected ? 1.5 : 1),
+          border: Border.all(color: selected ? AppColors.text : AppColors.line, width: 1.5),
         ),
         child: child,
       ),

@@ -38,7 +38,7 @@ class LicensesScreen extends StatelessWidget {
       body: ListView(
         padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
         children: [
-          Text('하루살이는 아래 글꼴을 SIL Open Font License 1.1에 따라 사용해요.', style: t.bodyMedium),
+          Text('하루살이는 아래 글꼴을 SIL Open Font License 1.1에 따라 사용해요', style: t.bodyMedium),
           const SizedBox(height: Space.lg),
           for (final f in _fonts) ...[
             Panel(
@@ -84,7 +84,7 @@ class _NoticeScreen extends StatelessWidget {
         future: DefaultAssetBundle.of(context).loadString(fontNoticePath),
         builder: (context, snap) {
           if (snap.hasError) {
-            return Center(child: Text('라이선스 글을 불러오지 못했어요.', style: t.bodyMedium));
+            return Center(child: Text('라이선스 글을 불러오지 못했어요', style: t.bodyMedium));
           }
           final text = snap.data;
           if (text == null) return const SizedBox.shrink();

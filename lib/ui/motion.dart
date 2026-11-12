@@ -16,32 +16,32 @@ import '../theme/tokens.dart';
 /// - 로딩: linear로 일정하게 회전
 /// - 제목·순서: 한 줄씩 차례로 등장
 class AppMotion {
-  static const snackIn = Curves.easeOut;
+  static const snackIn = Motion.curve;
   static const snackOut = Curves.easeIn;
   static const snackDuration = Duration(milliseconds: 280);
   static const snackReverse = Duration(milliseconds: 220);
 
   static const toastFade = Duration(milliseconds: 200);
 
-  static const popupIn = Curves.easeOut;
+  static const popupIn = Motion.curve;
   static const popupOut = Curves.easeIn;
   static const popupDuration = Duration(milliseconds: 220);
   static const popupFrom = 0.9;
 
-  static const sheetIn = Curves.easeOut;
+  static const sheetIn = Motion.curve;
   static const sheetOut = Curves.easeIn;
   static const sheetDuration = Duration(milliseconds: 320);
   static const sheetReverse = Duration(milliseconds: 240);
   static const scrim = Color(0x73000000);
 
   /// 톡 튀는 스프링 (조금 넘쳤다가 돌아옴)
-  static const likeSpring = SpringDescription(mass: 1, stiffness: 420, damping: 14);
+  static const likeSpring = SpringDescription(mass: 1, stiffness: 420, damping: 26);
 
   static const spinPeriod = Duration(milliseconds: 900);
 
-  static const stagger = Duration(milliseconds: 70);
+  static const stagger = Duration(milliseconds: 60);
   static const revealDuration = Duration(milliseconds: 360);
-  static const revealCurve = Curves.easeOut;
+  static const revealCurve = Motion.curve;
 
   static bool reduced(BuildContext context) => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 }
@@ -60,7 +60,7 @@ void showAppSnack(
   String message, {
   String? actionLabel,
   VoidCallback? onAction,
-  Duration duration = const Duration(milliseconds: 3200),
+  Duration duration = const Duration(milliseconds: 1400),
 }) {
   final overlay = Overlay.of(context, rootOverlay: true);
   _snackKey?.currentState?.dismiss(immediate: true);
@@ -362,7 +362,7 @@ class _SpringPopState extends State<SpringPop> with SingleTickerProviderStateMix
 
 /// 일정한 속도(linear)로 계속 도는 로딩 표시.
 class AppSpinner extends StatefulWidget {
-  const AppSpinner({super.key, this.size = 22, this.color = Colors.white});
+  const AppSpinner({super.key, this.size = 22, this.color = AppColors.text});
   final double size;
   final Color color;
   @override
