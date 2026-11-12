@@ -82,10 +82,22 @@ class IsoRoomPainter extends CustomPainter {
 
   // ───────── 벽 ─────────
 
+  /// 픽셀 그림(방 전체 크기 한 장)이 있으면 그걸 깔고, 없으면 화면에서 바로 그린다.
+  bool _surface(Canvas c, String kind, String? id) {
+    final img = registry?.surface(kind, id);
+    if (img == null) return false;
+    c.drawImage(img, Offset.zero, _sprite);
+    return true;
+  }
+
   void _walls(Canvas c) {
+    if (!_surface(c, 'walls', layout.wallSurface)) drawRoomWalls(c, wallStyleOf(layout.wallSurface));
+  }
+
+  /// 두 벽면 + 걸레받이 + 모서리선 (tool/draw_furniture_test.dart 도 이 그림을 픽셀로 뽑는다).
+  static void drawRoomWalls(Canvas c, WallStyle style) {
     const h = IsoGrid.wallH;
     final o = IsoGrid.toCanvas(0, 0), l = IsoGrid.toCanvas(0, 8), r = IsoGrid.toCanvas(8, 0);
-    final style = wallStyleOf(layout.wallSurface);
     drawWall(c, style, (u, z) => IsoGrid.toCanvas(0, u).translate(0, -z));
     drawWall(c, style, (u, z) => IsoGrid.toCanvas(u, 0).translate(0, -z), shaded: true);
     // 걸레받이 8px + 모서리선
@@ -113,7 +125,9 @@ class IsoRoomPainter extends CustomPainter {
 
   // ───────── 바닥 ─────────
 
-  void _floor(Canvas c) => drawFloor(c, floorStyleOf(layout.floorSurface));
+  void _floor(Canvas c) {
+    if (!_surface(c, 'floors', layout.floorSurface)) drawFloor(c, floorStyleOf(layout.floorSurface));
+  }
 
   // ───────── 아이템 ─────────
 
@@ -196,9 +210,25 @@ class IsoRoomPainter extends CustomPainter {
     final item = itemById(e.id);
     if (item == null) return;
     final box = e.box.rect;
-    // 벽 장식 PNG는 PART 5에서. 지금은 기존 그림을 벽 기울기만큼 비스듬히 그린다.
     final art = manifest[e.id];
     final onLeft = layout.wall[e.id]?.left ?? true;
+    // 픽셀 그림이 있으면 그걸 쓴다. 왼쪽 벽 기울기로 그린 한 장이라 오른쪽 벽에서는 좌우로 뒤집는다.
+    final s = registry?.wallSprite(e.id);
+    if (s != null) {
+      final src = Rect.fromLTWH(0, 0, s.image.width.toDouble(), s.image.height.toDouble());
+      if (onLeft) {
+        c.drawImageRect(s.image, src, box, _sprite);
+      } else {
+        c.save();
+        c.translate(box.center.dx, 0);
+        c.scale(-1, 1);
+        c.translate(-box.center.dx, 0);
+        c.drawImageRect(s.image, src, box, _sprite);
+        c.restore();
+      }
+      return;
+    }
+    // 그림이 없으면 기존 그림을 벽 기울기만큼 비스듬히 그린다.
     final h = (art?.height ?? 40).toDouble();
     // 벽면 기울기: 왼쪽 벽은 x가 1 늘면 y가 0.5 줄고, 오른쪽 벽은 0.5 는다.
     final k = onLeft ? -0.5 : 0.5;

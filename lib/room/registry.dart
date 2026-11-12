@@ -60,11 +60,51 @@ class AssetRegistry extends ChangeNotifier {
     return null;
   }
 
+  /// 방 바닥('floors')·벽('walls')의 픽셀 그림. 방 전체 크기(512×432) 한 장이다. 없으면 null.
+  ui.Image? surface(String kind, String? id) => _surfaces[surfacePath(kind, id)];
+
+  static String surfacePath(String kind, String? id) => 'rooms/$kind/${id ?? 'default'}.png';
+
+  final Map<String, ui.Image> _surfaces = {};
+
+  /// 지금 방의 바닥·벽 그림을 미리 읽는다.
+  Future<void> preloadSurfaces({String? floor, String? wall}) async {
+    var changed = false;
+    for (final path in [surfacePath('floors', floor), surfacePath('walls', wall)]) {
+      if (!_tried.add(path)) continue;
+      try {
+        final data = await _bundle.load('${PixelManifest.assetRoot}$path');
+        final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+        final img = (await codec.getNextFrame()).image;
+        if (img.width == IsoGrid.canvasW && img.height == IsoGrid.canvasH) {
+          _surfaces[path] = img;
+          changed = true;
+        }
+      } catch (_) {
+        // 그림이 없으면 화면에서 바로 그린다
+      }
+    }
+    if (changed) notifyListeners();
+  }
+
+  /// 벽 장식 그림 (왼쪽 벽 기울기로 그린 한 장). 오른쪽 벽에서는 그리는 쪽이 좌우로 뒤집는다. 없으면 null.
+  LoadedSprite? wallSprite(String id) => _sprites['$id#wall'];
+
   /// 방에 있는 아이템들의 이미지를 미리 읽는다. 한 번 시도한 것은 다시 읽지 않는다.
   Future<void> preload(Iterable<String> ids) async {
     var changed = false;
     for (final id in ids) {
       final art = manifest[id];
+      if (art != null && art.layer == ArtLayer.wall && art.path != null) {
+        if (_tried.add('$id#wall')) {
+          final loaded = await _loadWall(art);
+          if (loaded != null) {
+            _sprites['$id#wall'] = loaded;
+            changed = true;
+          }
+        }
+        continue;
+      }
       if (art == null || !art.isFloor) continue;
       for (final e in art.rotations.entries) {
         final k = _key(id, e.key);
@@ -77,6 +117,22 @@ class AssetRegistry extends ChangeNotifier {
       }
     }
     if (changed) notifyListeners();
+  }
+
+  Future<LoadedSprite?> _loadWall(ItemArt art) async {
+    try {
+      final data = await _bundle.load('${PixelManifest.assetRoot}${art.path}');
+      final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
+      final img = (await codec.getNextFrame()).image;
+      final box = IsoGrid.wallBox(left: true, u: 0, span: art.span, z: 0, h: art.height);
+      if (img.width != box.width || img.height != box.height) {
+        problems['${art.id}#wall'] = '크기 ${img.width}×${img.height} ≠ ${box.width}×${box.height}';
+        return null;
+      }
+      return LoadedSprite(img, Uint8List(0));
+    } catch (_) {
+      return null; // 그림이 없으면 기존 그림으로 그린다
+    }
   }
 
   Future<LoadedSprite?> _load(ItemArt art, Rot r, String path) async {

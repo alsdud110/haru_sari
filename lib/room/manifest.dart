@@ -76,6 +76,8 @@ class ItemArt {
     if (r is Map) {
       if (r['r0'] is String) rots[Rot.r0] = r['r0'] as String;
       if (r['r1'] is String) rots[Rot.r1] = r['r1'] as String;
+      if (r['r2'] is String) rots[Rot.r2] = r['r2'] as String;
+      if (r['r3'] is String) rots[Rot.r3] = r['r3'] as String;
     }
     return ItemArt(
       id: id,

@@ -4,7 +4,9 @@ import 'package:flutter/material.dart';
 
 import '../../data/catalog.dart';
 import '../../data/models.dart';
+import '../../room/generated_sprites.dart';
 import '../../room/iso.dart';
+import '../../room/manifest.dart';
 import '../../room/palette.dart';
 import '../../room/registry.dart';
 import '../../theme/tokens.dart';
@@ -865,9 +867,14 @@ class ItemThumb extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    if (item.assetPath != null) {
+    // 사람이 그린 그림(assetPath)이나 코드로 뽑은 픽셀 그림(generatedSprites)이 있으면 그 PNG를 쓴다.
+    final sprite = generatedSprites.contains(item.id)
+        ? RegistryScope.of(context)?.manifest[item.id]?.rotations[Rot.r0]
+        : null;
+    final asset = item.assetPath ?? (sprite == null ? null : '${PixelManifest.assetRoot}$sprite');
+    if (asset != null) {
       return Image.asset(
-        item.assetPath!,
+        asset,
         width: size,
         height: size,
         fit: BoxFit.contain,

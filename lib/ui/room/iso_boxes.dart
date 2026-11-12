@@ -80,6 +80,7 @@ List<IsoBox>? _boxesById(String id, double w, double d) => switch (id) {
     IsoBox(0.15, 0.1, 0.85, 0.8, 0, 30, _wood),
     IsoBox(0.12, 0.07, 0.88, 0.86, 30, 33, _wood),
     IsoBox(0.2, 0.8, 0.8, 0.83, 6, 26, _wood), // 서랍
+    IsoBox(0.44, 0.83, 0.56, 0.85, 15, 18, _butter), // 손잡이
     IsoBox(0.42, 0.36, 0.58, 0.52, 33, 38, _wood),
     IsoBox(0.34, 0.28, 0.66, 0.6, 38, 48, _butter), // 갓
   ],
@@ -94,6 +95,7 @@ List<IsoBox>? _boxesById(String id, double w, double d) => switch (id) {
     IsoBox(0.08, 0.1, w - 0.08, 0.8, 0, 44, _wood),
     IsoBox(0.05, 0.07, w - 0.05, 0.86, 44, 48, _wood),
     for (final z in [4.0, 17.0, 30.0]) IsoBox(0.14, 0.8, w - 0.14, 0.84, z, z + 11, _wood), // 서랍 셋
+    for (final z in [8.0, 21.0, 34.0]) IsoBox(w / 2 - 0.1, 0.84, w / 2 + 0.1, 0.86, z, z + 3, _butter), // 손잡이
     IsoBox(0.3, 0.3, 0.45, 0.45, 48, 54, _terra), // 화분
     IsoBox(0.26, 0.26, 0.49, 0.49, 54, 62, _green),
   ],
@@ -225,6 +227,7 @@ List<IsoBox>? isoBoxesFor(ShopItem item, (int, int) footprint) {
         IsoBox(m + 0.04, m + 0.1, w - m - 0.04, 0.8, 10, 22, _cream), // 매트리스
         for (var i = 0; i < footprint.$1; i++) IsoBox(i + 0.2, m + 0.16, i + 0.8, m + 0.5, 22, 27, _cream), // 베개
         IsoBox(m + 0.02, 0.8, w - m - 0.02, d - m - 0.08, 10, 24, blanket), // 이불
+        IsoBox(m + 0.02, 0.8, w - m - 0.02, 0.96, 24, 26, _cream), // 이불 접힌 단
       ];
     case RoomSlot.desk:
       final vanity = item.id == 'desk_vanity';
@@ -233,6 +236,7 @@ List<IsoBox>? isoBoxesFor(ShopItem item, (int, int) footprint) {
         for (final (x0, x1) in [(0.08, 0.18), (w - 0.18, w - 0.08)])
           for (final (y0, y1) in [(0.12, 0.22), (0.78, 0.88)]) IsoBox(x0, y0, x1, y1, 0, 36, ramp), // 다리
         IsoBox(w - 0.75, 0.22, w - 0.18, 0.78, 16, 36, ramp), // 서랍
+        IsoBox(w - 0.54, 0.78, w - 0.4, 0.8, 25, 28, _butter), // 서랍 손잡이
         IsoBox(0.03, 0.07, w - 0.03, 0.93, 36, 41, ramp), // 상판
         IsoBox(0.03, 0.07, w - 0.03, 0.15, 41, 52, ramp), // 뒤쪽 가림판
         IsoBox(0.4, 0.5, 0.52, 0.62, 41, 48, vanity ? _pink : PixelPalette.terracotta), // 머그
@@ -244,6 +248,7 @@ List<IsoBox>? isoBoxesFor(ShopItem item, (int, int) footprint) {
         for (final (x0, x1) in [(0.22, 0.3), (0.7, 0.78)])
           for (final (y0, y1) in [(0.22, 0.3), (0.7, 0.78)]) IsoBox(x0, y0, x1, y1, 0, 20, ramp), // 다리
         IsoBox(0.2, 0.2, 0.8, 0.8, 20, 24, ramp), // 앉는 면
+        IsoBox(0.24, 0.3, 0.76, 0.76, 24, 26, item.variant == 1 ? _sage : _terra), // 방석
         IsoBox(0.2, 0.2, 0.8, 0.28, 24, 46, ramp), // 등받이
       ];
     default:
@@ -290,7 +295,8 @@ List<IsoBox> sortBackToFront(List<IsoBox> boxes) {
 }
 
 /// (gx, gy)에 놓인 가구를 캔버스(네이티브 512×432 좌표)에 그린다.
-void drawIsoBoxes(Canvas c, List<IsoBox> boxes, (int, int) footprint, Rot r, int gx, int gy) {
+/// [antiAlias]를 끄면 가장자리가 번지지 않는다 (tool/draw_furniture_test.dart 가 픽셀 그림을 뽑을 때 쓴다).
+void drawIsoBoxes(Canvas c, List<IsoBox> boxes, (int, int) footprint, Rot r, int gx, int gy, {bool antiAlias = true}) {
   Offset p(double x, double y, double z) => IsoGrid.toCanvas(gx + x, gy + y).translate(0, -z);
   for (final b in sortBackToFront([for (final b in boxes) rotateBox(b, footprint, r)])) {
     final faces = [
@@ -302,10 +308,16 @@ void drawIsoBoxes(Canvas c, List<IsoBox> boxes, (int, int) footprint, Rot r, int
       ..color = Color(0xFF000000 | b.ramp[3])
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1
-      ..strokeJoin = StrokeJoin.round;
+      ..strokeJoin = StrokeJoin.round
+      ..isAntiAlias = antiAlias;
     for (final (pts, color) in faces) {
       final path = Path()..addPolygon(pts, true);
-      c.drawPath(path, Paint()..color = Color(0xFF000000 | color));
+      c.drawPath(
+        path,
+        Paint()
+          ..color = Color(0xFF000000 | color)
+          ..isAntiAlias = antiAlias,
+      );
       c.drawPath(path, line);
     }
   }

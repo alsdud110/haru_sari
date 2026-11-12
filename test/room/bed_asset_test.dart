@@ -8,6 +8,7 @@ import 'package:haru_sari/data/catalog.dart';
 import 'package:haru_sari/data/models.dart';
 import 'package:haru_sari/data/store.dart';
 import 'package:haru_sari/room/asset_check.dart';
+import 'package:haru_sari/room/generated_sprites.dart';
 import 'package:haru_sari/room/iso.dart';
 import 'package:haru_sari/room/layout.dart';
 import 'package:haru_sari/room/registry.dart';
@@ -54,10 +55,16 @@ void main() {
   });
 
   group('파일', () {
-    test('원본은 이름만 바꿔 보존, 싱글 자리에는 PNG가 없다', () {
+    test('원본은 이름만 바꿔 보존, 싱글은 코드로 그린 픽셀 그림이 네 방향 모두 있다', () {
       expect(File('art/source/furniture/beds/bed_double_r1_original.png').existsSync(), isTrue);
       expect(doubleFile.existsSync(), isTrue);
-      expect(File('assets/pixel/furniture/beds/bed_single_r0.png').existsSync(), isFalse);
+      expect(generatedSprites, contains('bed_single'));
+      expect(generatedSprites, isNot(contains('bed_double')), reason: '사람이 그린 그림은 덮어쓰지 않는다');
+      for (final r in Rot.values) {
+        final p = m['bed_single']!.rotations[r];
+        expect(p, isNotNull, reason: r.name);
+        expect(File('assets/pixel/$p').existsSync(), isTrue, reason: r.name);
+      }
     });
 
     testWidgets('더블 R1 보정본: 크기·알파·팔레트·허용 영역 모두 통과 (늘리지 않고 옮겨 놓음)', (tester) async {

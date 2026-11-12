@@ -72,6 +72,14 @@ flutter:
     - assets/pixel/
     - assets/pixel/furniture/beds/
     - assets/pixel/furniture/decorations/
+    - assets/pixel/furniture/chairs/
+    - assets/pixel/furniture/desks/
+    - assets/pixel/furniture/sofas/
+    - assets/pixel/furniture/storage/
+    - assets/pixel/furniture/tables/
+    - assets/pixel/rooms/windows/
+    - assets/pixel/rooms/floors/
+    - assets/pixel/rooms/walls/
     - assets/pixel/characters/base/
     - assets/pixel/characters/hair/
     - assets/pixel/characters/face/
