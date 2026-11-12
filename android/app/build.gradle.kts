@@ -6,7 +6,8 @@ plugins {
 
 android {
     namespace = "com.harusari.app"
-    compileSdk = flutter.compileSdkVersion
+    // flutter_local_notifications 23 / androidx.core 1.19 require API 37 or later.
+    compileSdk = 37
     ndkVersion = flutter.ndkVersion
 
     compileOptions {

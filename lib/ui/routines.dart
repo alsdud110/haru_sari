@@ -6,6 +6,7 @@ import '../theme/tokens.dart';
 import 'motion.dart';
 import 'settings.dart';
 import 'routine_icon.dart';
+import 'time_sheet.dart';
 import 'widgets.dart';
 
 /// 루틴 편집 화면을 열고, 저장하면 고친 사본을 돌려준다.
@@ -167,11 +168,21 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
 
   Future<void> _pickTime() async {
     final m = r.minuteOfDay ?? 8 * 60;
-    final picked = await showTimePicker(
-      context: context,
-      initialTime: TimeOfDay(hour: m ~/ 60, minute: m % 60),
+    // 창에서 시간을 고르거나 "시간 없이, 언제든 할게요"를 고른다.
+    final picked = await showTimeSheet(
+      context,
+      initialMinute: m,
+      anytimeLabel: '시간 없이, 언제든 할게요',
     );
-    if (picked != null) setState(() => r.minuteOfDay = picked.hour * 60 + picked.minute);
+    if (picked == null || !mounted) return;
+    setState(() {
+      if (picked == timeSheetAnytime) {
+        r.minuteOfDay = null;
+        r.alarmOn = false; // 시간이 없으면 알림도 없다
+      } else {
+        r.minuteOfDay = picked;
+      }
+    });
   }
 
   @override
@@ -297,18 +308,9 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
                 children: [
                   ListTile(
                     title: const Text('하는 시간'),
-                    trailing: Text(formatMinute(r.minuteOfDay), style: t.labelLarge),
+                    trailing: Text(r.minuteOfDay == null ? '설정 안 함' : formatMinute(r.minuteOfDay), style: t.labelLarge),
                     onTap: _pickTime,
                   ),
-                  if (r.minuteOfDay != null)
-                    ListTile(
-                      title: const Text('시간 정하지 않기'),
-                      leading: const Icon(Icons.schedule_rounded, color: AppColors.textMuted),
-                      onTap: () => setState(() {
-                        r.minuteOfDay = null;
-                        r.alarmOn = false;
-                      }),
-                    ),
                   SwitchListTile.adaptive(
                     title: const Text('알림 받기'),
                     subtitle: Text(r.minuteOfDay == null ? '시간을 정하면 켤 수 있어요' : '그 시간에 살며시 알려드려요'),

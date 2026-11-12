@@ -13,6 +13,7 @@ import 'onboarding.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
 import 'routine_icon.dart';
+import 'time_sheet.dart';
 import 'widgets.dart';
 
 /// '나' 탭: 프로필·설정
@@ -288,11 +289,8 @@ class AlarmSettingsScreen extends StatelessWidget {
                   title: const Text('하루 마감 알림 시간'),
                   trailing: Text(formatMinute(a.dayEndMinute), style: t.labelLarge),
                   onTap: () async {
-                    final picked = await showTimePicker(
-                      context: context,
-                      initialTime: TimeOfDay(hour: a.dayEndMinute ~/ 60, minute: a.dayEndMinute % 60),
-                    );
-                    if (picked != null) s.updateAlarms(a..dayEndMinute = picked.hour * 60 + picked.minute);
+                    final picked = await showTimeSheet(context, initialMinute: a.dayEndMinute);
+                    if (picked != null) s.updateAlarms(a..dayEndMinute = picked);
                   },
                 ),
               ],

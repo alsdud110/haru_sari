@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/auth.dart';
 import 'data/reminders.dart';
@@ -118,7 +119,17 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
   }
 
   MaterialApp _app({Key? key, required Widget home}) =>
-      MaterialApp(key: key, title: '하루살이', debugShowCheckedModeBanner: false, theme: buildTheme(), home: home);
+      MaterialApp(
+        key: key,
+        title: '하루살이',
+        debugShowCheckedModeBanner: false,
+        theme: buildTheme(),
+        // 시간 휠의 오전·오후, 기본 창의 버튼 글 등을 한국어로
+        locale: const Locale('ko', 'KR'),
+        supportedLocales: const [Locale('ko', 'KR')],
+        localizationsDelegates: GlobalMaterialLocalizations.delegates,
+        home: home,
+      );
 
   @override
   Widget build(BuildContext context) {

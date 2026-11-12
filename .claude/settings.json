@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "PowerShell(Get-CimInstance Win32_Process -Filter \"Name='java.exe'\" | ForEach-Object { \"$\\($_.ProcessId\\) :: \" + \\($_.CommandLine -replace '\\\\s+',' '\\).Substring\\(0, [Math]::Min\\(220, \\($_.CommandLine -replace '\\\\s+',' '\\).Length\\)\\) })",
+      "PowerShell(flutter build apk --debug 2>&1)",
+      "PowerShell(Get-ChildItem \"$env:LOCALAPPDATA\\\\Android\\\\sdk\\\\platforms\" | Select-Object -ExpandProperty Name; flutter build apk --debug 2>&1 | Select-String -Pattern \"^\\\\s+\\\\d\\\\.\\\\s+Dependency\" -Context 0,3)"
+    ]
+  }
+}

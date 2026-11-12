@@ -162,7 +162,7 @@ void main() {
     expect(tester.takeException(), isNull);
 
     // 빈 보관함 안내는 화면 가운데에 온다
-    await tester.pageBack();
+    await tester.tap(find.byType(BackButton)); // 한국어 설정이라 pageBack()의 영어 'Back' 찾기가 맞지 않는다
     await tester.pumpAndSettle();
     await tester.tap(find.text('내 방'));
     await settleish(tester);
