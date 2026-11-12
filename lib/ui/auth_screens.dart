@@ -4,10 +4,9 @@ import 'package:flutter_svg/flutter_svg.dart';
 
 import '../app.dart';
 import '../data/auth.dart';
-import '../data/models.dart';
 import '../theme/tokens.dart';
+import 'intro_demo.dart';
 import 'motion.dart';
-import 'room/room_painter.dart';
 import 'today.dart' show keepWords;
 
 /// 소개 (온보딩 캐러셀) → 소셜 로그인
@@ -21,19 +20,22 @@ class _IntroScreenState extends State<IntroScreen> {
   final _page = PageController();
   int _i = 0;
 
+  // 장마다 위쪽에 앱 화면을 미리 보여 주는 작은 장면이 들어간다 (intro_demo.dart).
   static const _slides = [
-    (
-      (Icons.wb_sunny_rounded, AppColors.coin, AppColors.coinSoft),
-      '평범한 하루도\n충분히 소중해요',
-      '기상, 식사, 산책 — 작은 루틴을 기록하며\n오늘 하루를 살아낸 나를 응원해 보세요',
-    ),
-    ((Icons.check_rounded, AppColors.sage, AppColors.sageSoft), '부담 없이,\n나만의 속도로', '완벽하지 않아도 괜찮아요.\n체크 하나로 오늘을 완성하세요'),
-    (
-      (Icons.home_rounded, AppColors.primary, AppColors.primarySoft),
-      '작은 성취가 쌓여\n나만의 공간이 돼요',
-      '루틴을 이어갈수록 미니미 방이 따뜻하게 채워져요.\n오늘도 한 걸음이면 충분해요',
-    ),
+    ('평범한 하루도\n충분히 소중해요', '기상, 식사, 산책 — 작은 루틴을 기록하며\n오늘 하루를 살아낸 나를 응원해 보세요'),
+    ('부담 없이,\n나만의 속도로', '완벽하지 않아도 괜찮아요.\n체크 하나로 오늘을 완성하세요'),
+    ('작은 성취가 쌓여\n나만의 공간이 돼요', '루틴을 이어갈수록 미니미 방이 따뜻하게 채워져요.\n오늘도 한 걸음이면 충분해요'),
   ];
+
+  Widget _demo(BuildContext context, int i) => switch (i) {
+    0 => IntroRoutinesDemo(active: _i == 0),
+    1 => IntroProgressDemo(active: _i == 1),
+    _ => IntroRoomDemo(
+      active: _i == 2,
+      // 디버그 빌드에서만: 미니미를 두 번 누르면 로그인 없이 개발자 모드로 들어간다.
+      onMinimiDoubleTap: kDebugMode ? () => AuthScope.read(context).signInAsDeveloper() : null,
+    ),
+  };
 
   @override
   void dispose() {
@@ -54,26 +56,15 @@ class _IntroScreenState extends State<IntroScreen> {
                 itemCount: _slides.length,
                 onPageChanged: (i) => setState(() => _i = i),
                 itemBuilder: (context, i) {
-                  final ((icon, color, soft), title, body) = _slides[i];
+                  final (title, body) = _slides[i];
                   return Padding(
                     padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Reveal(
-                          index: 0,
-                          child: i == 2
-                              // 디버그 빌드에서만: 미니미를 두 번 누르면 로그인 없이 개발자 모드로 들어간다.
-                              ? GestureDetector(
-                                  key: const ValueKey('intro-minimi'),
-                                  onDoubleTap: kDebugMode ? () => AuthScope.read(context).signInAsDeveloper() : null,
-                                  child: Breathing(child: MinimiView(profile: Profile(), happy: true, width: 120)),
-                                )
-                              : CircleAvatar(
-                                  radius: 60,
-                                  backgroundColor: soft,
-                                  child: Icon(icon, size: 64, color: color),
-                                ),
+                        // 작은 화면에서는 장면을 줄여 글과 버튼 자리를 남긴다.
+                        Flexible(
+                          child: FittedBox(fit: BoxFit.scaleDown, child: _demo(context, i)),
                         ),
                         const SizedBox(height: Space.xl),
                         Reveal(

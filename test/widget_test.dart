@@ -219,4 +219,28 @@ void main() {
     expect(DeviceAuthService(kv).signedIn, isFalse);
     await settleish(tester);
   });
+
+  testWidgets('소개 장면: 루틴이 차례로 체크되고, 달성률은 1/3에서 멈추고, 장을 다시 보면 처음부터 재생된다', (tester) async {
+    final kv = MemoryKeyValue();
+    await pump(tester, kv, DeviceAuthService(kv));
+
+    // 1장: 재생이 끝나면 루틴 세 개 가운데 위의 둘이 체크돼 있다
+    expect(find.text('일어나기'), findsOneWidget);
+    expect(find.text('점심 챙겨 먹기'), findsOneWidget);
+    expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+
+    // 2장: 다 채우지 않고 1/3에서 멈춘다
+    await tester.tap(find.text('다음'));
+    await tester.pumpAndSettle();
+    expect(find.text('1/3'), findsOneWidget);
+    expect(find.text('33%'), findsOneWidget);
+
+    // 1장으로 돌아가면 처음(체크 없음)부터 다시 재생된다
+    await tester.drag(find.byType(PageView), const Offset(300, 0));
+    await tester.pump(const Duration(milliseconds: 600));
+    expect(find.byIcon(Icons.check_rounded), findsNothing);
+    await tester.pumpAndSettle();
+    expect(find.byIcon(Icons.check_rounded), findsNWidgets(2));
+    expect(tester.takeException(), isNull);
+  });
 }
