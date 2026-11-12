@@ -1,7 +1,26 @@
 import '../room/layout.dart';
 
-/// 루틴 카테고리.
-const routineCategories = ['생활', '건강', '식사', '이동', '마음', '기타'];
+/// 루틴 카테고리. 하루에 실제로 하는 일을 기준으로 나눴다 (이름 → 칩에 함께 보이는 이모지).
+/// 예전 값('생활' 등)이 저장된 루틴은 편집 화면에서 그 이름 그대로 한 칸 더 보여 준다.
+const routineCategoryEmoji = <String, String>{
+  '기상·수면': '🌙', // 일어나기, 잠자리 들기, 낮잠
+  '씻기·단장': '🧼', // 세수, 샤워, 양치, 스킨케어, 출근 준비
+  '식사': '🍚', // 아침·점심·저녁, 도시락, 간식
+  '물·영양': '💧', // 물 마시기, 영양제, 약
+  '운동': '🏃', // 걷기, 스트레칭, 헬스, 요가
+  '건강': '🩺', // 병원, 자세, 눈 쉬기, 체중 재기
+  '이동': '🚇', // 출근, 퇴근, 등하교
+  '일·업무': '💼', // 업무 시작, 회의 준비, 할 일 정리
+  '공부': '📚', // 강의, 자격증, 외국어, 독서
+  '집안일': '🧹', // 청소, 빨래, 설거지, 장보기, 분리수거
+  '돌봄': '🐶', // 반려동물, 식물, 가족 챙기기
+  '마음': '🧘', // 명상, 일기, 감사, 산책하며 쉬기
+  '취미·여가': '🎧', // 음악, 게임, 그림, 영상
+  '관계': '💬', // 안부 연락, 가족 통화, 약속
+  '돈 관리': '💰', // 가계부, 저축, 지출 확인
+  '기타': '✨',
+};
+final routineCategories = routineCategoryEmoji.keys.toList(growable: false);
 
 /// 루틴: 사용자가 반복하는 일상 활동 하나.
 class Routine {
@@ -12,7 +31,7 @@ class Routine {
     this.minuteOfDay,
     Set<int>? weekdays,
     this.alarmOn = false,
-    this.category = '생활',
+    this.category = '기타',
     this.memo = '',
     this.active = true,
   }) : weekdays = weekdays ?? {1, 2, 3, 4, 5, 6, 7};
@@ -56,7 +75,7 @@ class Routine {
     minuteOfDay: j['minute'] as int?,
     weekdays: (j['weekdays'] as List).cast<int>().toSet(),
     alarmOn: j['alarmOn'] as bool? ?? false,
-    category: j['category'] as String? ?? '생활',
+    category: j['category'] as String? ?? '기타',
     memo: j['memo'] as String? ?? '',
     active: j['active'] as bool? ?? true,
   );

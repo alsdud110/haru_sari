@@ -7,6 +7,7 @@ import '../data/models.dart';
 import '../data/rewards.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
+import 'routine_icon.dart';
 import 'widgets.dart';
 
 enum RecordRange { day, week, month }
@@ -186,7 +187,7 @@ class _DayView extends StatelessWidget {
                     color: log.completed.contains(e.key) ? AppColors.sage : AppColors.line,
                   ),
                   const SizedBox(width: Space.md),
-                  Expanded(child: Text(e.value, style: t.bodyLarge)),
+                  Expanded(child: RoutineLabel(e.value, style: t.bodyLarge)),
                 ],
               ),
             ),
@@ -483,7 +484,7 @@ class _MonthView extends StatelessWidget {
                         Row(
                           children: [
                             Expanded(
-                              child: Text(r.label, style: t.bodyLarge, maxLines: 1, overflow: TextOverflow.ellipsis),
+                              child: RoutineLabel(r.label, style: t.bodyLarge),
                             ),
                             Text('${r.done} / ${r.total}', style: t.labelLarge),
                           ],

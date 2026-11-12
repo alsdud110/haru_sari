@@ -5,6 +5,7 @@ import '../data/models.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
 import 'settings.dart';
+import 'routine_icon.dart';
 import 'widgets.dart';
 
 /// 루틴 편집 화면을 열고, 저장하면 고친 사본을 돌려준다.
@@ -74,7 +75,7 @@ class RoutineManageScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(Space.lg, Space.xs, Space.xs, Space.xs),
                     child: Row(
                       children: [
-                        Text(r.emoji, style: const TextStyle(fontSize: 24)),
+                        RoutineIcon(r.emoji),
                         const SizedBox(width: Space.md),
                         Expanded(
                           child: Column(
@@ -140,7 +141,6 @@ class RoutineManageScreen extends StatelessWidget {
   }
 }
 
-const _emojiChoices = ['🌤️', '💧', '👔', '🚇', '🍚', '🏃', '🏠', '🛁', '📖', '🧘', '💊', '🐶', '🪴', '✍️', '🎧', '✨'];
 
 class RoutineEditorPage extends StatefulWidget {
   const RoutineEditorPage({super.key, required this.initial, this.isNew = false});
@@ -200,17 +200,32 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             const SizedBox(height: Space.xl),
             Text('카테고리', style: t.titleMedium),
             const SizedBox(height: Space.sm),
-            _ChoiceGrid(
-              columns: 3,
+            // 이름 길이가 제각각이라 칸 대신 글자 폭에 맞는 칩으로 흘려 놓는다.
+            // 예전 이름('생활' 등)이 저장된 루틴은 그 이름을 맨 끝에 한 칸 더 보여 준다.
+            Wrap(
+              spacing: Space.sm,
+              runSpacing: Space.sm,
               children: [
-                for (final c in routineCategories)
-                  _Choice(
-                    selected: r.category == c,
-                    semantics: '카테고리 $c',
-                    onTap: () => setState(() => r.category = c),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                      child: Text(c, style: t.labelLarge),
+                for (final c in [...routineCategories, if (!routineCategories.contains(r.category)) r.category])
+                  // IntrinsicWidth: 칩이 줄 전체로 늘어나지 않고 내용 폭만 차지하게 한다.
+                  IntrinsicWidth(
+                    child: _Choice(
+                      selected: r.category == c,
+                      semantics: '카테고리 $c',
+                      onTap: () => setState(() => r.category = c),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            if (routineCategoryEmoji[c] case final e?) ...[
+                              RoutineIcon(e, size: 22),
+                              const SizedBox(width: 6),
+                            ],
+                            Text(c, style: t.labelLarge),
+                          ],
+                        ),
+                      ),
                     ),
                   ),
               ],
@@ -221,12 +236,12 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
             _ChoiceGrid(
               columns: 6,
               children: [
-                for (final e in _emojiChoices)
+                for (final e in routineIconChoices)
                   _Choice(
                     selected: r.emoji == e,
                     onTap: () => setState(() => r.emoji = e),
                     semantics: '아이콘 $e',
-                    child: Text(e, style: const TextStyle(fontSize: 22)),
+                    child: RoutineIcon(e, size: 30),
                   ),
               ],
             ),

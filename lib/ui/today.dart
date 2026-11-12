@@ -12,6 +12,7 @@ import 'room/room_painter.dart';
 import 'routines.dart';
 import 'settings.dart';
 import 'shell.dart';
+import 'routine_icon.dart';
 import 'widgets.dart';
 
 /// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
@@ -330,7 +331,7 @@ class _RoutineRow extends StatelessWidget {
               padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
               child: Row(
                 children: [
-                  Text(routine.emoji, style: const TextStyle(fontSize: 24)),
+                  RoutineIcon(routine.emoji),
                   const SizedBox(width: Space.md),
                   Expanded(
                     child: Column(
@@ -416,7 +417,7 @@ class _Shortcuts extends StatelessWidget {
               child: _ShortcutCard(
                 label: '오늘의 한마디',
                 onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const EncouragementScreen())),
-                child: const Text('💌', style: TextStyle(fontSize: 34)),
+                child: const RoutineIcon('💌', size: 48),
               ),
             ),
           ],

@@ -12,6 +12,7 @@ import 'licenses.dart';
 import 'onboarding.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
+import 'routine_icon.dart';
 import 'widgets.dart';
 
 /// '나' 탭: 프로필·설정
@@ -310,7 +311,7 @@ class AlarmSettingsScreen extends StatelessWidget {
                   for (var i = 0; i < timed.length; i++) ...[
                     if (i > 0) const Divider(height: 1, color: AppColors.line),
                     SwitchListTile.adaptive(
-                      title: Text('${timed[i].emoji} ${timed[i].name}'),
+                      title: RoutineLabel('${timed[i].emoji} ${timed[i].name}', style: t.bodyLarge),
                       subtitle: Text(
                         '${weekdaySummary(timed[i].weekdays)} ${formatMinute(timed[i].minuteOfDay)}'
                         '${timed[i].active ? '' : ' · 쉬는 중'}',
@@ -361,7 +362,7 @@ class BadgesScreen extends StatelessWidget {
               children: [
                 Opacity(
                   opacity: got != null ? 1 : 0.3,
-                  child: Text(b.emoji, style: const TextStyle(fontSize: 36)),
+                  child: RoutineIcon(b.emoji, size: 48),
                 ),
                 const SizedBox(height: Space.sm),
                 Text(b.name, style: t.titleMedium, textAlign: TextAlign.center),
@@ -383,7 +384,7 @@ class BadgesScreen extends StatelessWidget {
 /// 새로 받은 배지를 보여준다.
 void showNewBadges(BuildContext context, List<String> ids) {
   if (ids.isEmpty) return;
-  final names = ids.map(badgeById).nonNulls.map((b) => '${b.emoji} ${b.name}').join('  ');
+  final names = ids.map(badgeById).nonNulls.map((b) => b.name).join(', ');
   showAppSnack(
     context,
     '새 배지를 받았어요  $names',

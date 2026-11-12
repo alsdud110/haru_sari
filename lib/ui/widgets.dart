@@ -6,6 +6,7 @@ import 'package:flutter/material.dart';
 import '../app.dart';
 import '../data/rewards.dart';
 import '../theme/tokens.dart';
+import 'routine_icon.dart';
 
 /// 흰 바탕의 기본 면.
 class Panel extends StatelessWidget {
@@ -188,7 +189,7 @@ class EmptyHint extends StatelessWidget {
     child: Column(
       mainAxisSize: MainAxisSize.min,
       children: [
-        Text(emoji, style: const TextStyle(fontSize: 44)),
+        RoutineIcon(emoji, size: 64),
         const SizedBox(height: Space.md),
         Text(title, style: Theme.of(context).textTheme.titleMedium, textAlign: TextAlign.center),
         const SizedBox(height: Space.xs),

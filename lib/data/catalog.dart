@@ -238,13 +238,13 @@ const _weekdays = {1, 2, 3, 4, 5};
 const _everyday = {1, 2, 3, 4, 5, 6, 7};
 
 const routineTemplates = <RoutineTemplate>[
-  RoutineTemplate('일어나기', '🌤️', 7 * 60, _everyday, '생활'),
-  RoutineTemplate('물 한 잔 마시기', '💧', 7 * 60 + 10, _everyday, '건강'),
-  RoutineTemplate('출근 준비', '👔', 7 * 60 + 30, _weekdays, '생활'),
+  RoutineTemplate('일어나기', '🌤️', 7 * 60, _everyday, '기상·수면'),
+  RoutineTemplate('물 한 잔 마시기', '💧', 7 * 60 + 10, _everyday, '물·영양'),
+  RoutineTemplate('출근 준비', '👔', 7 * 60 + 30, _weekdays, '씻기·단장'),
   RoutineTemplate('무사히 출근하기', '🚇', 8 * 60 + 20, _weekdays, '이동'),
   RoutineTemplate('점심 챙겨 먹기', '🍚', 12 * 60, _everyday, '식사'),
-  RoutineTemplate('가볍게 운동하기', '🏃', 19 * 60, _everyday, '건강'),
+  RoutineTemplate('가볍게 운동하기', '🏃', 19 * 60, _everyday, '운동'),
   RoutineTemplate('집에 돌아오기', '🏠', 19 * 60 + 30, _weekdays, '이동'),
-  RoutineTemplate('책 몇 장 읽기', '📖', 21 * 60 + 30, _everyday, '마음'),
-  RoutineTemplate('씻고 쉬기', '🛁', 22 * 60, _everyday, '생활'),
+  RoutineTemplate('책 몇 장 읽기', '📖', 21 * 60 + 30, _everyday, '공부'),
+  RoutineTemplate('씻고 쉬기', '🛁', 22 * 60, _everyday, '씻기·단장'),
 ];

@@ -8,6 +8,7 @@ import 'motion.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
 import 'today.dart' show keepWords;
+import 'routine_icon.dart';
 import 'widgets.dart';
 
 /// 가입 직후 첫 설정: 닉네임 → 미니미 → 루틴 템플릿과 알림
@@ -454,7 +455,7 @@ class _TemplateRow extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(Space.lg, Space.md, Space.sm, Space.md),
             child: Row(
               children: [
-                Text(r.emoji, style: const TextStyle(fontSize: 24)),
+                RoutineIcon(r.emoji),
                 const SizedBox(width: Space.md),
                 Expanded(
                   child: Column(

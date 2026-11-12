@@ -78,6 +78,7 @@ flutter:
     - assets/pixel/characters/outfits/
     - assets/pixel/characters/accessories/
     - assets/fonts/LICENSE.txt
+    - assets/icons/
 
   # To add assets to your application, add an assets section, like this:
   # assets:
