@@ -27,12 +27,25 @@ enum ItemKind { furniture, outfit, accessory }
 
 /// 상점·보관함에서 쓰는 분류.
 enum ShopCategory {
-  all('전체'),
-  furniture('가구'),
+  // 가구 분류는 RoomSlot과 이름이 같아야 한다 (ShopItem.category가 이름으로 찾는다)
+  bed('침대'),
+  desk('책상'),
+  chair('의자'),
+  sofa('소파'),
+  table('테이블'),
+  storage('수납'),
+  shelf('선반'),
+  lamp('조명'),
+  plant('식물'),
+  wallDecor('벽 장식'),
   decor('소품'),
-  wallFloor('벽·바닥'),
+  rug('러그'),
+  window('창문'),
+  wallpaper('벽지'),
+  floor('바닥'),
   outfit('의상'),
-  accessory('액세서리');
+  accessory('액세서리'),
+  all('전체');
 
   const ShopCategory(this.label);
   final String label;
@@ -71,12 +84,7 @@ class ShopItem {
   ShopCategory get category => switch (kind) {
     ItemKind.outfit => ShopCategory.outfit,
     ItemKind.accessory => ShopCategory.accessory,
-    ItemKind.furniture => switch (slot!) {
-      RoomSlot.bed || RoomSlot.desk || RoomSlot.chair || RoomSlot.shelf => ShopCategory.furniture,
-      RoomSlot.sofa || RoomSlot.table || RoomSlot.storage => ShopCategory.furniture,
-      RoomSlot.lamp || RoomSlot.plant || RoomSlot.wallDecor || RoomSlot.decor => ShopCategory.decor,
-      RoomSlot.wallpaper || RoomSlot.rug || RoomSlot.window || RoomSlot.floor => ShopCategory.wallFloor,
-    },
+    ItemKind.furniture => ShopCategory.values.byName(slot!.name),
   };
 
   /// 카드에 쓰는 짧은 분류 이름
