@@ -216,22 +216,83 @@ class _MinimiStep extends StatelessWidget {
   final VoidCallback onNext;
 
   @override
-  Widget build(BuildContext context) => _StepScaffold(
-    title: '$name님을 닮은\n미니미를 만들어요',
-    body: '이 친구가 앞으로 지낼 방을 함께 꾸며갈 거예요.',
-    content: SingleChildScrollView(
+  Widget build(BuildContext context) {
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          Breathing(
-            child: MinimiView(profile: Profile(minimi: minimi), happy: true, width: 140),
+          Expanded(
+            // 제목은 올라가 사라지고, 미니미는 위에 붙어 남는다: 아래 색을 고르면서 바뀐 모습을 바로 본다.
+            child: CustomScrollView(
+              slivers: [
+                SliverToBoxAdapter(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      const SizedBox(height: Space.xl),
+                      Reveal(index: 0, child: Text('$name님을 닮은\n미니미를 만들어요', style: t.headlineMedium)),
+                      const SizedBox(height: Space.sm),
+                      Reveal(
+                        index: 1,
+                        child: Text(
+                          keepWords('이 친구가 앞으로 지낼 방을 함께 꾸며갈 거예요.'),
+                          style: t.bodyLarge?.copyWith(color: AppColors.textMuted),
+                        ),
+                      ),
+                      const SizedBox(height: Space.md),
+                    ],
+                  ),
+                ),
+                SliverPersistentHeader(pinned: true, delegate: _PinnedMinimi(minimi)),
+                SliverToBoxAdapter(
+                  child: Padding(
+                    padding: const EdgeInsets.only(top: Space.md, bottom: Space.lg),
+                    child: MinimiPicker(minimi: minimi, onChanged: onChanged, basic: true),
+                  ),
+                ),
+              ],
+            ),
           ),
-          const SizedBox(height: Space.xl),
-          MinimiPicker(minimi: minimi, onChanged: onChanged, basic: true),
+          FilledButton(onPressed: onNext, child: const Text('이 모습이 좋아요')),
+          const SizedBox(height: Space.lg),
         ],
       ),
+    );
+  }
+}
+
+/// 스크롤해도 위에 붙어 있는 미니미. 붙으면 조금 작아져 고르는 칸에 자리를 내준다.
+class _PinnedMinimi extends SliverPersistentHeaderDelegate {
+  const _PinnedMinimi(this.minimi);
+  final Minimi minimi;
+
+  @override
+  double get maxExtent => 196;
+  @override
+  double get minExtent => 132;
+
+  @override
+  Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => DecoratedBox(
+    decoration: BoxDecoration(
+      color: AppColors.background, // 아래로 지나가는 칸이 비치지 않게
+      border: Border(
+        bottom: BorderSide(color: overlapsContent ? AppColors.line.withValues(alpha: 0.7) : Colors.transparent),
+      ),
     ),
-    bottom: FilledButton(onPressed: onNext, child: const Text('이 모습이 좋아요')),
+    child: Padding(
+      padding: const EdgeInsets.symmetric(vertical: Space.sm),
+      child: FittedBox(
+        child: Breathing(
+          child: MinimiView(profile: Profile(minimi: minimi), happy: true, width: 140),
+        ),
+      ),
+    ),
   );
+
+  @override
+  bool shouldRebuild(_PinnedMinimi old) => old.minimi != minimi;
 }
 
 /// 피부·머리·얼굴·옷 색 고르기. 설정 화면에서도 쓴다.
