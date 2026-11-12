@@ -44,8 +44,8 @@ class LocalReminders implements Reminders {
   bool _ready = false;
 
   /// 알림 하나의 모양. [iconAsset]이 있으면 알림 옆에 그 그림을 붙인다
-  /// (Android: 오른쪽 큰 아이콘, iOS: 첨부 그림 미리보기).
-  Future<NotificationDetails> _details(int id, String? iconAsset) async {
+  /// (Android: 글 왼쪽, iOS: 오른쪽 첨부 그림 미리보기).
+  Future<NotificationDetails> _details(int id, String? iconAsset, String body) async {
     final icon = iconAsset == null ? null : await _iconFile(id, iconAsset);
     return NotificationDetails(
       android: AndroidNotificationDetails(
@@ -54,7 +54,13 @@ class LocalReminders implements Reminders {
         channelDescription: '정해 둔 루틴 시간과 하루 마감에 살며시 알려드려요',
         importance: Importance.defaultImportance,
         priority: Priority.defaultPriority,
-        largeIcon: icon == null ? null : FilePathAndroidBitmap(icon),
+        // Android에서 그림을 글 왼쪽에 두는 길은 대화 모양 알림뿐이다 (큰 아이콘은 늘 오른쪽).
+        styleInformation: icon == null
+            ? null
+            : MessagingStyleInformation(
+                Person(name: '하루살이', icon: BitmapFilePathAndroidIcon(icon)),
+                messages: [Message(body, DateTime.now(), null)],
+              ),
       ),
       iOS: DarwinNotificationDetails(attachments: icon == null ? null : [DarwinNotificationAttachment(icon)]),
     );
@@ -71,7 +77,10 @@ class LocalReminders implements Reminders {
       if (ios || !file.existsSync()) {
         await dir.create(recursive: true);
         final data = await rootBundle.load(asset);
-        await file.writeAsBytes(data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes), flush: true);
+        final bytes = data.buffer.asUint8List(data.offsetInBytes, data.lengthInBytes);
+        // iOS는 내용이 같은 그림을 한 장으로 합쳐 알림 하나에만 묶어 두고, 그 알림이 지워지면 나머지 알림의 그림도 사라진다.
+        // 그래서 PNG 끝에 알림 번호를 덧붙여 알림마다 다른 파일로 만든다 (그림 뒤에 붙은 글자는 그릴 때 무시된다).
+        await file.writeAsBytes(ios ? [...bytes, ...'$id'.codeUnits] : bytes, flush: true);
       }
       return file.path;
     } catch (e) {
@@ -145,7 +154,7 @@ class LocalReminders implements Reminders {
               title: '하루살이',
               body: routineAlarmBody(r),
               scheduledDate: _next(r.minuteOfDay!, weekday: d),
-              notificationDetails: await _details(nid, iconAssetFor?.call(r.emoji)),
+              notificationDetails: await _details(nid, iconAssetFor?.call(r.emoji), routineAlarmBody(r)),
               androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
               matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
             );
@@ -158,7 +167,7 @@ class LocalReminders implements Reminders {
           title: dayEndTitle,
           body: dayEndBody,
           scheduledDate: _next(settings.dayEndMinute),
-          notificationDetails: await _details(0, null), // 마감 알림은 그림 없이 글 앞의 💌만
+          notificationDetails: await _details(0, null, dayEndBody), // 마감 알림은 그림 없이 글 앞의 💌만
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,
         );
