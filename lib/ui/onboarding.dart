@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 
 import '../app.dart';
 import '../data/catalog.dart';
@@ -7,7 +7,6 @@ import '../theme/tokens.dart';
 import 'motion.dart';
 import 'room/room_painter.dart';
 import 'routines.dart';
-import 'today.dart' show keepWords;
 import 'routine_icon.dart';
 import 'widgets.dart';
 

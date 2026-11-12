@@ -1,5 +1,5 @@
 import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:intl/intl.dart';
 
 import '../app.dart';

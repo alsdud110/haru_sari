@@ -1,6 +1,7 @@
 import 'package:flutter/cupertino.dart' show CupertinoPageTransitionsBuilder;
 import 'package:flutter/foundation.dart' show defaultTargetPlatform;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/material.dart' as m show Text;
 
 /// 하루살이 디자인 토큰. 위젯에서 색·간격을 직접 쓰지 말고 여기서 가져온다.
 class AppColors {
@@ -197,5 +198,25 @@ ThemeData buildTheme() {
             ),
           ),
     snackBarTheme: const SnackBarThemeData(behavior: SnackBarBehavior.floating),
+  );
+}
+
+/// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
+String keepWords(String s) => s.replaceAll('\u200D', '').replaceAllMapped(RegExp(r'\S(?=\S)'), (m) => '${m[0]}\u200D');
+
+/// 앱 화면에서 쓰는 Text. 줄이 넘어갈 때 낱말 중간이 아니라 띄어쓰기에서만 바뀐다
+/// (플러터에는 CSS의 word-break: keep-all이 없다). 화면 파일은 머티리얼의 Text를 숨기고 이것을 쓴다.
+class Text extends m.Text {
+  const Text(super.data, {super.key, super.style, super.textAlign, super.maxLines, super.overflow, super.softWrap});
+
+  @override
+  Widget build(BuildContext context) => m.Text(
+    keepWords(data!),
+    style: style,
+    textAlign: textAlign,
+    maxLines: maxLines,
+    overflow: overflow,
+    softWrap: softWrap,
+    semanticsLabel: data, // 화면 낭독기에는 이음자 없는 원래 글을 읽힌다
   );
 }

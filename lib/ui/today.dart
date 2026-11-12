@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
@@ -15,8 +15,7 @@ import 'shell.dart';
 import 'routine_icon.dart';
 import 'widgets.dart';
 
-/// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
-String keepWords(String s) => s.replaceAllMapped(RegExp(r'\S(?=\S)'), (m) => '${m[0]}\u200D');
+export '../theme/tokens.dart' show keepWords; // 예전부터 이 파일에서 가져다 쓰던 곳을 위해
 
 /// 달성률에 따라 고르는 부드러운 한마디. 실패라는 말은 쓰지 않는다. 문장마다 줄을 바꾼다.
 String gentleLine(int done, int total) {

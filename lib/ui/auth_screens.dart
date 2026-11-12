@@ -1,5 +1,5 @@
 import 'package:flutter/foundation.dart' show kDebugMode;
-import 'package:flutter/material.dart';
+import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_svg/flutter_svg.dart';
 
 import '../app.dart';
@@ -7,7 +7,6 @@ import '../data/auth.dart';
 import '../theme/tokens.dart';
 import 'intro_demo.dart';
 import 'motion.dart';
-import 'today.dart' show keepWords;
 
 /// 소개 (온보딩 캐러셀) → 소셜 로그인
 class IntroScreen extends StatefulWidget {
