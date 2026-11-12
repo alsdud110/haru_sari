@@ -17,17 +17,16 @@ import 'store.dart';
 ///   앱에 카카오·구글 SDK 를 넣지 않아도 된다.
 /// - Apple: iOS 기본 로그인 창 → ID 토큰을 Supabase 에 넘긴다. iOS 에서만 버튼을 보인다.
 class SupabaseAuthService extends AuthService {
-  SupabaseAuthService(this._kv) {
+  SupabaseAuthService(super.kv) {
     _sub = _auth.onAuthStateChange.listen((_) => notifyListeners());
   }
 
-  final KeyValue _kv;
   late final StreamSubscription<AuthState> _sub;
 
   GoTrueClient get _auth => Supabase.instance.client.auth;
 
   @override
-  AuthUser? get current {
+  AuthUser? get account {
     final u = _auth.currentUser;
     if (u == null) return null;
     final meta = u.userMetadata ?? const {};
@@ -84,7 +83,7 @@ class SupabaseAuthService extends AuthService {
     await _auth.signInWithIdToken(provider: OAuthProvider.apple, idToken: token, nonce: raw);
     // Apple 은 이름을 첫 로그인 때 한 번만 준다 → 메타데이터에 남겨둔다.
     final name = [cred.familyName, cred.givenName].whereType<String>().join();
-    if (name.isNotEmpty && (current?.nickname.isEmpty ?? false)) {
+    if (name.isNotEmpty && (account?.nickname.isEmpty ?? false)) {
       await _auth.updateUser(UserAttributes(data: {'nickname': name}));
     }
     return null;
@@ -96,7 +95,7 @@ class SupabaseAuthService extends AuthService {
   }
 
   @override
-  Future<void> logout() async {
+  Future<void> signOutAccount() async {
     try {
       await _auth.signOut();
     } catch (e) {
@@ -106,8 +105,8 @@ class SupabaseAuthService extends AuthService {
   }
 
   @override
-  Future<String?> deleteAccount() async {
-    final u = current;
+  Future<String?> deleteSignedInAccount() async {
+    final u = account;
     if (u == null) return '로그인이 필요해요';
     try {
       await Supabase.instance.client.rpc<void>('delete_account');
@@ -115,19 +114,13 @@ class SupabaseAuthService extends AuthService {
       debugPrint('delete failed: $e');
       return '지우지 못했어요. 계정은 그대로 있어요. 인터넷 연결을 확인하고 다시 시도해 주세요';
     }
-    await _kv.removePrefix(userPrefix(u.uid));
+    await kv.removePrefix(userPrefix(u.uid));
     // 서버에서 계정이 지워졌으니 이 기기의 세션만 정리한다.
     try {
       await _auth.signOut(scope: SignOutScope.local);
     } catch (_) {}
     notifyListeners();
     return null;
-  }
-
-  @override
-  Future<void> debugReset() async {
-    await _kv.removePrefix('');
-    await logout();
   }
 
   @override

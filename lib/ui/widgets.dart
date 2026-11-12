@@ -132,8 +132,8 @@ class CoinChip extends StatelessWidget {
       color: AppColors.coin,
       bg: AppColors.coinSoft,
     );
-    // 디버그 빌드에서만: 길게 누르면 테스트용 코인·레벨 충전
-    return kDebugMode ? GestureDetector(onLongPress: s.debugTopUp, child: chip) : chip;
+    // 디버그 빌드에서만: 누를 때마다 테스트용 코인 +10000, 레벨 +1
+    return kDebugMode ? GestureDetector(onTap: s.debugTopUp, child: chip) : chip;
   }
 }
 

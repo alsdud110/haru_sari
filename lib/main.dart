@@ -5,6 +5,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 
 import 'app.dart';
 import 'config.dart';
+import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
 import 'data/supabase_auth.dart';
@@ -25,7 +26,8 @@ Future<void> main() async {
       auth: SupabaseAuthService(kv),
       reminders: LocalReminders(),
       manifest: manifest,
-      remoteFor: SupabaseRemote.new,
+      // 개발자 모드 계정은 서버와 맞추지 않는다 (이 기기에만 저장).
+      remoteFor: (uid) => uid == AuthService.devUid ? null : SupabaseRemote(uid),
     ),
   );
 }

@@ -46,7 +46,7 @@ class HaruSariApp extends StatefulWidget {
   final PixelManifest? manifest;
 
   /// 로그인한 사용자의 서버 저장소. 없으면 기기에만 저장한다 (테스트).
-  final Remote Function(String uid)? remoteFor;
+  final Remote? Function(String uid)? remoteFor;
 
   @override
   State<HaruSariApp> createState() => _HaruSariAppState();
