@@ -13,6 +13,7 @@ import 'catalog.dart';
 import 'models.dart';
 import 'reminders.dart';
 import 'rewards.dart';
+import 'sync.dart';
 
 /// 저장소 추상화. 테스트에서는 메모리 저장소를 쓴다.
 abstract class KeyValue {
@@ -154,7 +155,81 @@ class AppState extends ChangeNotifier {
     _checkBadges();
     notifyListeners();
     _save();
+    sync?.changed(day: logs.containsKey(todayKey) ? todayKey : null);
     if (resync) syncReminders();
+  }
+
+  // ───────── 서버 동기화 (sync.dart 가 부른다) ─────────
+
+  /// 붙어 있으면 바뀐 것을 서버에 올린다. 없으면 기기에만 저장한다 (테스트 등).
+  SyncEngine? sync;
+
+  ShopItem? itemById(String id) => shopCatalog.where((i) => i.id == id).firstOrNull;
+
+  /// 서버 지갑 값으로 맞춘다.
+  void applyWallet(Wallet w) {
+    if (profile.level == w.level && profile.xp == w.xp && profile.totalXp == w.totalXp && profile.coins == w.coins) {
+      return;
+    }
+    profile
+      ..level = w.level
+      ..xp = w.xp
+      ..totalXp = w.totalXp
+      ..coins = w.coins;
+    notifyListeners();
+    _save();
+  }
+
+  /// 다른 기기에서 고친 루틴·방·설정을 받는다. 지갑 값은 그대로 둔다 (applyWallet 이 맞춘다).
+  void applyRemoteState({required String nickname, required List<dynamic> routines, required Map<String, dynamic> profile}) {
+    final keep = this.profile;
+    final p = Profile.fromJson(profile)
+      ..level = keep.level
+      ..xp = keep.xp
+      ..totalXp = keep.totalXp
+      ..coins = keep.coins;
+    if (nickname.trim().isNotEmpty) p.name = nickname.trim();
+    this.profile = p;
+    this.routines
+      ..clear()
+      ..addAll(routines.map((e) => Routine.fromJson((e as Map).cast<String, dynamic>())));
+    onboarded = true;
+    _migrateRoom();
+    _syncToday();
+    notifyListeners();
+    _save();
+    syncReminders();
+  }
+
+  /// 다른 기기에서 쓴 날짜별 기록을 받는다.
+  void applyRemoteLogs(Map<String, Map<String, dynamic>> days) {
+    days.forEach((k, v) => logs[k] = DayLog.fromJson(v));
+    if (days.containsKey(todayKey)) _syncToday();
+    notifyListeners();
+    _save();
+  }
+
+  /// 다른 기기에서 산 물건을 보관함에 더한다.
+  void addOwned(Set<String> ids) {
+    final add = ids.difference(profile.owned).where((id) => itemById(id) != null).toList();
+    if (add.isEmpty) return;
+    for (final id in add) {
+      profile.owned.add(id);
+      profile.acquired.putIfAbsent(id, () => todayKey);
+    }
+    notifyListeners();
+    _save();
+  }
+
+  /// 서버가 구매를 거절했을 때 (다른 기기에서 코인을 먼저 썼을 때) 되돌린다.
+  void revertPurchase(String id) {
+    final item = itemById(id);
+    if (item == null || !profile.owned.contains(id)) return;
+    putAway(item);
+    profile.owned.remove(id);
+    profile.acquired.remove(id);
+    notifyListeners();
+    _save();
   }
 
   Future<void> syncReminders() => reminders.sync(routines: routines, settings: profile.alarms);
@@ -297,22 +372,45 @@ class AppState extends ChangeNotifier {
     _commit();
   }
 
+  /// 하루 보상. 기준을 처음 넘을 때 한 번, 그 뒤 그날 100%가 되면 보너스만 한 번 더 준다 (PL-BBQESH).
+  /// 서버(claim_daily_reward)도 같은 규칙으로 날짜당 한 번만 지급한다.
   DailyReward? _maybeReward(DayLog log) {
-    if (log.rewarded) return null;
-    final r = rewardFor(log.rate);
-    if (r == null || log.total == 0) return null;
-    log.rewarded = true;
-    final lv = addXp(profile.level, profile.xp, r.xp);
-    final coins = r.coins + lv.levelsGained * RewardRules.levelUpCoins;
+    if (log.total == 0) return null;
+    final int xp;
+    final int baseCoins;
+    if (!log.rewarded) {
+      final r = rewardFor(log.rate);
+      if (r == null) return null;
+      xp = r.xp;
+      baseCoins = r.coins;
+      log
+        ..rewarded = true
+        ..perfectPaid = r.perfect;
+    } else if (!log.perfectPaid && log.done == log.total) {
+      xp = RewardRules.perfectBonusXp;
+      baseCoins = RewardRules.perfectBonusCoins;
+      log.perfectPaid = true;
+    } else {
+      return null;
+    }
+    final lv = addXp(profile.level, profile.xp, xp);
+    final coins = baseCoins + lv.levelsGained * RewardRules.levelUpCoins;
     profile
       ..level = lv.level
       ..xp = lv.xp
-      ..totalXp += r.xp
+      ..totalXp += xp
       ..coins += coins;
     log
-      ..rewardXp = r.xp
-      ..rewardCoins = coins;
-    return DailyReward(xp: r.xp, coins: coins, perfect: r.perfect, levelsGained: lv.levelsGained, newLevel: lv.level);
+      ..rewardXp += xp
+      ..rewardCoins += coins;
+    sync?.queueClaim(log.date, log.done, log.total);
+    return DailyReward(
+      xp: xp,
+      coins: coins,
+      perfect: log.perfectPaid,
+      levelsGained: lv.levelsGained,
+      newLevel: lv.level,
+    );
   }
 
   /// 오늘 이미 받은 보상 (다시 보기용)
@@ -322,7 +420,7 @@ class AppState extends ChangeNotifier {
     return DailyReward(
       xp: l.rewardXp,
       coins: l.rewardCoins,
-      perfect: l.done == l.total,
+      perfect: l.perfectPaid,
       levelsGained: 0,
       newLevel: profile.level,
     );
@@ -347,6 +445,7 @@ class AppState extends ChangeNotifier {
     profile.acquired[item.id] = todayKey;
     final used = _use(item);
     _commit();
+    sync?.queueBuy(item.id, item.price, item.level);
     return used ? BuyResult.ok : BuyResult.okStored;
   }
 

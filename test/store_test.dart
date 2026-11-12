@@ -82,6 +82,21 @@ void main() {
       expect(s.profile.coins, RewardRules.baseCoins);
     });
 
+    test('70%로 받은 뒤 그날 100%가 되면 보너스만 한 번 더 받는다', () {
+      s.completeMany(['a', 'b', 'c']); // 75%
+      expect(s.profile.totalXp, RewardRules.baseXp);
+      final bonus = s.toggle('d'); // 100%
+      expect(bonus, isNotNull);
+      expect(bonus!.xp, RewardRules.perfectBonusXp);
+      expect(bonus.coins, RewardRules.perfectBonusCoins);
+      expect(bonus.perfect, isTrue);
+      expect(s.profile.totalXp, RewardRules.baseXp + RewardRules.perfectBonusXp);
+      expect(s.profile.coins, RewardRules.baseCoins + RewardRules.perfectBonusCoins);
+      // 취소했다 다시 100%가 돼도 더 받지 않는다
+      s.toggle('d');
+      expect(s.toggle('d'), isNull);
+      expect(s.todayReward!.xp, RewardRules.baseXp + RewardRules.perfectBonusXp);
+    });
 
     test('완료를 취소해도 보상은 회수하지 않는다', () {
       s.completeMany(['a', 'b', 'c']);

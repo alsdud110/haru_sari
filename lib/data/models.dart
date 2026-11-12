@@ -82,6 +82,7 @@ class DayLog {
     required this.scheduled,
     Set<String>? completed,
     this.rewarded = false,
+    this.perfectPaid = false,
     this.rewardXp = 0,
     this.rewardCoins = 0,
     this.memo = '',
@@ -92,6 +93,9 @@ class DayLog {
   final Map<String, String> scheduled;
   final Set<String> completed;
   bool rewarded;
+
+  /// 100% 보너스를 받았는지 (70%로 먼저 받고 나중에 100%가 되면 보너스만 더 받는다)
+  bool perfectPaid;
   int rewardXp;
   int rewardCoins;
 
@@ -107,6 +111,7 @@ class DayLog {
     'scheduled': scheduled,
     'completed': completed.toList(),
     'rewarded': rewarded,
+    'perfectPaid': perfectPaid,
     'rewardXp': rewardXp,
     'rewardCoins': rewardCoins,
     'memo': memo,
@@ -117,6 +122,7 @@ class DayLog {
     scheduled: (j['scheduled'] as Map).cast<String, String>(),
     completed: (j['completed'] as List).cast<String>().toSet(),
     rewarded: j['rewarded'] as bool? ?? false,
+    perfectPaid: j['perfectPaid'] as bool? ?? false,
     rewardXp: j['rewardXp'] as int? ?? 0,
     rewardCoins: j['rewardCoins'] as int? ?? 0,
     memo: j['memo'] as String? ?? '',

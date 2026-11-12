@@ -8,6 +8,7 @@ import 'config.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
 import 'data/supabase_auth.dart';
+import 'data/supabase_remote.dart';
 import 'room/manifest.dart';
 
 Future<void> main() async {
@@ -22,6 +23,7 @@ Future<void> main() async {
       auth: SupabaseAuthService(kv),
       reminders: LocalReminders(),
       manifest: manifest,
+      remoteFor: SupabaseRemote.new,
     ),
   );
 }

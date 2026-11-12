@@ -3,10 +3,12 @@ import 'package:flutter/material.dart';
 import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
+import 'data/sync.dart';
 import 'room/manifest.dart';
 import 'room/registry.dart';
 import 'theme/tokens.dart';
 import 'ui/auth_screens.dart';
+import 'ui/motion.dart';
 import 'ui/onboarding.dart';
 import 'ui/shell.dart';
 
@@ -28,18 +30,29 @@ class AuthScope extends InheritedNotifier<AuthService> {
 }
 
 class HaruSariApp extends StatefulWidget {
-  const HaruSariApp({super.key, required this.kv, required this.auth, this.reminders, this.clock, this.manifest});
+  const HaruSariApp({
+    super.key,
+    required this.kv,
+    required this.auth,
+    this.reminders,
+    this.clock,
+    this.manifest,
+    this.remoteFor,
+  });
   final KeyValue kv;
   final AuthService auth;
   final Reminders? reminders;
   final DateTime Function()? clock;
   final PixelManifest? manifest;
 
+  /// 로그인한 사용자의 서버 저장소. 없으면 기기에만 저장한다 (테스트).
+  final Remote Function(String uid)? remoteFor;
+
   @override
   State<HaruSariApp> createState() => _HaruSariAppState();
 }
 
-class _HaruSariAppState extends State<HaruSariApp> {
+class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
   AppState? _state;
 
   /// 픽셀 에셋 이미지 캐시 (계정과 무관하므로 앱 전체에서 하나)
@@ -48,16 +61,23 @@ class _HaruSariAppState extends State<HaruSariApp> {
 
   AppState _stateFor(String uid) {
     if (_uid != uid || _state == null) {
-      _state?.dispose();
+      _disposeState();
       _uid = uid;
+      final kv = PrefixedKeyValue(widget.kv, userPrefix(uid));
       _state = AppState(
-        PrefixedKeyValue(widget.kv, userPrefix(uid)),
+        kv,
         clock: widget.clock,
         reminders: widget.reminders,
         initialName: widget.auth.current?.nickname ?? '',
         manifest: widget.manifest,
       );
       if (_state!.onboarded) _state!.syncReminders();
+      final remote = widget.remoteFor?.call(uid);
+      if (remote != null) {
+        final engine = SyncEngine(_state!, remote, kv, clock: widget.clock);
+        _state!.sync = engine;
+        engine.start();
+      }
     }
     return _state!;
   }
@@ -66,13 +86,25 @@ class _HaruSariAppState extends State<HaruSariApp> {
   void initState() {
     super.initState();
     widget.auth.addListener(_onAuth);
+    WidgetsBinding.instance.addObserver(this);
+  }
+
+  /// 앱으로 돌아오면 못 보낸 것을 다시 보낸다.
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState s) {
+    if (s == AppLifecycleState.resumed) _state?.sync?.flush();
+  }
+
+  void _disposeState() {
+    _state?.sync?.dispose();
+    _state?.dispose();
+    _state = null;
   }
 
   void _onAuth() {
     if (!widget.auth.signedIn) {
       widget.reminders?.clear();
-      _state?.dispose();
-      _state = null;
+      _disposeState();
       _uid = null;
     }
   }
@@ -80,7 +112,8 @@ class _HaruSariAppState extends State<HaruSariApp> {
   @override
   void dispose() {
     widget.auth.removeListener(_onAuth);
-    _state?.dispose();
+    WidgetsBinding.instance.removeObserver(this);
+    _disposeState();
     super.dispose();
   }
 
@@ -115,6 +148,18 @@ class _Gate extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
-    return AnimatedSwitcher(duration: Motion.slow, child: s.onboarded ? const HomeShell() : const SetupFlow());
+    final pulling = s.sync?.pulling;
+    Widget pick() => s.onboarded ? const HomeShell() : const SetupFlow();
+    if (pulling == null) return AnimatedSwitcher(duration: Motion.slow, child: pick());
+    // 새 기기: 서버에서 받아오는 동안 첫 설정 화면 대신 잠깐 기다린다.
+    return ValueListenableBuilder<bool>(
+      valueListenable: pulling,
+      builder: (context, busy, _) => AnimatedSwitcher(
+        duration: Motion.slow,
+        child: busy && !s.onboarded
+            ? const Scaffold(key: ValueKey('pulling'), body: Center(child: AppSpinner()))
+            : pick(),
+      ),
+    );
   }
 }
