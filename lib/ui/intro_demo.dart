@@ -19,9 +19,9 @@ abstract class _Demo extends StatefulWidget {
 }
 
 abstract class _DemoState<T extends _Demo> extends State<T> with SingleTickerProviderStateMixin {
-  /// 한 장면의 전체 길이 (2초 안쪽)
-  static const _length = Duration(milliseconds: 1900);
-  late final c = AnimationController(vsync: this, duration: _length);
+  /// 한 장면의 전체 길이
+  Duration get length => const Duration(milliseconds: 1900);
+  late final c = AnimationController(vsync: this, duration: length);
   bool _started = false;
 
   void _play() {
@@ -83,7 +83,9 @@ class _Rise extends StatelessWidget {
   }
 }
 
-/// 1장: 루틴 카드 세 장이 차례로 놓이고, 위에서부터 둘이 체크된다.
+/// 1장: 루틴 카드가 한 장씩 가운데에 나타나 체크되고, 체크된 카드는 뒤로 물러난다.
+///
+/// 일어나기 → 체크 → (뒤로 살짝 빠지며 작아지고 어두워짐 + 물 한 잔 마시기 등장) → 체크 → (같은 식으로 점심 챙겨 먹기 등장)
 class IntroRoutinesDemo extends _Demo {
   const IntroRoutinesDemo({super.key, required super.active});
   @override
@@ -93,35 +95,68 @@ class IntroRoutinesDemo extends _Demo {
 class _IntroRoutinesDemoState extends _DemoState<IntroRoutinesDemo> {
   static const _rows = [('🌤', '일어나기', '오전 7:00'), ('💧', '물 한 잔 마시기', '오전 7:10'), ('🍚', '점심 챙겨 먹기', '오후 12:00')];
 
+  // 장면의 때 (0~1): 체크 두 번, 카드가 바뀌는 구간 두 번
+  static const _check = [0.26, 0.62];
+  static const _swap = [0.38, 0.74];
+  static const _swapSpan = 0.16;
+
+  @override
+  Duration get length => const Duration(milliseconds: 2800);
+
   @override
   Widget scene(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    // 카드가 바뀌는 정도 (0 → 1)
+    final s = [for (final from in _swap) Motion.curve.transform(part(from, _swapSpan))];
+    final cards = <(double depth, Widget card)>[];
+    for (var i = 0; i < _rows.length; i++) {
+      // 얼마나 뒤로 물러났는지: 0 = 맨 앞(가운데), 1 = 한 칸 뒤, 2 = 두 칸 뒤
+      final depth = [s[0] + s[1], s[1], 0.0][i];
+      // 나타난 정도: 첫 카드는 처음에, 나머지는 앞 카드가 물러날 때
+      final shown = i == 0 ? Motion.curve.transform(part(0, 0.12)) : s[i - 1];
+      if (shown == 0) continue;
+      cards.add((
+        depth,
+        Opacity(
+          opacity: shown,
+          child: Transform.translate(
+            // 뒤로 갈수록 위로 살짝 올라가고, 새 카드는 아래에서 떠오른다
+            offset: Offset(0, -18 * depth + 12 * (1 - shown)),
+            child: Transform.scale(
+              scale: 1 - 0.07 * depth,
+              child: _row(t, _rows[i], done: i < 2 && c.value >= _check[i], dim: 0.1 * depth),
+            ),
+          ),
+        ),
+      ));
+    }
+    cards.sort((a, b) => b.$1.compareTo(a.$1)); // 뒤에 있는 카드부터 그린다
     return IgnorePointer(
       child: SizedBox(
         width: 300,
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            for (var i = 0; i < _rows.length; i++) ...[
-              if (i > 0) const SizedBox(height: Space.sm),
-              _Rise(
-                t: part(0.12 * i, 0.22),
-                child: _row(t, _rows[i], done: i < 2 && c.value >= 0.58 + 0.2 * i),
-              ),
-            ],
-          ],
+        height: 106,
+        child: Stack(
+          alignment: Alignment.bottomCenter,
+          clipBehavior: Clip.none,
+          children: [for (final (_, card) in cards) SizedBox(width: 300, child: card)],
         ),
       ),
     );
   }
 
-  Widget _row(TextTheme t, (String, String, String) r, {required bool done}) => AnimatedContainer(
+  /// [dim]: 뒤로 물러난 카드를 어둡게 덮는 정도 (0~1)
+  Widget _row(TextTheme t, (String, String, String) r, {required bool done, double dim = 0}) => AnimatedContainer(
     duration: Motion.normal,
     padding: const EdgeInsets.symmetric(horizontal: Space.lg, vertical: Space.md),
+    // 겹쳐 놓이므로 뒤 카드가 비치지 않게 불투명한 색을 쓴다
     decoration: BoxDecoration(
-      color: done ? AppColors.sageSoft.withValues(alpha: 0.55) : AppColors.surface,
+      color: done ? Color.alphaBlend(AppColors.sageSoft.withValues(alpha: 0.55), AppColors.surface) : AppColors.surface,
       borderRadius: BorderRadius.circular(Radii.md),
       border: Border.all(color: AppColors.line.withValues(alpha: 0.7)),
+    ),
+    foregroundDecoration: BoxDecoration(
+      color: AppColors.text.withValues(alpha: dim),
+      borderRadius: BorderRadius.circular(Radii.md),
     ),
     child: Row(
       children: [
@@ -129,6 +164,7 @@ class _IntroRoutinesDemoState extends _DemoState<IntroRoutinesDemo> {
         const SizedBox(width: Space.md),
         Expanded(
           child: Column(
+            mainAxisSize: MainAxisSize.min, // 겹쳐 놓는 칸 안에서 카드가 세로로 늘어나지 않게
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Text(r.$2, style: t.titleMedium?.copyWith(color: done ? AppColors.textMuted : AppColors.text)),

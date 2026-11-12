@@ -86,46 +86,62 @@ class _IntroScreenState extends State<IntroScreen> {
                 },
               ),
             ),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: List.generate(
-                _slides.length,
-                (i) => AnimatedContainer(
-                  duration: Motion.normal,
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  width: i == _i ? 22 : 8,
-                  height: 8,
-                  decoration: BoxDecoration(
-                    color: i == _i ? AppColors.primary : AppColors.line,
-                    borderRadius: BorderRadius.circular(99),
-                  ),
-                ),
-              ),
-            ),
             // 소개를 다 본 마지막 장에서만 로그인을 권한다. 앞 장에서는 '다음'과 '건너뛰기'.
             Padding(
-              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.lg),
+              padding: const EdgeInsets.fromLTRB(Space.gutter, Space.md, Space.gutter, Space.lg),
               // 장마다 높이가 같아야 넘길 때 위쪽 그림과 글이 움직이지 않는다.
+              // 그 안에서 쪽 표시(점)는 늘 버튼 바로 위에 붙고, 버튼 묶음 높이가 바뀌면 함께 미끄러진다.
               child: SizedBox(
-                height: AuthScope.of(context).providers.length * 60 + 32,
-                child: AnimatedSwitcher(
-                  duration: Motion.normal,
-                  layoutBuilder: (current, previous) => Stack(
-                    alignment: Alignment.bottomCenter,
-                    children: [...previous, ?current],
-                  ),
-                  child: _i == _slides.length - 1
-                      ? const SocialButtons(key: ValueKey('login'))
-                      : Column(
-                          key: const ValueKey('next'),
-                          mainAxisSize: MainAxisSize.min,
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            FilledButton(onPressed: () => _to(_i + 1), child: const Text('다음')),
-                            const SizedBox(height: Space.xs),
-                            TextButton(onPressed: () => _to(_slides.length - 1), child: const Text('건너뛰기')),
-                          ],
+                height: AuthScope.of(context).providers.length * 60 + 32 + 8 + Space.lg,
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        _slides.length,
+                        (i) => AnimatedContainer(
+                          duration: Motion.normal,
+                          margin: const EdgeInsets.symmetric(horizontal: 3),
+                          width: i == _i ? 22 : 8,
+                          height: 8,
+                          decoration: BoxDecoration(
+                            color: i == _i ? AppColors.primary : AppColors.line,
+                            borderRadius: BorderRadius.circular(99),
+                          ),
                         ),
+                      ),
+                    ),
+                    const SizedBox(height: Space.lg),
+                    AnimatedSize(
+                      duration: Motion.normal,
+                      curve: Motion.curve,
+                      alignment: Alignment.bottomCenter,
+                      child: AnimatedSwitcher(
+                        duration: Motion.normal,
+                        layoutBuilder: (current, previous) => Stack(
+                          alignment: Alignment.bottomCenter,
+                          children: [...previous, ?current],
+                        ),
+                        child: _i == _slides.length - 1
+                            ? const SocialButtons(key: ValueKey('login'))
+                            : Column(
+                                key: const ValueKey('next'),
+                                mainAxisSize: MainAxisSize.min,
+                                crossAxisAlignment: CrossAxisAlignment.stretch,
+                                children: [
+                                  FilledButton(onPressed: () => _to(_i + 1), child: const Text('다음')),
+                                  const SizedBox(height: Space.xs),
+                                  TextButton(
+                                    onPressed: () => _to(_slides.length - 1),
+                                    child: const Text('건너뛰기'),
+                                  ),
+                                ],
+                              ),
+                      ),
+                    ),
+                  ],
                 ),
               ),
             ),
