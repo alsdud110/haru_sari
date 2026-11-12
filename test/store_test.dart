@@ -194,6 +194,26 @@ void main() {
       expect(s.buy(desk), BuyResult.alreadyOwned);
     });
 
+    test('같은 가구를 색마다 따로 사고, 보관함에 색별로 남는다', () {
+      s.profile
+        ..level = 9
+        ..coins = 1000;
+      final bed = itemById('bed_single')!;
+      final sky = bed.withColor(ItemColor.sky);
+      expect(itemById(sky.id)!.color, ItemColor.sky);
+      expect(sky.withColor(null).id, 'bed_single');
+      expect(itemById('bed_single~nope'), isNull);
+      expect(itemById('outfit_knit~sky'), isNull);
+      expect(s.buy(bed), BuyResult.ok);
+      expect(s.canBuy(sky), BuyResult.ok);
+      expect(s.buy(sky), BuyResult.ok);
+      expect(s.buy(sky), BuyResult.alreadyOwned);
+      expect(s.isInUse(sky), isTrue);
+      s.putAway(bed);
+      s.putAway(sky);
+      expect(s.storedItems.map((i) => i.id), ['bed_single', 'bed_single~sky']);
+    });
+
     test('같은 분류 가구를 여러 개 놓을 수 있고, 보관했다 다시 놓으면 원래 자리로 간다', () {
       s.profile
         ..level = 6

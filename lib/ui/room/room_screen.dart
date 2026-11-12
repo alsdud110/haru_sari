@@ -4,6 +4,8 @@ import 'package:flutter/services.dart';
 import '../../app.dart';
 import '../../data/catalog.dart';
 import '../../data/store.dart';
+import '../../room/palette.dart';
+import '../../room/registry.dart';
 import '../../theme/tokens.dart';
 import '../settings.dart';
 import '../motion.dart';
@@ -520,10 +522,14 @@ class _StorageScreenState extends State<StorageScreen> {
 Future<void> showItemSheet(BuildContext context, ShopItem item) {
   return showAppSheet<void>(
     context,
-    builder: (ctx) {
+    builder: (ctx) => StatefulBuilder(builder: (ctx, setState) {
       final s = AppScope.of(ctx);
       final p = s.profile;
       final t = Theme.of(ctx).textTheme;
+      // 바닥에 놓는 가구는 색을 고를 수 있다. 그림을 읽어야 어느 색이 바뀌는지 안다.
+      final reg = RegistryScope.of(ctx);
+      final ramp = item.isFurniture ? reg?.recolorRampOf(item.id) : null;
+      if (item.isFurniture && ramp == null) reg?.preload([baseIdOf(item.id)]);
       final status = s.canBuy(item);
       final owned = status == BuyResult.alreadyOwned;
       final inUse = owned && s.isInUse(item);
@@ -613,6 +619,45 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
                 Text(item.name, style: t.titleLarge),
                 const SizedBox(height: 2),
                 Text('${item.typeLabel} · Lv.${item.level}', style: t.bodySmall),
+                if (ramp != null && ramp >= 0)
+                  Padding(
+                    padding: const EdgeInsets.only(top: Space.sm),
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        for (final c in <ItemColor?>[null, ...ItemColor.values])
+                          if (c?.index != ramp)
+                            Semantics(
+                              button: true,
+                              selected: item.color == c,
+                              label: c?.label ?? '원래 색',
+                              child: GestureDetector(
+                                behavior: HitTestBehavior.opaque,
+                                onTap: () => setState(() => item = item.withColor(c)),
+                                child: SizedBox.square(
+                                  dimension: 44,
+                                  child: Center(
+                                    child: Container(
+                                      width: 30,
+                                      height: 30,
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: Color(0xFF000000 | PixelPalette.ramps[c?.index ?? ramp][1]),
+                                        border: item.color == c
+                                            ? Border.all(color: AppColors.text, width: 1.5)
+                                            : Border.all(color: AppColors.line),
+                                      ),
+                                      child: p.owned.contains(item.withColor(c).id)
+                                          ? const Icon(Icons.check_rounded, size: 16, color: AppColors.text)
+                                          : null,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                      ],
+                    ),
+                  ),
                 const SizedBox(height: Space.md),
                 for (final (k, v) in rows)
                   Padding(
@@ -640,6 +685,6 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
           ),
         ),
       );
-    },
+    }),
   );
 }

@@ -52,6 +52,9 @@ class PixelPalette {
     };
   }
 
+  /// 가구 색 바꾸기에 쓰는 램프. 앞 다섯 개는 ItemColor 순서다.
+  static const ramps = [terracotta, sage, butter, sky, lavender, cream, floor, wood];
+
   /// 엔진이 그리는 그림자 (반투명, 에셋에는 쓰지 않음)
   static const shadow = 0x6B4F3A;
   static const shadowAlpha = 0.28;

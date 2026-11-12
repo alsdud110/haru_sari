@@ -51,6 +51,21 @@ enum ShopCategory {
   final String label;
 }
 
+/// 바닥에 놓는 가구의 색. 순서는 PixelPalette.ramps 앞 다섯 개와 같다 (registry.dart 가 그 색으로 바꿔 칠한다).
+enum ItemColor {
+  coral('코랄'),
+  sage('세이지'),
+  butter('버터'),
+  sky('하늘'),
+  lavender('라벤더');
+
+  const ItemColor(this.label);
+  final String label;
+}
+
+/// 색을 고른 가구의 id는 '원래id~색이름'이다.
+String baseIdOf(String id) => id.split('~').first;
+
 /// 상점 아이템 하나 (가구·의상·액세서리).
 /// [variant]는 그림 그릴 때 쓰는 모양 번호다.
 /// 나중에 그림 에셋이 생기면 [assetPath]를 채우면 된다.
@@ -64,6 +79,7 @@ class ShopItem {
     this.kind = ItemKind.furniture,
     this.slot,
     this.assetPath,
+    this.color,
   });
   final String id;
   final String name;
@@ -75,6 +91,26 @@ class ShopItem {
   final int level;
   final int variant;
   final String? assetPath;
+
+  /// 고른 색. null이면 원래 색
+  final ItemColor? color;
+
+  /// 같은 가구의 다른 색 (null이면 원래 색). 색마다 따로 사고 따로 가진다.
+  ShopItem withColor(ItemColor? c) {
+    final b = color == null ? this : itemById(baseIdOf(id))!;
+    if (c == null) return b;
+    return ShopItem(
+      id: '${b.id}~${c.name}',
+      name: '${b.name} (${c.label})',
+      price: b.price,
+      level: b.level,
+      variant: b.variant,
+      kind: b.kind,
+      slot: b.slot,
+      assetPath: b.assetPath,
+      color: c,
+    );
+  }
 
   bool get isFurniture => kind == ItemKind.furniture;
 
@@ -223,8 +259,12 @@ const shopCatalog = <ShopItem>[
 
 ShopItem? itemById(String? id) {
   if (id == null) return null;
+  final parts = id.split('~');
   for (final i in shopCatalog) {
-    if (i.id == id) return i;
+    if (i.id != parts[0]) continue;
+    if (parts.length == 1) return i;
+    final c = ItemColor.values.asNameMap()[parts[1]];
+    return c == null || !i.isFurniture ? null : i.withColor(c);
   }
   return null;
 }

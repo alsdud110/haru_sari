@@ -868,7 +868,16 @@ class ItemThumb extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     // 사람이 그린 그림(assetPath)이나 코드로 뽑은 픽셀 그림(generatedSprites)이 있으면 그 PNG를 쓴다.
-    final sprite = generatedSprites.contains(item.id)
+    // 색을 고른 가구는 바꿔 칠한 그림을 쓴다. 읽는 동안은 원래 색 그림이 보인다.
+    if (item.color != null) {
+      final reg = RegistryScope.of(context);
+      final s = reg?.sprite(item.id, Rot.r0);
+      if (s != null) {
+        return RawImage(image: s.image, width: size, height: size, fit: BoxFit.contain, filterQuality: FilterQuality.none);
+      }
+      reg?.preload([item.id]);
+    }
+    final sprite = generatedSprites.contains(baseIdOf(item.id))
         ? RegistryScope.of(context)?.manifest[item.id]?.rotations[Rot.r0]
         : null;
     final asset = item.assetPath ?? (sprite == null ? null : '${PixelManifest.assetRoot}$sprite');

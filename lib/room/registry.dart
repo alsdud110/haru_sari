@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter/widgets.dart';
 
+import '../data/catalog.dart';
 import 'iso.dart';
 import 'manifest.dart';
 import 'palette.dart';
@@ -45,6 +46,11 @@ class AssetRegistry extends ChangeNotifier {
   final Set<String> _tried = {};
 
   static String _key(String id, Rot r) => '$id#${r.name}';
+
+  final Map<String, int> _ramps = {};
+
+  /// 그 가구에서 색이 바뀌는 램프 번호 (PixelPalette.ramps). 아직 안 읽었으면 null, 바꿀 색이 없으면 -1.
+  int? recolorRampOf(String id) => _ramps[baseIdOf(id)];
 
   /// 그 아이템·방향에 쓸 스프라이트. 없으면 null (대체 그림).
   LoadedSprite? sprite(String id, Rot r) {
@@ -109,7 +115,7 @@ class AssetRegistry extends ChangeNotifier {
       for (final e in art.rotations.entries) {
         final k = _key(id, e.key);
         if (!_tried.add(k)) continue;
-        final loaded = await _load(art, e.key, e.value);
+        final loaded = await _load(art, e.key, e.value, id);
         if (loaded != null) {
           _sprites[k] = loaded;
           changed = true;
@@ -135,12 +141,12 @@ class AssetRegistry extends ChangeNotifier {
     }
   }
 
-  Future<LoadedSprite?> _load(ItemArt art, Rot r, String path) async {
-    final k = _key(art.id, r);
+  Future<LoadedSprite?> _load(ItemArt art, Rot r, String path, String id) async {
+    final k = _key(id, r);
     try {
       final data = await _bundle.load('${PixelManifest.assetRoot}$path');
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      final img = (await codec.getNextFrame()).image;
+      var img = (await codec.getNextFrame()).image;
       final spec = art.spriteSpec(r);
       if (img.width != spec.width || img.height != spec.height) {
         problems[k] = '크기 ${img.width}×${img.height} ≠ ${spec.width}×${spec.height}';
@@ -150,6 +156,15 @@ class AssetRegistry extends ChangeNotifier {
       final alpha = Uint8List(img.width * img.height);
       for (var i = 0; i < alpha.length; i++) {
         alpha[i] = rgba[i * 4 + 3];
+      }
+      // 방향마다 많이 쓰인 색이 다를 수 있어 R0에서 정한 램프를 네 방향에 같이 쓴다
+      final ramp = _ramps[art.id] ??= recolorRamp(rgba);
+      final color = itemById(id)?.color;
+      if (color != null && ramp >= 0) {
+        final from = PixelPalette.ramps[ramp], to = PixelPalette.ramps[color.index];
+        img = await paletteSwap(img, {
+          for (var i = 0; i < from.length; i++) from[i]: to[i < to.length ? i : to.length - 1],
+        });
       }
       return LoadedSprite(img, alpha);
     } catch (e) {
@@ -333,6 +348,33 @@ extension MinimiAssets on AssetRegistry {
     out.sort((a, b) => MinimiSheet.order.indexOf(a.name).compareTo(MinimiSheet.order.indexOf(b.name)));
     return out;
   }
+}
+
+/// 가구 그림에서 색을 바꿀 램프 번호 (PixelPalette.ramps). 없으면 -1.
+/// 강조색이 20% 넘게 쓰였으면 그중 가장 많은 것(침대 이불), 아니면 가장 많이 쓰인 램프(원목 몸통).
+/// 그것도 20%가 안 되면 바꿔도 티가 안 나서 색을 고르지 않는다.
+int recolorRamp(Uint8List rgba) {
+  final n = List.filled(PixelPalette.ramps.length, 0);
+  var total = 0;
+  for (var i = 0; i < rgba.length; i += 4) {
+    if (rgba[i + 3] == 0) continue;
+    final rgb = (rgba[i] << 16) | (rgba[i + 1] << 8) | rgba[i + 2];
+    if (PixelPalette.ink.contains(rgb)) continue;
+    total++;
+    final r = PixelPalette.ramps.indexWhere((l) => l.contains(rgb));
+    if (r >= 0) n[r]++;
+  }
+  int top(int end) {
+    var best = 0;
+    for (var i = 1; i < end; i++) {
+      if (n[i] > n[best]) best = i;
+    }
+    return best;
+  }
+
+  bool enough(int r) => total > 0 && n[r] * 5 >= total;
+  final accent = top(ItemColor.values.length), any = top(n.length);
+  return enough(accent) ? accent : (enough(any) ? any : -1);
 }
 
 /// 0번 램프 색과 정확히 같은 픽셀만 고른 램프 색으로 바꾼다 (01 §6).

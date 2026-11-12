@@ -180,7 +180,7 @@ class IsoRoomPainter extends CustomPainter {
 
   /// PNG가 없을 때: 기존 벡터 그림을 계산된 상자 안에 그린다 (02 §9.2).
   void _fallback(Canvas c, SceneEntry e) {
-    final item = itemById(e.id);
+    final item = itemById(baseIdOf(e.id));
     if (item == null) return;
     if (e.kind == EntryKind.floorDecor) {
       drawRug(c, rugStyleOf(item.id), e.footprint!);

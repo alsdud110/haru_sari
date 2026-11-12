@@ -68,6 +68,8 @@ String userPrefix(String uid) => 'u/$uid/';
 enum BuyResult { ok, okStored, alreadyOwned, levelTooLow, notEnoughCoins }
 
 /// 앱 전체 상태. 루틴·하루 기록·프로필(경험치/코인/방/옷/배지)을 저장한다.
+const _catalogItem = itemById;
+
 class AppState extends ChangeNotifier {
   AppState(
     this._kv, {
@@ -164,7 +166,7 @@ class AppState extends ChangeNotifier {
   /// 붙어 있으면 바뀐 것을 서버에 올린다. 없으면 기기에만 저장한다 (테스트 등).
   SyncEngine? sync;
 
-  ShopItem? itemById(String id) => shopCatalog.where((i) => i.id == id).firstOrNull;
+  ShopItem? itemById(String id) => _catalogItem(id);
 
   /// 서버 지갑 값으로 맞춘다.
   void applyWallet(Wallet w) {
@@ -515,7 +517,14 @@ class AppState extends ChangeNotifier {
     ItemKind.accessory => profile.accessoryId == item.id || profile.earringId == item.id,
   };
 
-  List<ShopItem> get ownedItems => shopCatalog.where((i) => profile.owned.contains(i.id)).toList();
+  List<ShopItem> get ownedItems => [
+    for (final i in shopCatalog) ...[
+      if (profile.owned.contains(i.id)) i,
+      if (i.isFurniture)
+        for (final c in ItemColor.values)
+          if (profile.owned.contains('${i.id}~${c.name}')) i.withColor(c),
+    ],
+  ];
 
   /// 보관함: 갖고 있지만 쓰지 않는 것
   List<ShopItem> get storedItems => ownedItems.where((i) => !isInUse(i)).toList();

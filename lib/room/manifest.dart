@@ -119,7 +119,8 @@ class PixelManifest {
   static const assetRoot = 'assets/pixel/';
   static const manifestPath = 'assets/pixel/manifest.json';
 
-  ItemArt? operator [](String id) => items[id];
+  /// 색을 고른 가구('id~색')는 원래 가구의 그림 정보를 쓴다.
+  ItemArt? operator [](String id) => items[id] ?? items[id.split('~').first];
 
   factory PixelManifest.parse(String source) {
     final j = jsonDecode(source) as Map<String, dynamic>;
