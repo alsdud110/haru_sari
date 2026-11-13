@@ -46,11 +46,11 @@ void main() {
       expect(a.mirrorR1, isFalse, reason: '광원 때문에 반전 금지, R0·R1 따로 그림');
     });
 
-    test('카탈로그: 더블 100코인·레벨 3, 싱글은 그대로 60코인·레벨 3', () {
+    test('카탈로그: 더블 100코인·레벨 9, 싱글은 그대로 60코인·레벨 1', () {
       final d = itemById('bed_double')!;
-      expect((d.price, d.level, d.slot), (100, 3, RoomSlot.bed));
+      expect((d.price, d.level, d.slot), (100, 9, RoomSlot.bed));
       final s = itemById('bed_single')!;
-      expect((s.price, s.level), (60, 3));
+      expect((s.price, s.level), (60, 1));
     });
   });
 
@@ -82,7 +82,7 @@ void main() {
     test('싱글 침대를 산 기존 사용자: ID·구매일·배치 그대로, 더블은 따로 산다', () async {
       final kv = MemoryKeyValue();
       final old = Profile(
-        level: 3,
+        level: 9,
         coins: 120,
         owned: {'bed_single'},
         acquired: {'bed_single': '2026-11-01'},
@@ -107,7 +107,7 @@ void main() {
     test('더블 2×2 회전: 점유는 그대로 2×2, 방 끝에서도 회전 가능', () {
       final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: m);
       s.profile
-        ..level = 3
+        ..level = 9
         ..coins = 200;
       s.buy(itemById('bed_double')!);
       expect(s.moveFloor('bed_double', const FloorPos(6, 6)).ok, isTrue);

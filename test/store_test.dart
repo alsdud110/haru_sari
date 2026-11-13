@@ -182,16 +182,16 @@ void main() {
 
   group('상점·방·옷', () {
     test('가구는 레벨과 코인이 충분해야 산다', () {
-      final desk = itemById('desk_wood')!; // Lv2, 40
-      expect(s.buy(desk), BuyResult.levelTooLow);
-      s.profile.level = 2;
-      expect(s.buy(desk), BuyResult.notEnoughCoins);
+      final rug = itemById('rug_stripe')!; // Lv3, 30
+      expect(s.buy(rug), BuyResult.levelTooLow);
+      s.profile.level = 3;
+      expect(s.buy(rug), BuyResult.notEnoughCoins);
       s.profile.coins = 100;
-      expect(s.buy(desk), BuyResult.ok);
-      expect(s.profile.coins, 60);
-      expect(s.isInUse(desk), isTrue);
-      expect(s.profile.acquired[desk.id], '2026-11-11');
-      expect(s.buy(desk), BuyResult.alreadyOwned);
+      expect(s.buy(rug), BuyResult.ok);
+      expect(s.profile.coins, 70);
+      expect(s.isInUse(rug), isTrue);
+      expect(s.profile.acquired[rug.id], '2026-11-11');
+      expect(s.buy(rug), BuyResult.alreadyOwned);
     });
 
     test('같은 가구를 색마다 따로 사고, 보관함에 색별로 남는다', () {
@@ -248,7 +248,7 @@ void main() {
 
     test('바닥재는 벽지와 따로 깔린다', () {
       s.profile
-        ..level = 6
+        ..level = 7
         ..coins = 500;
       s.buy(itemById('wall_sage')!);
       s.buy(itemById('floor_checker')!);
