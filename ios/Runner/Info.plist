@@ -36,6 +36,9 @@
 			<string>cstr6suwn9.skadnetwork</string>
 		</dict>
 	</array>
+	<!-- HTTPS 같은 표준 암호화만 쓴다는 선언. 없으면 업로드할 때마다 수출 규정 질문이 뜬다. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>
