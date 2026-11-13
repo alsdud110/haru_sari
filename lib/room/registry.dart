@@ -50,7 +50,14 @@ class AssetRegistry extends ChangeNotifier {
   final Map<String, int> _ramps = {};
 
   /// 그 가구에서 색이 바뀌는 램프 번호 (PixelPalette.ramps). 아직 안 읽었으면 null, 바꿀 색이 없으면 -1.
-  int? recolorRampOf(String id) => _ramps[baseIdOf(id)];
+  /// 원래 색이 정해진 가구(ShopItem.accent)는 그림을 읽지 않아도 안다.
+  int? recolorRampOf(String id) => itemById(baseIdOf(id))?.accent?.index ?? _ramps[baseIdOf(id)];
+
+  /// [from]번 램프의 색을 [to] 색으로 바꾸는 표.
+  static Map<int, int> _swapTable(int from, ItemColor to) {
+    final a = PixelPalette.ramps[from], b = PixelPalette.ramps[to.index];
+    return {for (var i = 0; i < a.length; i++) a[i]: b[i < b.length ? i : b.length - 1]};
+  }
 
   /// 그 아이템·방향에 쓸 스프라이트. 없으면 null (대체 그림).
   LoadedSprite? sprite(String id, Rot r) {
@@ -103,7 +110,7 @@ class AssetRegistry extends ChangeNotifier {
       final art = manifest[id];
       if (art != null && art.layer == ArtLayer.wall && art.path != null) {
         if (_tried.add('$id#wall')) {
-          final loaded = await _loadWall(art);
+          final loaded = await _loadWall(art, id);
           if (loaded != null) {
             _sprites['$id#wall'] = loaded;
             changed = true;
@@ -125,11 +132,16 @@ class AssetRegistry extends ChangeNotifier {
     if (changed) notifyListeners();
   }
 
-  Future<LoadedSprite?> _loadWall(ItemArt art) async {
+  Future<LoadedSprite?> _loadWall(ItemArt art, String id) async {
     try {
       final data = await _bundle.load('${PixelManifest.assetRoot}${art.path}');
       final codec = await ui.instantiateImageCodec(data.buffer.asUint8List());
-      final img = (await codec.getNextFrame()).image;
+      var img = (await codec.getNextFrame()).image;
+      // 색을 고른 벽 장식: 원래 색(accent)을 고른 색으로 바꿔 칠한다
+      final item = itemById(id);
+      if (item?.color != null && item?.accent != null) {
+        img = await paletteSwap(img, _swapTable(item!.accent!.index, item.color!));
+      }
       final box = IsoGrid.wallBox(left: true, u: 0, span: art.span, z: 0, h: art.height);
       if (img.width != box.width || img.height != box.height) {
         problems['${art.id}#wall'] = '크기 ${img.width}×${img.height} ≠ ${box.width}×${box.height}';
@@ -158,14 +170,10 @@ class AssetRegistry extends ChangeNotifier {
         alpha[i] = rgba[i * 4 + 3];
       }
       // 방향마다 많이 쓰인 색이 다를 수 있어 R0에서 정한 램프를 네 방향에 같이 쓴다
-      final ramp = _ramps[art.id] ??= recolorRamp(rgba);
-      final color = itemById(id)?.color;
-      if (color != null && ramp >= 0) {
-        final from = PixelPalette.ramps[ramp], to = PixelPalette.ramps[color.index];
-        img = await paletteSwap(img, {
-          for (var i = 0; i < from.length; i++) from[i]: to[i < to.length ? i : to.length - 1],
-        });
-      }
+      final item = itemById(id);
+      final ramp = _ramps[art.id] ??= item?.accent?.index ?? recolorRamp(rgba);
+      final color = item?.color;
+      if (color != null && ramp >= 0) img = await paletteSwap(img, _swapTable(ramp, color));
       return LoadedSprite(img, alpha);
     } catch (e) {
       problems[k] = '불러오기 실패: $path';

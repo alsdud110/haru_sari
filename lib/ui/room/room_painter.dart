@@ -374,6 +374,94 @@ void drawFurniture(Canvas c, ShopItem item, Rect r) {
   }
 }
 
+/// 벽에 거는 무늬 가구 3차 (선반·액자·창문). 그렸으면 true.
+/// 색은 그 가구의 램프(고른 색이 있으면 그 색)로 칠하고, 번지지 않게 그린다 (픽셀 그림에서 색을 바꿔 칠할 수 있도록).
+bool _drawPatternWall(Canvas c, ShopItem item, Rect Function(double, double, double, double) f) {
+  final tint = item.color ?? item.accent;
+  if (tint == null) return false;
+  final ramp = PixelPalette.ramps[tint.index];
+  Paint p(int rgb) => Paint()
+    ..color = Color(0xFF000000 | rgb)
+    ..isAntiAlias = false;
+  const cream = PixelPalette.cream, wood = PixelPalette.wood, sky = PixelPalette.sky;
+  void box(double l, double t, double r, double b, int rgb) => c.drawRect(f(l, t, r, b), p(rgb));
+
+  /// (l, t)~(r, b)를 천으로 칠하고 크림색 무늬를 [nx]×[ny] 칸으로 찍는다.
+  void cloth(double l, double t, double r, double b, BoxPattern pattern, int nx, int ny) {
+    box(l, t, r, b, ramp[1]);
+    // 하트·꽃은 알아볼 수 있게 두 배 큰 칸에 3×3 그림으로 찍는다
+    final motif = pattern == BoxPattern.heart || pattern == BoxPattern.flower;
+    if (motif) {
+      nx = math.max(1, (nx / 2).round());
+      ny = math.max(1, (ny / 2).round());
+    }
+    final cw = (r - l) / nx, ch = (b - t) / ny;
+    for (var j = 0; j < ny; j++) {
+      for (var i = 0; i < nx; i++) {
+        final x = l + i * cw, y = t + j * ch;
+        switch (pattern) {
+          case BoxPattern.dots:
+            if ((i + j).isEven) box(x + cw * 0.3, y + ch * 0.3, x + cw * 0.7, y + ch * 0.7, cream[0]);
+          case BoxPattern.check:
+            if ((i + j).isOdd) box(x, y, x + cw, y + ch, cream[0]);
+          case BoxPattern.stripe:
+            if (i.isOdd) box(x, y, x + cw, y + ch, cream[0]);
+          case BoxPattern.hstripe:
+            if (j.isOdd) box(x, y, x + cw, y + ch, cream[0]);
+          case BoxPattern.heart || BoxPattern.flower:
+            if ((i + j).isOdd && nx > 1) continue;
+            final rows = pattern == BoxPattern.heart
+                ? const [[0, 2], [0, 1, 2], [1]]
+                : const [[1], [0, 2], [1]];
+            final qw = cw / 4, qh = ch / 4;
+            for (final (row, cols) in rows.indexed) {
+              for (final k in cols) {
+                final sx = x + qw * (0.5 + k), sy = y + qh * (0.5 + row);
+                box(sx, sy, sx + qw, sy + qh, cream[0]);
+              }
+            }
+        }
+      }
+    }
+  }
+
+  final id = baseIdOf(item.id);
+  final pattern = patternOfId(id);
+  switch (id.split('_').first) {
+    case 'shelf':
+      box(0, 0.82, 1, 0.94, wood[1]);
+      cloth(0.06, 0.3, 0.42, 0.82, pattern, 6, 4); // 바구니 둘
+      cloth(0.48, 0.44, 0.76, 0.82, pattern, 4, 3);
+      box(0.82, 0.56, 0.94, 0.82, cream[1]); // 작은 병
+      box(0.84, 0.5, 0.92, 0.56, wood[0]);
+    case 'frame':
+      box(0, 0, 1, 1, wood[2]);
+      cloth(0.12, 0.1, 0.88, 0.9, pattern, 4, 4);
+      box(0.3, 0.32, 0.7, 0.68, cream[0]); // 가운데 그림
+      box(0.4, 0.42, 0.6, 0.58, ramp[2]);
+    case 'tapestry':
+      box(0, 0, 1, 0.08, wood[2]); // 봉
+      box(0.08, 0.08, 0.92, 0.9, cream[0]);
+      for (var i = 0; i < 4; i++) {
+        box(0.08, 0.14 + i * 0.2, 0.92, 0.24 + i * 0.2, ramp[i.isEven ? 1 : 2]);
+      }
+      for (var i = 0; i < 5; i++) {
+        box(0.1 + i * 0.17, 0.9, 0.2 + i * 0.17, 1, ramp[1]); // 술
+      }
+    case 'window':
+      box(0.1, 0.06, 0.9, 1, cream[0]); // 창틀
+      box(0.16, 0.12, 0.84, 0.94, sky[0]);
+      box(0.48, 0.12, 0.52, 0.94, cream[0]);
+      box(0.16, 0.5, 0.84, 0.54, cream[0]);
+      cloth(0, 0.06, 0.26, 1, pattern, 4, 8); // 커튼 둘
+      cloth(0.74, 0.06, 1, 1, pattern, 4, 8);
+      box(0, 0, 1, 0.06, wood[2]); // 봉
+    default:
+      return false;
+  }
+  return true;
+}
+
 // ───────── 미니미 ─────────
 
 final skinTones = [for (final r in PixelPalette.skin) Color(0xFF000000 | r[1])];
@@ -389,6 +477,7 @@ bool _drawWallExtra(Canvas c, ShopItem item, Rect Function(double, double, doubl
     c.drawRect(f(0.1, 0.1, 0.9, 0.9), _p(inner));
   }
 
+  if (_drawPatternWall(c, item, f)) return true;
   switch (item.id) {
     case 'frame_sea':
       frame(px(PixelPalette.sky[0]));

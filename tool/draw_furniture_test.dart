@@ -28,7 +28,7 @@ import 'package:haru_sari/room/registry.dart';
 import 'package:haru_sari/ui/room/iso_boxes.dart';
 import 'package:haru_sari/ui/room/iso_room_painter.dart';
 import 'package:haru_sari/ui/room/room_painter.dart' show drawFurniture;
-import 'package:haru_sari/ui/room/surfaces.dart' show drawFloor, drawRug, floorStyleOf, floorStyles, rugStyleOf, wallStyleOf, wallStyles;
+import 'package:haru_sari/ui/room/surfaces.dart' show drawFloor, drawRug, floorStyleOf, floorSurfaceIds, rugStyleOf, wallStyleOf, wallSurfaceIds;
 import 'package:image/image.dart' as img;
 
 const _handDrawn = {'bed_double', 'plant_small'};
@@ -146,7 +146,7 @@ void main() {
           final box = IsoGrid.spriteBox(0, 0, w, d, art.height);
           final rec = ui.PictureRecorder();
           final c = ui.Canvas(rec)..translate(-box.left.toDouble(), -box.top.toDouble());
-          drawRug(c, rugStyleOf(item.id), (0, 0, w, d));
+          drawRug(c, rugStyleOf(item.id), (0, 0, w, d), antiAlias: false);
           final px = await _snap(rec, spec.width, spec.height);
           // 러그는 칸을 꽉 채우기도 해서 안쪽 가장자리를 외곽선으로 바꾼다
           final png = _encode(_innerOutline(px, spec.width, spec.height, PixelPalette.ink[0]), spec.width, spec.height);
@@ -208,10 +208,10 @@ void main() {
         surfaces++;
       }
 
-      for (final id in <String?>[null, ...floorStyles.keys]) {
+      for (final id in <String?>[null, ...floorSurfaceIds]) {
         await surface('floors', id, (c) => drawFloor(c, floorStyleOf(id)));
       }
-      for (final id in <String?>[null, ...wallStyles.keys]) {
+      for (final id in <String?>[null, ...wallSurfaceIds]) {
         await surface('walls', id, (c) => IsoRoomPainter.drawRoomWalls(c, wallStyleOf(id)));
       }
 

@@ -10,12 +10,34 @@ import '../../room/palette.dart';
 /// 좌표는 R0 기준 점유 칸 안의 위치 (x: 0~w, y: 0~d, 단위 타일)와 바닥에서의 높이 (z, px).
 /// R0에서 앞면은 +y 쪽(왼쪽 아래)이다.
 class IsoBox {
-  const IsoBox(this.x0, this.y0, this.x1, this.y1, this.z0, this.z1, this.ramp);
+  const IsoBox(this.x0, this.y0, this.x1, this.y1, this.z0, this.z1, this.ramp, {this.pattern, this.ink = _cream});
   final double x0, y0, x1, y1, z0, z1;
 
   /// 윗면, 왼쪽 면, 오른쪽 면, 모서리선 색 (0xRRGGBB)
   final List<int> ramp;
+
+  /// 천 무늬 (이불·방석·갓 등). 세 면에 모두 찍는다.
+  final BoxPattern? pattern;
+
+  /// 무늬 색 (윗면, 왼쪽 면, 오른쪽 면)
+  final List<int> ink;
 }
+
+/// 상자 면에 찍는 무늬.
+enum BoxPattern { dots, check, stripe, heart, flower, hstripe }
+
+const _dots = BoxPattern.dots, _check = BoxPattern.check, _stripe = BoxPattern.stripe;
+const _heart = BoxPattern.heart, _flower = BoxPattern.flower, _hstripe = BoxPattern.hstripe;
+
+/// 가구 id 끝말로 정해지는 무늬 ('bed_heart' → 하트). 벽에 거는 가구가 쓴다.
+BoxPattern patternOfId(String id) => switch (id.split('_').last) {
+  'dot' => BoxPattern.dots,
+  'check' => BoxPattern.check,
+  'heart' => BoxPattern.heart,
+  'floral' => BoxPattern.flower,
+  'hstripe' => BoxPattern.hstripe,
+  _ => BoxPattern.stripe,
+};
 
 const _wood = PixelPalette.wood;
 const _cream = PixelPalette.cream;
@@ -38,13 +60,131 @@ List<IsoBox> _legs(double w, double d, double inset, double t, double h, List<in
     for (final y in [inset, d - inset - t]) IsoBox(x, y, x + t, y + t, 0, h, ramp),
 ];
 
-List<IsoBox> _sofa(double w, List<int> c) => [
-  IsoBox(0.04, 0.1, w - 0.04, 0.94, 0, 14, c),
-  IsoBox(0.04, 0.1, w - 0.04, 0.3, 14, 40, c), // 등받이
-  IsoBox(0.04, 0.3, 0.2, 0.94, 14, 26, c), // 팔걸이
-  IsoBox(w - 0.2, 0.3, w - 0.04, 0.94, 14, 26, c),
-  IsoBox(0.2, 0.3, w - 0.2, 0.92, 14, 19, c), // 방석
-  if (w > 1) IsoBox(0.26, 0.3, 0.5, 0.4, 19, 30, _butter), // 쿠션
+List<IsoBox> _sofa(double w, List<int> c, [BoxPattern? p]) => [
+  IsoBox(0.04, 0.1, w - 0.04, 0.94, 0, 14, c, pattern: p),
+  IsoBox(0.04, 0.1, w - 0.04, 0.3, 14, 40, c, pattern: p), // 등받이
+  IsoBox(0.04, 0.3, 0.2, 0.94, 14, 26, c, pattern: p), // 팔걸이
+  IsoBox(w - 0.2, 0.3, w - 0.04, 0.94, 14, 26, c, pattern: p),
+  IsoBox(0.2, 0.3, w - 0.2, 0.92, 14, 19, c, pattern: p), // 방석
+  if (w > 1) IsoBox(0.26, 0.3, 0.5, 0.4, 19, 30, p == null ? _butter : _cream), // 쿠션
+];
+
+/// 무늬 이불 침대 (베개는 가로 칸 수만큼).
+List<IsoBox> _bed(double w, double d, List<int> frame, List<int> blanket, BoxPattern p) {
+  const m = 0.06;
+  return [
+    IsoBox(m, m, w - m, d - m, 0, 10, frame),
+    IsoBox(m, m, w - m, m + 0.1, 10, 48, frame), // 헤드보드
+    IsoBox(m, d - m - 0.08, w - m, d - m, 10, 16, frame), // 발판
+    IsoBox(m + 0.04, m + 0.1, w - m - 0.04, 0.8, 10, 22, _cream), // 매트리스
+    for (var i = 0; i < w; i++) IsoBox(i + 0.2, m + 0.16, i + 0.8, m + 0.5, 22, 27, _cream), // 베개
+    IsoBox(m + 0.02, 0.8, w - m - 0.02, d - m - 0.08, 10, 24, blanket, pattern: p), // 이불
+    IsoBox(m + 0.02, 0.8, w - m - 0.02, 0.96, 24, 26, _cream), // 이불 접힌 단
+  ];
+}
+
+/// 색칠한 책상: 상판과 서랍에 무늬.
+List<IsoBox> _desk(double w, List<int> c, BoxPattern p) => [
+  for (final (x0, x1) in [(0.08, 0.18), (w - 0.18, w - 0.08)])
+    for (final (y0, y1) in [(0.12, 0.22), (0.78, 0.88)]) IsoBox(x0, y0, x1, y1, 0, 36, _white), // 다리
+  IsoBox(w - 0.75, 0.22, w - 0.18, 0.78, 16, 36, c, pattern: p), // 서랍
+  IsoBox(w - 0.54, 0.78, w - 0.4, 0.8, 25, 28, _white), // 서랍 손잡이
+  IsoBox(0.03, 0.07, w - 0.03, 0.93, 36, 41, c, pattern: p), // 상판
+  IsoBox(0.03, 0.07, w - 0.03, 0.15, 41, 52, c), // 뒤쪽 가림판
+  IsoBox(0.4, 0.5, 0.52, 0.62, 41, 48, _white), // 머그
+];
+
+/// 천을 씌운 의자: 방석과 등받이에 무늬.
+List<IsoBox> _chair(List<int> c, BoxPattern p) => [
+  ..._legs(1, 1, 0.22, 0.08, 14, _wood),
+  IsoBox(0.18, 0.18, 0.82, 0.82, 14, 24, c, pattern: p), // 방석
+  IsoBox(0.18, 0.18, 0.82, 0.3, 24, 46, c, pattern: p), // 등받이
+];
+
+/// 색을 바꿔 칠할 수 있는 라벤더 (모서리선도 같은 램프 색).
+final _lilac = [...PixelPalette.lavender, PixelPalette.lavender[2]];
+
+// 무늬 천을 쓴 가구 모양들. [c]가 천 색, [p]가 무늬.
+List<IsoBox> _tableSide(List<int> c, BoxPattern p) => [
+  IsoBox(0.44, 0.44, 0.56, 0.56, 0, 16, _wood),
+  IsoBox(0.14, 0.14, 0.86, 0.86, 16, 30, c, pattern: p), // 식탁보
+  IsoBox(0.4, 0.4, 0.54, 0.54, 30, 37, _white), // 머그
+];
+
+List<IsoBox> _tableCoffee(double w, List<int> c, BoxPattern p) => [
+  ..._legs(w, 1, 0.16, 0.08, 8, _wood),
+  IsoBox(0.08, 0.12, w - 0.08, 0.88, 8, 18, c, pattern: p), // 식탁보
+  IsoBox(1.1, 0.35, 1.45, 0.6, 18, 21, _sage), // 책
+];
+
+List<IsoBox> _tableDining(double w, double d, List<int> c, BoxPattern p) => [
+  ..._legs(w, d, 0.16, 0.1, 22, _wood),
+  IsoBox(0.06, 0.06, w - 0.06, d - 0.06, 22, 36, c, pattern: p), // 식탁보
+  IsoBox(0.9, 0.9, 1.1, 1.1, 36, 48, _white), // 꽃병
+  IsoBox(0.86, 0.86, 1.14, 1.14, 48, 54, _green),
+];
+
+List<IsoBox> _fabricBoxes(List<int> c, BoxPattern p) => [
+  IsoBox(0.14, 0.14, 0.86, 0.86, 0, 18, c, pattern: p),
+  IsoBox(0.12, 0.12, 0.88, 0.88, 18, 20, _cream), // 뚜껑
+  IsoBox(0.22, 0.22, 0.78, 0.78, 20, 34, c, pattern: p),
+  IsoBox(0.2, 0.2, 0.8, 0.8, 34, 36, _cream),
+];
+
+List<IsoBox> _cabinet(List<int> c, BoxPattern p) => [
+  IsoBox(0.12, 0.12, 0.88, 0.8, 0, 48, c, pattern: p),
+  IsoBox(0.09, 0.09, 0.91, 0.86, 48, 51, _white), // 상판
+  IsoBox(0.16, 0.8, 0.49, 0.83, 4, 44, c, pattern: p), // 문 둘
+  IsoBox(0.51, 0.8, 0.84, 0.83, 4, 44, c, pattern: p),
+  IsoBox(0.42, 0.83, 0.46, 0.85, 22, 28, _white), // 손잡이
+  IsoBox(0.54, 0.83, 0.58, 0.85, 22, 28, _white),
+];
+
+List<IsoBox> _wardrobe(double w, List<int> c, BoxPattern p) => [
+  IsoBox(0.08, 0.1, w - 0.08, 0.85, 0, 90, c, pattern: p),
+  IsoBox(0.05, 0.07, w - 0.05, 0.9, 90, 94, _white),
+  IsoBox(0.12, 0.85, w / 2 - 0.01, 0.88, 6, 86, c, pattern: p), // 문 둘
+  IsoBox(w / 2 + 0.01, 0.85, w - 0.12, 0.88, 6, 86, c, pattern: p),
+  IsoBox(w / 2 - 0.08, 0.88, w / 2 - 0.04, 0.9, 40, 52, _wood), // 손잡이
+  IsoBox(w / 2 + 0.04, 0.88, w / 2 + 0.08, 0.9, 40, 52, _wood),
+];
+
+List<IsoBox> _lampMood(List<int> c, BoxPattern p) => [
+  IsoBox(0.36, 0.36, 0.64, 0.64, 0, 6, _wood),
+  IsoBox(0.26, 0.26, 0.74, 0.74, 6, 28, c, pattern: p),
+];
+
+List<IsoBox> _lampTable(List<int> c, BoxPattern p) => [
+  IsoBox(0.34, 0.34, 0.66, 0.66, 0, 4, _wood),
+  IsoBox(0.46, 0.46, 0.54, 0.54, 4, 30, _wood),
+  IsoBox(0.24, 0.24, 0.76, 0.76, 30, 52, c, pattern: p),
+];
+
+List<IsoBox> _lampFloor(List<int> c, BoxPattern p) => [
+  IsoBox(0.36, 0.36, 0.64, 0.64, 0, 4, _wood),
+  IsoBox(0.47, 0.47, 0.53, 0.53, 4, 64, _wood),
+  IsoBox(0.24, 0.24, 0.76, 0.76, 64, 90, c, pattern: p),
+];
+
+List<IsoBox> _plantBush(List<int> c, BoxPattern p) => [
+  IsoBox(0.26, 0.26, 0.74, 0.74, 0, 16, c, pattern: p),
+  IsoBox(0.22, 0.22, 0.78, 0.78, 16, 30, _green),
+  IsoBox(0.32, 0.32, 0.68, 0.68, 30, 38, _green),
+];
+
+List<IsoBox> _plantFlowers(List<int> c, BoxPattern p) => [
+  IsoBox(0.26, 0.26, 0.74, 0.74, 0, 14, c, pattern: p),
+  IsoBox(0.28, 0.28, 0.72, 0.72, 14, 26, _green),
+  IsoBox(0.32, 0.32, 0.46, 0.46, 26, 33, _pink),
+  IsoBox(0.54, 0.36, 0.68, 0.5, 26, 35, _white),
+  IsoBox(0.4, 0.54, 0.54, 0.68, 26, 32, _bear),
+];
+
+List<IsoBox> _plantTree(List<int> c, BoxPattern p) => [
+  IsoBox(0.28, 0.28, 0.72, 0.72, 0, 18, c, pattern: p),
+  IsoBox(0.46, 0.46, 0.54, 0.54, 18, 34, _wood),
+  IsoBox(0.22, 0.22, 0.78, 0.78, 34, 50, _green),
+  IsoBox(0.32, 0.32, 0.68, 0.68, 50, 60, _green),
 ];
 
 /// id로 정해지는 가구 (R0 기준).
@@ -200,13 +340,72 @@ List<IsoBox>? _boxesById(String id, double w, double d) => switch (id) {
     IsoBox(0.33, 0.33, 0.67, 0.67, 48, 64, _green),
     IsoBox(0.45, 0.45, 0.55, 0.55, 64, 72, _butter), // 별
   ],
+  // 무늬 가구 3차
+  'bed_dot' => _bed(w, d, _wood, _terra, _dots),
+  'bed_check' => _bed(w, d, _paleFrame, _sage, _check),
+  'bed_stripe' => _bed(w, d, _wood, _sky, _stripe),
+  'bed_dot_double' => _bed(w, d, _paleFrame, _butter, _dots),
+  'desk_dot' => _desk(w, _sky, _dots),
+  'desk_check' => _desk(w, _sage, _check),
+  'desk_stripe' => _desk(w, _butter, _stripe),
+  'chair_dot' => _chair(_terra, _dots),
+  'chair_check' => _chair(_sage, _check),
+  'chair_stripe' => _chair(_sky, _stripe),
+  'sofa_single_check' => _sofa(w, _sage, _check),
+  'sofa_dot' => _sofa(w, _terra, _dots),
+  'sofa_check' => _sofa(w, _sky, _check),
+  'sofa_stripe' => _sofa(w, _butter, _stripe),
+  'table_dot' => _tableSide(_sky, _dots),
+  'table_stripe' => _tableCoffee(w, _butter, _stripe),
+  'table_check' => _tableDining(w, d, _terra, _check),
+  'box_check' => _fabricBoxes(_terra, _check),
+  'cabinet_dot' => _cabinet(_sky, _dots),
+  'drawer_sage' => [
+    IsoBox(0.08, 0.1, w - 0.08, 0.8, 0, 44, _sage),
+    IsoBox(0.05, 0.07, w - 0.05, 0.86, 44, 48, _white),
+    for (final z in [4.0, 17.0, 30.0]) IsoBox(0.14, 0.8, w - 0.14, 0.84, z, z + 11, _sage), // 서랍 셋
+    for (final z in [8.0, 21.0, 34.0]) IsoBox(w / 2 - 0.1, 0.84, w / 2 + 0.1, 0.86, z, z + 3, _white), // 손잡이
+    IsoBox(0.3, 0.3, 0.6, 0.55, 48, 52, _butter), // 책
+  ],
+  'wardrobe_stripe' => _wardrobe(w, _butter, _stripe),
+  'lamp_check' => _lampMood(_sage, _check),
+  'lamp_stripe' => _lampTable(_sky, _stripe),
+  'lamp_dot' => _lampFloor(_terra, _dots),
+  'plant_dot' => _plantBush(_terra, _dots),
+  'plant_stripe' => _plantFlowers(_butter, _stripe),
+  'plant_check' => _plantTree(_sky, _check),
+  // 무늬 가구 4차 (하트·꽃무늬·가로 줄무늬)
+  'bed_heart' => _bed(w, d, _paleFrame, _terra, _heart),
+  'bed_floral' => _bed(w, d, _wood, _lilac, _flower),
+  'bed_hstripe' => _bed(w, d, _paleFrame, _sky, _hstripe),
+  'desk_heart' => _desk(w, _terra, _heart),
+  'desk_floral' => _desk(w, _lilac, _flower),
+  'desk_hstripe' => _desk(w, _sky, _hstripe),
+  'chair_heart' => _chair(_terra, _heart),
+  'chair_floral' => _chair(_lilac, _flower),
+  'chair_hstripe' => _chair(_sky, _hstripe),
+  'sofa_heart' => _sofa(w, _terra, _heart),
+  'sofa_floral' => _sofa(w, _lilac, _flower),
+  'sofa_hstripe' => _sofa(w, _sky, _hstripe),
+  'table_heart' => _tableSide(_terra, _heart),
+  'table_floral' => _tableDining(w, d, _lilac, _flower),
+  'table_hstripe' => _tableCoffee(w, _sky, _hstripe),
+  'box_heart' => _fabricBoxes(_terra, _heart),
+  'cabinet_floral' => _cabinet(_lilac, _flower),
+  'wardrobe_hstripe' => _wardrobe(w, _sky, _hstripe),
+  'lamp_heart' => _lampMood(_terra, _heart),
+  'lamp_floral' => _lampFloor(_lilac, _flower),
+  'lamp_hstripe' => _lampTable(_sky, _hstripe),
+  'plant_heart' => _plantBush(_terra, _heart),
+  'plant_floral' => _plantFlowers(_lilac, _flower),
+  'plant_hstripe' => _plantTree(_sky, _hstripe),
   _ => null,
 };
 
 /// 그 아이템의 상자들 (R0 기준). 방향이 없는 가구(조명·화분 등)는 null.
 List<IsoBox>? isoBoxesFor(ShopItem item, (int, int) footprint) {
   final w = footprint.$1.toDouble(), d = footprint.$2.toDouble();
-  final byId = _boxesById(item.id, w, d);
+  final byId = _boxesById(baseIdOf(item.id), w, d);
   if (byId != null) return byId;
   switch (item.slot) {
     case RoomSlot.bed:
@@ -275,6 +474,8 @@ IsoBox rotateBox(IsoBox b, (int, int) footprint, Rot r) {
     b.z0,
     b.z1,
     b.ramp,
+    pattern: b.pattern,
+    ink: b.ink,
   );
 }
 
@@ -310,7 +511,18 @@ void drawIsoBoxes(Canvas c, List<IsoBox> boxes, (int, int) footprint, Rot r, int
       ..strokeWidth = 1
       ..strokeJoin = StrokeJoin.round
       ..isAntiAlias = antiAlias;
-    for (final (pts, color) in faces) {
+    // 무늬: 면마다 (왼쪽 위 모서리, 가로 1칸, 세로 1칸, 가로 길이, 세로 길이, 색). 옆면의 세로는 높이(32px = 1칸).
+    const down = Offset(0, 32);
+    final h = (b.z1 - b.z0) / 32;
+    final ux = p(b.x0 + 1, b.y1, b.z1) - p(b.x0, b.y1, b.z1), uy = p(b.x1, b.y0 + 1, b.z1) - p(b.x1, b.y0, b.z1);
+    final marks = b.pattern == null
+        ? null
+        : [
+            (p(b.x0, b.y1, b.z1), ux, down, b.x1 - b.x0, h, b.ink[1]),
+            (p(b.x1, b.y0, b.z1), uy, down, b.y1 - b.y0, h, b.ink[2]),
+            (p(b.x0, b.y0, b.z1), ux, uy, b.x1 - b.x0, b.y1 - b.y0, b.ink[0]),
+          ];
+    for (final (i, (pts, color)) in faces.indexed) {
       final path = Path()..addPolygon(pts, true);
       c.drawPath(
         path,
@@ -318,7 +530,70 @@ void drawIsoBoxes(Canvas c, List<IsoBox> boxes, (int, int) footprint, Rot r, int
           ..color = Color(0xFF000000 | color)
           ..isAntiAlias = antiAlias,
       );
+      if (marks != null) {
+        final (o, u, v, a, len, ink) = marks[i];
+        final paint = Paint()
+          ..color = Color(0xFF000000 | ink)
+          ..isAntiAlias = antiAlias;
+        _drawPattern(c, b.pattern!, o, u, v, a, len, paint);
+      }
       c.drawPath(path, line);
     }
+  }
+}
+
+/// 면 하나에 무늬를 찍는다. 면 안의 점 (s, t)는 [o] + [u]·s + [v]·t 이고, 범위는 0~[a], 0~[b] (단위: 칸).
+void _drawPattern(Canvas c, BoxPattern pattern, Offset o, Offset u, Offset v, double a, double b, Paint paint) {
+  void cell(double s0, double t0, double s1, double t1) {
+    s0 = s0.clamp(0, a);
+    s1 = s1.clamp(0, a);
+    t0 = t0.clamp(0, b);
+    t1 = t1.clamp(0, b);
+    if (s1 - s0 < 0.02 || t1 - t0 < 0.02) return;
+    Offset at(double s, double t) => o + u * s + v * t;
+    c.drawPath(Path()..addPolygon([at(s0, t0), at(s1, t0), at(s1, t1), at(s0, t1)], true), paint);
+  }
+
+  switch (pattern) {
+    case BoxPattern.dots:
+      const step = 0.3, size = 0.12;
+      for (var j = 0; j * step < b; j++) {
+        for (var s = j.isEven ? 0.06 : 0.21; s < a; s += step) {
+          cell(s, j * step + 0.06, s + size, j * step + 0.06 + size);
+        }
+      }
+    case BoxPattern.check:
+      const step = 0.2;
+      for (var j = 0; j * step < b; j++) {
+        for (var i = 0; i * step < a; i++) {
+          if ((i + j).isOdd) cell(i * step, j * step, (i + 1) * step, (j + 1) * step);
+        }
+      }
+    case BoxPattern.stripe:
+      const step = 0.3, size = 0.12;
+      for (var s = 0.09; s < a; s += step) {
+        cell(s, 0, s + size, b);
+      }
+    case BoxPattern.hstripe:
+      const step = 0.25, size = 0.1;
+      for (var t = 0.08; t < b; t += step) {
+        cell(0, t, a, t + size);
+      }
+    case BoxPattern.heart || BoxPattern.flower:
+      // 3×3 칸짜리 작은 그림을 엇갈려 찍는다. 면 밖으로 잘리는 것은 찍지 않는다.
+      const q = 0.08, step = 0.42;
+      final rows = pattern == BoxPattern.heart
+          ? const [[0, 2], [0, 1, 2], [1]] // 하트
+          : const [[1], [0, 2], [1]]; // 꽃잎 넷
+      for (var j = 0; j * step + 0.05 + q * 3 <= b + 0.01; j++) {
+        for (var s = j.isEven ? 0.06 : 0.27; s + q * 3 <= a + 0.01; s += step) {
+          final t = j * step + 0.05;
+          for (final (r, cols) in rows.indexed) {
+            for (final k in cols) {
+              cell(s + k * q, t + r * q, s + (k + 1) * q, t + (r + 1) * q);
+            }
+          }
+        }
+      }
   }
 }

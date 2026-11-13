@@ -80,6 +80,7 @@ class ShopItem {
     this.slot,
     this.assetPath,
     this.color,
+    this.accent,
   });
   final String id;
   final String name;
@@ -95,6 +96,18 @@ class ShopItem {
   /// 고른 색. null이면 원래 색
   final ItemColor? color;
 
+  /// 원래 색이 어느 색인지 정해 둔 가구 (무늬 가구·벽 장식·벽지·바닥). 색을 고르면 이 색이 고른 색으로 바뀐다.
+  /// null이면 그림에서 가장 많이 쓰인 색을 찾아 바꾼다 (registry.dart 의 recolorRamp).
+  final ItemColor? accent;
+
+  /// 고를 수 있는 색마다의 id (원래 색 포함). [accent]가 없으면 원래 id뿐이다.
+  List<String> get colorIds => [
+    baseIdOf(id),
+    if (accent != null)
+      for (final c in ItemColor.values)
+        if (c != accent) '${baseIdOf(id)}~${c.name}',
+  ];
+
   /// 같은 가구의 다른 색 (null이면 원래 색). 색마다 따로 사고 따로 가진다.
   ShopItem withColor(ItemColor? c) {
     final b = color == null ? this : itemById(baseIdOf(id))!;
@@ -109,6 +122,7 @@ class ShopItem {
       slot: b.slot,
       assetPath: b.assetPath,
       color: c,
+      accent: b.accent,
     );
   }
 
@@ -132,8 +146,14 @@ class ShopItem {
 }
 
 const _f = ItemKind.furniture;
+const _coral = ItemColor.coral, _sage = ItemColor.sage, _butter = ItemColor.butter, _sky = ItemColor.sky;
+const _lavender = ItemColor.lavender;
 
-const shopCatalog = <ShopItem>[
+/// 무늬 가구 한 줄 (땡땡이·체크·줄무늬). [accent]가 원래 색이고, 다른 색으로도 살 수 있다.
+ShopItem _pat(String id, String name, RoomSlot slot, int price, int level, ItemColor accent) =>
+    ShopItem(id: id, name: name, kind: _f, slot: slot, price: price, level: level, variant: 0, accent: accent);
+
+final shopCatalog = <ShopItem>[
   // 가구
   ShopItem(id: 'rug_round', name: '동그란 러그', kind: _f, slot: RoomSlot.rug, price: 20, level: 1, variant: 0),
   ShopItem(
@@ -232,6 +252,97 @@ const shopCatalog = <ShopItem>[
   ShopItem(id: 'floor_carpet_pink', name: '핑크 카펫', kind: _f, slot: RoomSlot.floor, price: 55, level: 6, variant: 0),
   ShopItem(id: 'floor_tile_sage', name: '민트 타일', kind: _f, slot: RoomSlot.floor, price: 60, level: 7, variant: 0),
   ShopItem(id: 'floor_tile_terra', name: '테라코타 타일', kind: _f, slot: RoomSlot.floor, price: 65, level: 8, variant: 0),
+  // 무늬 가구 3차 (땡땡이·체크·줄무늬). 모두 색을 골라 살 수 있다.
+  _pat('bed_dot', '땡땡이 침대', RoomSlot.bed, 70, 2, _coral),
+  _pat('bed_check', '체크 침대', RoomSlot.bed, 75, 4, _sage),
+  _pat('bed_stripe', '줄무늬 침대', RoomSlot.bed, 75, 5, _sky),
+  _pat('bed_dot_double', '땡땡이 더블 침대', RoomSlot.bed, 120, 7, _butter),
+  _pat('desk_dot', '땡땡이 책상', RoomSlot.desk, 50, 3, _sky),
+  _pat('desk_check', '체크 책상', RoomSlot.desk, 55, 4, _sage),
+  _pat('desk_stripe', '줄무늬 책상', RoomSlot.desk, 55, 6, _butter),
+  _pat('chair_dot', '땡땡이 의자', RoomSlot.chair, 30, 2, _coral),
+  _pat('chair_check', '체크 의자', RoomSlot.chair, 35, 4, _sage),
+  _pat('chair_stripe', '줄무늬 의자', RoomSlot.chair, 35, 5, _sky),
+  _pat('sofa_single_check', '체크 1인 소파', RoomSlot.sofa, 60, 3, _sage),
+  _pat('sofa_dot', '땡땡이 소파', RoomSlot.sofa, 95, 5, _coral),
+  _pat('sofa_check', '체크 소파', RoomSlot.sofa, 100, 6, _sky),
+  _pat('sofa_stripe', '줄무늬 소파', RoomSlot.sofa, 100, 7, _butter),
+  _pat('table_dot', '땡땡이 테이블', RoomSlot.table, 35, 2, _sky),
+  _pat('table_stripe', '줄무늬 커피 테이블', RoomSlot.table, 50, 4, _butter),
+  _pat('table_check', '체크 식탁', RoomSlot.table, 90, 6, _coral),
+  _pat('box_check', '체크 수납 상자', RoomSlot.storage, 30, 1, _coral),
+  _pat('cabinet_dot', '땡땡이 수납장', RoomSlot.storage, 55, 3, _sky),
+  _pat('drawer_sage', '세이지 서랍장', RoomSlot.storage, 70, 5, _sage),
+  _pat('wardrobe_stripe', '줄무늬 옷장', RoomSlot.storage, 105, 7, _butter),
+  _pat('shelf_dot', '땡땡이 바구니 선반', RoomSlot.shelf, 40, 2, _coral),
+  _pat('shelf_check', '체크 바구니 선반', RoomSlot.shelf, 45, 4, _sage),
+  _pat('shelf_stripe', '줄무늬 바구니 선반', RoomSlot.shelf, 45, 5, _sky),
+  _pat('lamp_check', '체크 무드등', RoomSlot.lamp, 35, 2, _sage),
+  _pat('lamp_stripe', '줄무늬 스탠드', RoomSlot.lamp, 45, 3, _sky),
+  _pat('lamp_dot', '땡땡이 장스탠드', RoomSlot.lamp, 55, 5, _coral),
+  _pat('plant_dot', '땡땡이 화분', RoomSlot.plant, 25, 1, _coral),
+  _pat('plant_stripe', '줄무늬 꽃 화분', RoomSlot.plant, 30, 3, _butter),
+  _pat('plant_check', '체크 화분 나무', RoomSlot.plant, 50, 5, _sky),
+  _pat('frame_dot', '땡땡이 액자', RoomSlot.wallDecor, 25, 2, _coral),
+  _pat('frame_check', '체크 액자', RoomSlot.wallDecor, 30, 3, _sage),
+  _pat('tapestry_stripe', '줄무늬 패브릭 포스터', RoomSlot.wallDecor, 40, 5, _sky),
+  _pat('rug_dot', '땡땡이 러그', RoomSlot.rug, 30, 2, _sage),
+  _pat('rug_diamond', '다이아 러그', RoomSlot.rug, 35, 3, _butter),
+  _pat('rug_gingham', '깅엄 체크 러그', RoomSlot.rug, 45, 5, _sky),
+  _pat('rug_dot_round', '땡땡이 원형 러그', RoomSlot.rug, 65, 7, _coral),
+  _pat('window_dot', '땡땡이 커튼 창', RoomSlot.window, 40, 3, _coral),
+  _pat('window_check', '체크 커튼 창', RoomSlot.window, 45, 4, _sage),
+  _pat('window_stripe', '줄무늬 커튼 창', RoomSlot.window, 50, 6, _butter),
+  _pat('wall_dot', '땡땡이 벽지', RoomSlot.wallpaper, 55, 3, _coral),
+  _pat('wall_check', '체크 벽지', RoomSlot.wallpaper, 60, 4, _sage),
+  _pat('wall_stripe_wide', '굵은 줄무늬 벽지', RoomSlot.wallpaper, 60, 5, _sky),
+  _pat('wall_diamond', '다이아 벽지', RoomSlot.wallpaper, 70, 7, _butter),
+  _pat('floor_dot', '땡땡이 장판', RoomSlot.floor, 50, 3, _coral),
+  _pat('floor_stripe', '줄무늬 장판', RoomSlot.floor, 55, 4, _sage),
+  _pat('floor_check', '체크 장판', RoomSlot.floor, 60, 6, _sky),
+  // 무늬 가구 4차 (하트·꽃무늬·가로 줄무늬). 꽃무늬 id는 '_floral' (꽃 액자·꽃 화분과 겹치지 않게).
+  _pat('bed_heart', '하트 침대', RoomSlot.bed, 80, 3, _coral),
+  _pat('bed_floral', '꽃무늬 침대', RoomSlot.bed, 85, 5, _lavender),
+  _pat('bed_hstripe', '가로 줄무늬 침대', RoomSlot.bed, 80, 6, _sky),
+  _pat('desk_heart', '하트 책상', RoomSlot.desk, 55, 3, _coral),
+  _pat('desk_floral', '꽃무늬 책상', RoomSlot.desk, 60, 5, _lavender),
+  _pat('desk_hstripe', '가로 줄무늬 책상', RoomSlot.desk, 55, 4, _sky),
+  _pat('chair_heart', '하트 의자', RoomSlot.chair, 35, 2, _coral),
+  _pat('chair_floral', '꽃무늬 의자', RoomSlot.chair, 40, 4, _lavender),
+  _pat('chair_hstripe', '가로 줄무늬 의자', RoomSlot.chair, 35, 3, _sky),
+  _pat('sofa_heart', '하트 소파', RoomSlot.sofa, 100, 5, _coral),
+  _pat('sofa_floral', '꽃무늬 소파', RoomSlot.sofa, 105, 7, _lavender),
+  _pat('sofa_hstripe', '가로 줄무늬 소파', RoomSlot.sofa, 100, 6, _sky),
+  _pat('table_heart', '하트 테이블', RoomSlot.table, 40, 2, _coral),
+  _pat('table_hstripe', '가로 줄무늬 커피 테이블', RoomSlot.table, 50, 4, _sky),
+  _pat('table_floral', '꽃무늬 식탁', RoomSlot.table, 95, 7, _lavender),
+  _pat('box_heart', '하트 수납 상자', RoomSlot.storage, 35, 2, _coral),
+  _pat('cabinet_floral', '꽃무늬 수납장', RoomSlot.storage, 60, 4, _lavender),
+  _pat('wardrobe_hstripe', '가로 줄무늬 옷장', RoomSlot.storage, 105, 7, _sky),
+  _pat('shelf_heart', '하트 바구니 선반', RoomSlot.shelf, 45, 3, _coral),
+  _pat('shelf_floral', '꽃무늬 바구니 선반', RoomSlot.shelf, 45, 4, _lavender),
+  _pat('shelf_hstripe', '가로 줄무늬 바구니 선반', RoomSlot.shelf, 45, 6, _sky),
+  _pat('lamp_heart', '하트 무드등', RoomSlot.lamp, 35, 2, _coral),
+  _pat('lamp_hstripe', '가로 줄무늬 스탠드', RoomSlot.lamp, 45, 4, _sky),
+  _pat('lamp_floral', '꽃무늬 장스탠드', RoomSlot.lamp, 60, 6, _lavender),
+  _pat('plant_heart', '하트 화분', RoomSlot.plant, 25, 2, _coral),
+  _pat('plant_floral', '꽃무늬 꽃 화분', RoomSlot.plant, 35, 4, _lavender),
+  _pat('plant_hstripe', '가로 줄무늬 화분 나무', RoomSlot.plant, 50, 6, _sky),
+  _pat('frame_heart', '하트 액자', RoomSlot.wallDecor, 30, 2, _coral),
+  _pat('frame_floral', '꽃무늬 액자', RoomSlot.wallDecor, 30, 4, _lavender),
+  _pat('frame_hstripe', '가로 줄무늬 액자', RoomSlot.wallDecor, 30, 5, _sky),
+  _pat('rug_heart', '하트 러그', RoomSlot.rug, 35, 3, _coral),
+  _pat('rug_floral', '꽃무늬 원형 러그', RoomSlot.rug, 40, 4, _lavender),
+  _pat('rug_hstripe', '가로 줄무늬 러그', RoomSlot.rug, 40, 5, _sky),
+  _pat('window_heart', '하트 커튼 창', RoomSlot.window, 45, 3, _coral),
+  _pat('window_floral', '꽃무늬 커튼 창', RoomSlot.window, 50, 5, _lavender),
+  _pat('window_hstripe', '가로 줄무늬 커튼 창', RoomSlot.window, 50, 6, _sage),
+  _pat('wall_heart', '하트 벽지', RoomSlot.wallpaper, 60, 4, _coral),
+  _pat('wall_hstripe', '가로 줄무늬 벽지', RoomSlot.wallpaper, 60, 5, _sky),
+  _pat('wall_floral', '꽃무늬 벽지', RoomSlot.wallpaper, 65, 6, _lavender),
+  _pat('floor_hstripe', '가로 줄무늬 장판', RoomSlot.floor, 55, 3, _sky),
+  _pat('floor_heart', '하트 장판', RoomSlot.floor, 55, 4, _coral),
+  _pat('floor_floral', '꽃무늬 장판', RoomSlot.floor, 60, 5, _lavender),
   // 의상
   ShopItem(id: 'outfit_knit', name: '크림 니트', kind: ItemKind.outfit, price: 30, level: 1, variant: 1),
   ShopItem(id: 'outfit_stripe', name: '줄무늬 셔츠', kind: ItemKind.outfit, price: 40, level: 2, variant: 2),
