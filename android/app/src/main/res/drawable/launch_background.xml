@@ -1,12 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- Modify this file to customize your launch splash screen -->
+<!-- 시작 화면: 크림색 바탕 가운데에 미니미 그림 (tool/make_app_icon.dart 가 만든다) -->
 <layer-list xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:drawable="@android:color/white" />
-
-    <!-- You can insert your own image assets here -->
-    <!-- <item>
+    <item android:drawable="@color/splash_background" />
+    <item>
         <bitmap
             android:gravity="center"
-            android:src="@mipmap/launch_image" />
-    </item> -->
+            android:src="@drawable/splash" />
+    </item>
 </layer-list>

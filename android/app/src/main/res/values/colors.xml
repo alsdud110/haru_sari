@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- 앱 아이콘 바탕 (아이콘 원본의 노을빛. tool/make_app_icon.dart 의 iconBg 와 같아야 한다) -->
+    <color name="ic_launcher_background">#D47B52</color>
+    <!-- 시작 화면 바탕 (크림색, AppColors.background) -->
+    <color name="splash_background">#F7F0E6</color>
+</resources>
