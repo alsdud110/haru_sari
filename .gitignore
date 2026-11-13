@@ -102,3 +102,6 @@ cmake-build-*/
 
 # IntelliJ build output
 out/
+# Claude 스킬 (각자 설치)
+.claude/skills/
+skills-lock.json
