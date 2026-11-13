@@ -577,6 +577,17 @@ class AppState extends ChangeNotifier {
     return c;
   }
 
+  /// 미니미가 설 수 있는 칸인지 (방 안이고 가구가 막지 않은 칸).
+  bool canStandAt((int, int) to) => IsoGrid.inRoom(to.$1, to.$2) && !occupancy.tileBlocked(room, to.$1, to.$2);
+
+  /// 미니미 옮기기 (방 꾸미기). 설 수 없는 칸이면 그대로 두고 false.
+  bool moveMinimi((int, int) to) {
+    if (!canStandAt(to)) return false;
+    room.minimi = to;
+    _commit();
+    return true;
+  }
+
   /// 레벨업으로 새로 열린 아이템.
   List<ShopItem> unlockedAt(int level) => shopCatalog.where((i) => i.level == level).toList();
 

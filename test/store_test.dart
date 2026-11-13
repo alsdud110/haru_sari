@@ -460,4 +460,19 @@ void main() {
     expect(s.rotateFloor('bed_single').ok, isTrue);
     expect(s.room.floor['bed_single']!.r, Rot.r2);
   });
+
+  test('미니미 옮기기: 빈 칸으로는 가고, 가구가 막은 칸이나 방 밖으로는 못 간다', () {
+    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest)
+      ..debugTopUp()
+      ..debugTopUp();
+    s.buy(itemById('bed_single')!);
+    expect(s.moveFloor('bed_single', const FloorPos(0, 0)).ok, isTrue); // (0,0)~(0,1)을 막는다
+    expect(s.moveMinimi((6, 2)), isTrue);
+    expect(s.room.minimi, (6, 2));
+    expect(s.moveMinimi((0, 1)), isFalse);
+    expect(s.moveMinimi((8, 2)), isFalse);
+    expect(s.room.minimi, (6, 2));
+    // 옮긴 자리는 저장된다
+    expect(RoomLayout.fromJson(s.room.toJson()).minimi, (6, 2));
+  });
 }

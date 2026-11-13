@@ -72,6 +72,10 @@ void main() {
     final bed = s.entries.firstWhere((e) => e.id == 'bed_single');
     expect(s.hitTest(Offset(bed.box.left + 20.0, bed.box.top + 60.0)), 'bed_single');
     expect(s.hitTest(IsoGrid.tileCenter(4, 6)), isNull);
+    // 방 꾸미기에서는 미니미도 고른다
+    final me = s.entries.firstWhere((e) => e.kind == EntryKind.minimi);
+    expect(s.hitTest(me.box.rect.center), isNot(RoomScene.minimiId));
+    expect(s.hitTest(me.box.rect.center, minimi: true), RoomScene.minimiId);
     // 알파 마스크가 투명이라고 하면 뒤의 것으로 넘어간다
     expect(s.hitTest(chair.box.rect.center, opaque: (e, _, _) => e.id != 'chair_wood'), isNot('chair_wood'));
   });

@@ -33,7 +33,10 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
   Offset _grab = Offset.zero; // 손가락과 가구 기준 꼭짓점 사이 (캔버스 좌표)
   FloorPos? _ghostFloor;
   WallPos? _ghostWall;
+  (int, int)? _ghostMinimi;
   bool _ghostOk = true;
+
+  static const _minimi = RoomScene.minimiId;
 
   late final _idle = IdleClock(this);
 
@@ -45,25 +48,34 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
 
   AppState get _s => AppScope.read(context);
 
-  bool Function(SceneEntry, int, int)? _opaque(AssetRegistry? reg) => reg == null
-      ? null
-      : (e, lx, ly) {
-          final sp = reg.sprite(e.id, e.rot);
-          return sp == null || sp.opaqueAt(lx, ly); // PNG가 없으면 상자 전체를 인정
-        };
+  bool Function(SceneEntry, int, int) _opaque(AssetRegistry? reg) => (e, lx, ly) {
+    // 미니미는 프레임(64×96)의 빈 둘레를 빼고 몸이 있는 가운데만 인정한다 (뒤 가구를 가리지 않게)
+    if (e.kind == EntryKind.minimi) return lx >= 14 && lx < 50 && ly >= 20 && ly < 92;
+    final sp = reg?.sprite(e.id, e.rot);
+    return sp == null || sp.opaqueAt(lx, ly); // PNG가 없으면 상자 전체를 인정
+  };
 
   void _tap(Offset canvasPt, RoomScene scene, AssetRegistry? reg) {
-    final id = scene.hitTest(canvasPt, opaque: _opaque(reg));
+    final id = scene.hitTest(canvasPt, opaque: _opaque(reg), minimi: true);
     setState(() => _selected = id);
     if (id != null) HapticFeedback.selectionClick();
   }
 
   void _panStart(Offset canvasPt, RoomScene scene, AssetRegistry? reg) {
     final l = _s.room;
-    final hit = scene.hitTest(canvasPt, opaque: _opaque(reg));
+    final hit = scene.hitTest(canvasPt, opaque: _opaque(reg), minimi: true);
     final id = hit ?? _selected;
     if (id == null) return;
-    if (l.floor[id] case final p?) {
+    if (id == _minimi) {
+      // 미니미는 발이 놓인 칸의 가운데가 기준이다
+      _grab = canvasPt - IsoGrid.tileCenter(l.minimi.$1, l.minimi.$2);
+      setState(() {
+        _selected = id;
+        _dragId = id;
+        _ghostMinimi = l.minimi;
+        _ghostOk = true;
+      });
+    } else if (l.floor[id] case final p?) {
       _grab = canvasPt - IsoGrid.toCanvas(p.x, p.y);
       setState(() {
         _selected = id;
@@ -85,7 +97,15 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
     final id = _dragId;
     if (id == null) return;
     final s = _s;
-    if (_ghostFloor case final cur?) {
+    if (_ghostMinimi case final cur?) {
+      final next = IsoGrid.tileAt(canvasPt - _grab);
+      if (next == cur) return;
+      HapticFeedback.selectionClick();
+      setState(() {
+        _ghostMinimi = next;
+        _ghostOk = s.canStandAt(next);
+      });
+    } else if (_ghostFloor case final cur?) {
       final (gx, gy) = IsoGrid.toGrid(canvasPt - _grab);
       final next = FloorPos(gx.round(), gy.round(), cur.r);
       if (next == cur) return;
@@ -114,16 +134,23 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
     if (id == null) return;
     final s = _s;
     var moved = false;
-    if (_ghostFloor case final p? when _ghostOk) moved = s.moveFloor(id, p).ok;
-    if (_ghostWall case final p? when _ghostOk) moved = s.moveWall(id, p).ok;
-    if (moved) HapticFeedback.lightImpact();
-    if (!moved && (_ghostFloor != s.room.floor[id] || _ghostWall != s.room.wall[id])) {
-      showAppToast(context, '여기엔 놓을 수 없어요');
+    if (_ghostMinimi case final p?) {
+      final from = s.room.minimi;
+      moved = _ghostOk && s.moveMinimi(p);
+      if (!moved && p != from) showAppToast(context, '여기엔 설 수 없어요');
+    } else {
+      if (_ghostFloor case final p? when _ghostOk) moved = s.moveFloor(id, p).ok;
+      if (_ghostWall case final p? when _ghostOk) moved = s.moveWall(id, p).ok;
+      if (!moved && (_ghostFloor != s.room.floor[id] || _ghostWall != s.room.wall[id])) {
+        showAppToast(context, '여기엔 놓을 수 없어요');
+      }
     }
+    if (moved) HapticFeedback.lightImpact();
     setState(() {
       _dragId = null;
       _ghostFloor = null;
       _ghostWall = null;
+      _ghostMinimi = null;
     });
   }
 
@@ -156,12 +183,14 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
     final reg = RegistryScope.of(context);
     final t = Theme.of(context).textTheme;
     final l = s.room;
-    if (_selected != null && !l.contains(_selected!)) _selected = null;
+    if (_selected != null && _selected != _minimi && !l.contains(_selected!)) _selected = null;
+    final minimiPicked = _selected == _minimi;
 
     final override = <String, FloorPos>{if (_dragId != null && _ghostFloor != null) _dragId!: _ghostFloor!};
-    final shownLayout = _ghostWall == null
-        ? l
-        : (RoomLayout.fromJson(l.toJson())..wall[_dragId!] = _ghostWall!);
+    // 벽 장식이나 미니미를 끄는 동안은 그 자리만 바꾼 사본을 그린다
+    final shownLayout = _ghostWall == null && _ghostMinimi == null ? l : RoomLayout.fromJson(l.toJson());
+    if (_ghostWall case final p?) shownLayout.wall[_dragId!] = p;
+    if (_ghostMinimi case final p?) shownLayout.minimi = p;
     final scene = RoomScene.build(shownLayout, s.manifest, override: override);
     reg?.preload([...l.floor.keys, ...l.wall.keys]);
     reg?.preloadSurfaces(floor: l.floorSurface, wall: l.wallSurface);
@@ -228,14 +257,15 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
                     id: _selected!,
                     canRotate: (s.manifest[_selected!]?.rotatable ?? false) && l.floor.containsKey(_selected),
                     onRotate: () => _rotate(_selected!),
-                    onPutAway: () => _putAway(_selected!),
+                    // 미니미는 보관함에 넣을 수 없다
+                    onPutAway: minimiPicked ? null : () => _putAway(_selected!),
                     onDone: () => setState(() => _selected = null),
                   ),
           ),
           Padding(
             padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.sm),
             child: Text(
-              _selected == null ? '가구를 눌러 고르고, 끌어서 옮겨요' : '끌어서 옮기면 칸에 맞춰 놓여요',
+              _selected == null ? '가구나 미니미를 눌러 고르고, 끌어서 옮겨요' : '끌어서 옮기면 칸에 맞춰 놓여요',
               style: t.bodySmall,
             ),
           ),
@@ -257,22 +287,24 @@ class _SelectedPanel extends StatelessWidget {
   final String id;
   final bool canRotate;
   final VoidCallback onRotate;
-  final VoidCallback onPutAway;
+  final VoidCallback? onPutAway;
   final VoidCallback onDone;
 
   @override
   Widget build(BuildContext context) {
     final item = itemById(id);
+    final name = id == RoomScene.minimiId ? '내 미니미' : (item?.name ?? id);
     final t = Theme.of(context).textTheme;
     return Container(
       margin: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.sm),
       padding: const EdgeInsets.all(Space.md),
       decoration: BoxDecoration(color: AppColors.surface, borderRadius: BorderRadius.circular(Radii.lg)),
       child: Row(children: [
-        Expanded(child: Text(item?.name ?? id, style: t.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
+        Expanded(child: Text(name, style: t.titleMedium, maxLines: 1, overflow: TextOverflow.ellipsis)),
         if (canRotate)
           IconButton(tooltip: '회전', onPressed: onRotate, icon: const Icon(Icons.rotate_90_degrees_ccw_rounded)),
-        IconButton(tooltip: '보관함으로', onPressed: onPutAway, icon: const Icon(Icons.inventory_2_outlined)),
+        if (onPutAway != null)
+          IconButton(tooltip: '보관함으로', onPressed: onPutAway, icon: const Icon(Icons.inventory_2_outlined)),
         IconButton(tooltip: '선택 해제', onPressed: onDone, icon: const Icon(Icons.check_rounded)),
       ]),
     );

@@ -97,11 +97,11 @@ class RoomScene {
     );
   }
 
-  /// 터치한 아이템 (앞 → 뒤 순서로 찾는다). 미니미는 고르지 않는다.
+  /// 터치한 아이템 (앞 → 뒤 순서로 찾는다). 미니미는 [minimi]를 켰을 때만 고른다 (방 꾸미기).
   /// [opaque]가 주어지면 그 픽셀이 실제로 칠해진 곳만 인정한다(PNG 알파 마스크).
-  String? hitTest(Offset p, {bool Function(SceneEntry e, int lx, int ly)? opaque}) {
+  String? hitTest(Offset p, {bool Function(SceneEntry e, int lx, int ly)? opaque, bool minimi = false}) {
     for (final e in entries.reversed) {
-      if (e.kind == EntryKind.minimi) continue;
+      if (e.kind == EntryKind.minimi && !minimi) continue;
       if (!e.box.contains(p)) continue;
       if (opaque != null && !opaque(e, (p.dx - e.box.left).floor(), (p.dy - e.box.top).floor())) continue;
       return e.id;
