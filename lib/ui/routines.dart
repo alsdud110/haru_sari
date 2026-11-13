@@ -142,7 +142,6 @@ class RoutineManageScreen extends StatelessWidget {
   }
 }
 
-
 class RoutineEditorPage extends StatefulWidget {
   const RoutineEditorPage({super.key, required this.initial, this.isNew = false});
   final Routine initial;
@@ -157,6 +156,44 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   late final _name = TextEditingController(text: r.name);
   late final _memo = TextEditingController(text: r.memo);
 
+  /// 아이콘을 직접 골랐는지. 아직 안 골랐으면 카테고리를 바꿀 때 그 카테고리 아이콘으로 따라 바뀐다.
+  late bool _iconPicked = !widget.isNew;
+
+  /// 카테고리를 전부 펼쳐 보는 중인지 (접혀 있으면 앞의 몇 개와 지금 고른 것만 보인다)
+  bool _allCategories = false;
+
+  /// 접혀 있을 때 보여 줄 카테고리 수 ('운동'까지)
+  static const _categoryPreview = 5;
+
+  /// 카테고리 칸에 보여 줄 목록. 예전 이름('생활' 등)이 저장된 루틴은 그 이름도 한 칸 보여 준다.
+  List<String> get _categories {
+    final shown = _allCategories ? routineCategories : routineCategories.take(_categoryPreview).toList();
+    return [...shown, if (!shown.contains(r.category)) r.category];
+  }
+
+  /// 아이콘을 전부 펼쳐 보는 중인지 (접혀 있으면 고른 카테고리에 어울리는 것만 보인다)
+  bool _allIcons = false;
+
+  /// 이모지 뒤의 꾸밈 문자(U+FE0F)를 뗀다 ('🌤️'와 '🌤'를 같은 아이콘으로 본다).
+  static String _plain(String e) => String.fromCharCodes(e.runes.where((c) => c != 0xFE0F));
+
+  /// 접혀 있을 때 보여 줄 아이콘 수 (화살표 칸까지 한 줄 6칸)
+  static const _iconPreview = 5;
+
+  /// 아이콘 칸에 보여 줄 목록: 펼치면 전부, 접으면 다섯 개.
+  /// 카테고리에 어울리는 것을 앞에 놓고 모자란 칸은 전체 목록 순서대로 채운다. 지금 고른 것은 늘 보인다.
+  List<String> get _icons {
+    if (_allIcons) return routineIconChoices;
+    final picked = _plain(r.emoji);
+    final suggested = routineCategoryIcons[r.category] ?? const <String>[];
+    final shown = [
+      ...suggested,
+      ...routineIconChoices.where((e) => !suggested.contains(e)),
+    ].take(_iconPreview).toList();
+    if (!shown.contains(picked) && routineIconChoices.contains(picked)) shown[shown.length - 1] = picked;
+    return shown;
+  }
+
   @override
   void dispose() {
     _name.dispose();
@@ -169,11 +206,7 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
   Future<void> _pickTime() async {
     final m = r.minuteOfDay ?? 8 * 60;
     // 창에서 시간을 고르거나 "시간 없이, 언제든 할게요"를 고른다.
-    final picked = await showTimeSheet(
-      context,
-      initialMinute: m,
-      anytimeLabel: '시간 없이, 언제든 할게요',
-    );
+    final picked = await showTimeSheet(context, initialMinute: m, anytimeLabel: '시간 없이, 언제든 할게요');
     if (picked == null || !mounted) return;
     setState(() {
       if (picked == timeSheetAnytime) {
@@ -201,60 +234,84 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
         child: ListView(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.sm, Space.gutter, Space.xl),
           children: [
-            TextField(
-              controller: _name,
-              autofocus: widget.isNew,
-              maxLength: 20,
-              onChanged: (_) => setState(() {}),
-              decoration: const InputDecoration(labelText: '루틴 이름', hintText: '예: 물 한 잔 마시기', counterText: ''),
-            ),
-            const SizedBox(height: Space.xl),
             Text('카테고리', style: t.titleMedium),
             const SizedBox(height: Space.sm),
             // 이름 길이가 제각각이라 칸 대신 글자 폭에 맞는 칩으로 흘려 놓는다.
-            // 예전 이름('생활' 등)이 저장된 루틴은 그 이름을 맨 끝에 한 칸 더 보여 준다.
-            Wrap(
-              spacing: Space.sm,
-              runSpacing: Space.sm,
-              children: [
-                for (final c in [...routineCategories, if (!routineCategories.contains(r.category)) r.category])
-                  // IntrinsicWidth: 칩이 줄 전체로 늘어나지 않고 내용 폭만 차지하게 한다.
-                  IntrinsicWidth(
-                    child: _Choice(
-                      selected: r.category == c,
-                      semantics: '카테고리 $c',
-                      onTap: () => setState(() => r.category = c),
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: Space.md),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            if (routineCategoryEmoji[c] case final e?) ...[
-                              RoutineIcon(e, size: 22),
-                              const SizedBox(width: Space.sm),
+            // 처음에는 앞의 몇 개만 보이고, 끝의 화살표 칸으로 펼치고 접는다.
+            _Unfold(
+              child: Wrap(
+                spacing: Space.sm,
+                runSpacing: Space.sm,
+                children: [
+                  for (final c in _categories)
+                    // IntrinsicWidth: 칩이 줄 전체로 늘어나지 않고 내용 폭만 차지하게 한다.
+                    IntrinsicWidth(
+                      child: _Choice(
+                        selected: r.category == c,
+                        semantics: '카테고리 $c',
+                        onTap: () => setState(() {
+                          r.category = c;
+                          if (!_iconPicked) r.emoji = routineCategoryEmoji[c] ?? r.emoji;
+                        }),
+                        child: Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: Space.md),
+                          child: Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              if (routineCategoryEmoji[c] case final e?) ...[
+                                RoutineIcon(e, size: 22),
+                                const SizedBox(width: Space.sm),
+                              ],
+                              Text(c, style: t.labelLarge),
                             ],
-                            Text(c, style: t.labelLarge),
-                          ],
+                          ),
                         ),
                       ),
                     ),
+                  SizedBox(
+                    key: const ValueKey('category-arrow'),
+                    width: 48,
+                    child: _UnfoldArrow(
+                      open: _allCategories,
+                      what: '카테고리',
+                      onTap: () => setState(() => _allCategories = !_allCategories),
+                    ),
                   ),
-              ],
+                ],
+              ),
             ),
             const SizedBox(height: Space.xl),
             Text('아이콘', style: t.titleMedium),
             const SizedBox(height: Space.sm),
-            _ChoiceGrid(
-              columns: 6,
-              children: [
-                for (final e in routineIconChoices)
-                  _Choice(
-                    selected: r.emoji == e,
-                    onTap: () => setState(() => r.emoji = e),
-                    semantics: '아이콘 $e',
-                    child: RoutineIcon(e, size: 30),
+            _Unfold(
+              child: _ChoiceGrid(
+                columns: 6,
+                children: [
+                  for (final e in _icons)
+                    _Choice(
+                      selected: _plain(r.emoji) == e,
+                      onTap: () => setState(() {
+                        r.emoji = e;
+                        _iconPicked = true;
+                      }),
+                      semantics: '아이콘 $e',
+                      child: RoutineIcon(e, size: 30),
+                    ),
+                  _UnfoldArrow(
+                    key: const ValueKey('icon-arrow'),
+                    open: _allIcons,
+                    what: '아이콘',
+                    onTap: () => setState(() => _allIcons = !_allIcons),
                   ),
-              ],
+                ],
+              ),
+            ),
+            const SizedBox(height: Space.xl),
+            TextField(
+              controller: _name,
+              maxLength: 20,
+              onChanged: (_) => setState(() {}),
+              decoration: const InputDecoration(labelText: '루틴 이름', hintText: '예: 물 한 잔 마시기', counterText: ''),
             ),
             const SizedBox(height: Space.xl),
             Text('반복 요일', style: t.titleMedium),
@@ -350,6 +407,41 @@ class _RoutineEditorPageState extends State<RoutineEditorPage> {
       ),
     );
   }
+}
+
+/// 펼치고 접을 때 높이가 부드럽게 늘고 준다. 새로 드러나는 칸은 위에서부터 차례로 보인다.
+class _Unfold extends StatelessWidget {
+  const _Unfold({required this.child});
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) => AnimatedSize(
+    duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.unfoldDuration,
+    curve: AppMotion.unfoldCurve,
+    alignment: Alignment.topCenter,
+    child: child,
+  );
+}
+
+/// 펼치기·접기 칸. 아래 화살표가 반 바퀴 돌아 위 화살표가 된다.
+class _UnfoldArrow extends StatelessWidget {
+  const _UnfoldArrow({super.key, required this.open, required this.what, required this.onTap});
+  final bool open;
+  final String what;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) => _Choice(
+    selected: false,
+    onTap: onTap,
+    semantics: open ? '$what 접기' : '$what 펼치기',
+    child: AnimatedRotation(
+      turns: open ? 0.5 : 0,
+      duration: AppMotion.reduced(context) ? Duration.zero : AppMotion.unfoldDuration,
+      curve: AppMotion.unfoldCurve,
+      child: const Icon(Icons.keyboard_arrow_down_rounded, color: AppColors.textMuted),
+    ),
+  );
 }
 
 /// 선택 버튼을 같은 폭의 칸으로 나란히 놓는다 (칸 높이 48).

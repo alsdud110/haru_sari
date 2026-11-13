@@ -26,6 +26,18 @@ void main() {
     }
   });
 
+  test('카테고리마다 먼저 보여 줄 아이콘이 있고, 첫 칸은 카테고리 아이콘이며 모두 고를 수 있는 아이콘이다', () {
+    expect(routineCategoryIcons.keys, routineCategories);
+    for (final e in routineCategoryIcons.entries) {
+      expect(e.value.first, routineCategoryEmoji[e.key], reason: e.key);
+      expect(e.value.length, lessThanOrEqualTo(4), reason: '${e.key}: 고른 아이콘·전체 보기 칸까지 한 줄(6칸)에 들어가야 한다');
+      expect(e.value.toSet(), hasLength(e.value.length), reason: e.key);
+      for (final icon in e.value) {
+        expect(routineIconChoices, contains(icon), reason: '${e.key} $icon');
+      }
+    }
+  });
+
   test('꾸밈 문자가 붙은 이모지와 예전 이모지도 같은 그림을 찾고, 모르는 이모지는 글자로 둔다', () {
     expect(routineIconAsset('🌤️'), 'assets/icons/sun.png');
     expect(routineIconAsset('✍️'), 'assets/icons/note.png');

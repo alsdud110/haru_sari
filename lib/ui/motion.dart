@@ -15,6 +15,7 @@ import '../theme/tokens.dart';
 /// - 좋아요(체크): 스프링으로 톡 튀는 scale
 /// - 로딩: linear로 일정하게 회전
 /// - 제목·순서: 한 줄씩 차례로 등장
+/// - 펼치기·접기: 높이가 ease-out으로 늘고 줄며, 화살표는 반 바퀴 돈다
 class AppMotion {
   static const snackIn = Motion.curve;
   static const snackOut = Curves.easeIn;
@@ -42,6 +43,9 @@ class AppMotion {
   static const stagger = Duration(milliseconds: 60);
   static const revealDuration = Duration(milliseconds: 360);
   static const revealCurve = Motion.curve;
+
+  static const unfoldDuration = Motion.normal;
+  static const unfoldCurve = Motion.curve;
 
   static bool reduced(BuildContext context) => MediaQuery.maybeOf(context)?.disableAnimations ?? false;
 }
