@@ -1,12 +1,10 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' hide Text;
 
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../config.dart';
-import '../data/auth.dart';
 import '../data/badges.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
@@ -144,28 +142,9 @@ class ProfileScreen extends StatelessWidget {
             style: t.bodySmall?.cheer,
             textAlign: TextAlign.center,
           ),
-          if (kDebugMode) ...[
-            const SizedBox(height: Space.lg),
-            TextButton(onPressed: () => _confirmReset(context, auth), child: const Text('초기화 (개발용)')),
-          ],
         ],
       ),
     );
-  }
-
-  Future<void> _confirmReset(BuildContext context, AuthService auth) async {
-    final ok = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('전부 초기화할까요?'),
-        content: const Text('이 기기의 모든 계정과 기록이 지워지고 첫 화면으로 돌아가요'),
-        actions: [
-          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('취소')),
-          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('초기화')),
-        ],
-      ),
-    );
-    if (ok == true) await auth.debugReset();
   }
 
   void _editMinimi(BuildContext context) {

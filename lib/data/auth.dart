@@ -49,12 +49,6 @@ abstract class AuthService extends ChangeNotifier {
   /// 성공하면 null, 실패하면 안내 문구 (계정은 그대로 둔다).
   Future<String?> deleteAccount() => deleteSignedInAccount();
 
-  /// 개발용: 이 기기의 기록을 지우고 로그아웃한다.
-  Future<void> debugReset() async {
-    await kv.removePrefix('');
-    await signOutAccount();
-  }
-
   @protected
   Future<void> signOutAccount();
 

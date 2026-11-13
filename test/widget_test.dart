@@ -113,17 +113,6 @@ void main() {
     await tester.tap(find.text('카카오로 시작하기'));
     await tester.pumpAndSettle();
     expect(find.text('하루의 오늘'), findsOneWidget);
-
-    // 개발용 초기화: 계정까지 지우고 소개 화면으로
-    await tester.tap(find.text('나'));
-    await tester.pumpAndSettle();
-    await tester.scrollUntilVisible(find.text('초기화 (개발용)'), 200);
-    await tester.tap(find.text('초기화 (개발용)'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.widgetWithText(TextButton, '초기화'));
-    await tester.pumpAndSettle();
-    expect(find.text('건너뛰기'), findsOneWidget);
-    expect(kv.read('${userPrefix('dev-kakao')}routines'), isNull);
   });
 
   testWidgets('기록 탭: 일간·주간·월간이 그려진다', (tester) async {
