@@ -434,21 +434,11 @@ void main() {
     });
   });
 
-  test('개발용 충전: 누를 때마다 코인 +10000, 레벨 +1', () {
-    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9));
-    final before = s.profile.coins;
-    s.debugTopUp();
-    expect(s.profile.coins, before + 10000);
-    expect(s.profile.level, 2);
-    s.debugTopUp();
-    expect(s.profile.coins, before + 20000);
-    expect(s.profile.level, 3);
-  });
-
   test('회전: 네 방향을 차례로 돌아 제자리로, 막힌 방향은 건너뛴다', () {
-    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest)
-      ..debugTopUp()
-      ..debugTopUp();
+    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest);
+    s.profile
+      ..coins = 20000
+      ..level = 3;
     s.buy(itemById('bed_single')!);
     expect(s.moveFloor('bed_single', const FloorPos(3, 3)).ok, isTrue);
     for (final r in [Rot.r1, Rot.r2, Rot.r3, Rot.r0]) {
@@ -462,9 +452,10 @@ void main() {
   });
 
   test('미니미 옮기기: 빈 칸으로는 가고, 가구가 막은 칸이나 방 밖으로는 못 간다', () {
-    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest)
-      ..debugTopUp()
-      ..debugTopUp();
+    final s = AppState(MemoryKeyValue(), clock: () => DateTime(2026, 11, 11, 9), manifest: manifest);
+    s.profile
+      ..coins = 20000
+      ..level = 3;
     s.buy(itemById('bed_single')!);
     expect(s.moveFloor('bed_single', const FloorPos(0, 0)).ok, isTrue); // (0,0)~(0,1)을 막는다
     expect(s.moveMinimi((6, 2)), isTrue);

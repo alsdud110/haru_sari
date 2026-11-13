@@ -6,7 +6,6 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'config.dart';
 import 'data/admob_ads.dart';
-import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
 import 'data/supabase_auth.dart';
@@ -29,8 +28,7 @@ Future<void> main() async {
       reminders: LocalReminders(iconAssetFor: routineIconAsset),
       ads: AdMobRewardAds(),
       manifest: manifest,
-      // 개발자 모드 계정은 서버와 맞추지 않는다 (이 기기에만 저장).
-      remoteFor: (uid) => uid == AuthService.devUid ? null : SupabaseRemote(uid),
+      remoteFor: SupabaseRemote.new,
     ),
   );
 }

@@ -240,12 +240,11 @@ class _IntroProgressDemoState extends _DemoState<IntroProgressDemo> {
   }
 }
 
-/// 3장: 미니미 곁에 가구가 하나씩 놓인다. [onMinimiDoubleTap]은 개발자 모드 진입에 쓴다.
+/// 3장: 미니미 곁에 가구가 하나씩 놓인다.
 ///
 /// 가구는 방에서 쓰는 픽셀 그림 그대로다 (미니미와 같은 그림체): 작은 화분, 협탁, 더블 침대.
 class IntroRoomDemo extends _Demo {
-  const IntroRoomDemo({super.key, required super.active, this.onMinimiDoubleTap});
-  final VoidCallback? onMinimiDoubleTap;
+  const IntroRoomDemo({super.key, required super.active});
   @override
   State<IntroRoomDemo> createState() => _IntroRoomDemoState();
 }
@@ -283,10 +282,9 @@ class _IntroRoomDemoState extends _DemoState<IntroRoomDemo> {
         Align(alignment: const Alignment(-1, 0.1), child: _furniture(_bed, 128, 120, 0.42)),
         Align(
           alignment: const Alignment(0.12, 0),
-          child: GestureDetector(
+          child: Breathing(
             key: const ValueKey('intro-minimi'),
-            onDoubleTap: widget.onMinimiDoubleTap,
-            child: Breathing(child: MinimiView(profile: Profile(), happy: true, width: 120)),
+            child: MinimiView(profile: Profile(), happy: true, width: 120),
           ),
         ),
         Align(alignment: const Alignment(1, -1), child: _furniture(_nightstand, 64, 80, 0.18)),

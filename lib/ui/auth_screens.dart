@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' hide Text;
 import 'package:flutter_svg/flutter_svg.dart';
 
@@ -32,11 +31,7 @@ class _IntroScreenState extends State<IntroScreen> {
   Widget _demo(BuildContext context, int i) => switch (i) {
     0 => IntroRoutinesDemo(active: _i == 0),
     1 => IntroProgressDemo(active: _i == 1),
-    _ => IntroRoomDemo(
-      active: _i == 2,
-      // 디버그 빌드에서만: 미니미를 두 번 누르면 로그인 없이 개발자 모드로 들어간다.
-      onMinimiDoubleTap: kDebugMode ? () => AuthScope.read(context).signInAsDeveloper() : null,
-    ),
+    _ => IntroRoomDemo(active: _i == 2),
   };
 
   @override
@@ -447,7 +442,6 @@ class _AccountScreenState extends State<AccountScreen> {
 
 /// '카카오 계정 · a@b.com' 같은 로그인 수단 표시.
 String accountLabel(AuthUser? user) => [
-  if (user?.isDeveloper ?? false) '개발자 모드 · 이 기기에만 저장',
   if (user?.provider case final p?) '${p.label} 계정',
   if (user?.email case final e? when e.isNotEmpty) e,
 ].join(' · ');

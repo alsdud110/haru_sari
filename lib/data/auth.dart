@@ -18,33 +18,23 @@ class AuthUser {
   final String nickname;
   final SocialProvider? provider;
   final String? email;
-
-  /// 로그인 없이 들어온 개발자 모드 계정인지
-  bool get isDeveloper => uid == AuthService.devUid;
 }
 
 /// 계정 관리.
 ///
 /// 실제 앱은 [SupabaseAuthService](supabase_auth.dart)를 쓴다.
 /// 테스트는 서버 없이 도는 [DeviceAuthService]를 쓴다.
-///
-/// **개발자 모드**: 디버그 빌드에서만, 로그인 없이 이 기기 전용 계정([devUid])으로 들어간다.
-/// 서버와 동기화하지 않고 기록은 이 기기에만 남는다. 출시 빌드에서는 켤 수 없다.
 abstract class AuthService extends ChangeNotifier {
-  AuthService(this.kv) : _dev = kDebugMode && kv.read(_kDev) == 'true';
+  AuthService(this.kv);
 
   @protected
   final KeyValue kv;
 
-  static const devUid = 'dev-local';
-  static const _kDev = 'devMode';
-  bool _dev;
-
-  /// 실제로 로그인한 계정 (개발자 모드는 빼고)
+  /// 로그인한 계정 (없으면 null)
   @protected
   AuthUser? get account;
 
-  AuthUser? get current => _dev ? const AuthUser(uid: devUid, nickname: '') : account;
+  AuthUser? get current => account;
   bool get signedIn => current != null;
 
   /// 이 기기에서 보여줄 로그인 버튼 (Apple 은 iOS 에서만).
@@ -53,36 +43,15 @@ abstract class AuthService extends ChangeNotifier {
   /// 성공하면 null, 실패하면 안내 문구. 취소는 '' (안내 없이 조용히 끝낸다).
   Future<String?> signIn(SocialProvider provider);
 
-  /// 로그인 없이 개발자 모드로 들어간다. 디버그 빌드가 아니면 아무 일도 하지 않고 false.
-  Future<bool> signInAsDeveloper() async {
-    if (!kDebugMode) return false;
-    _dev = true;
-    await kv.write(_kDev, 'true');
-    notifyListeners();
-    return true;
-  }
-
-  Future<void> _leaveDeveloper() async {
-    _dev = false;
-    await kv.write(_kDev, '');
-    notifyListeners();
-  }
-
-  Future<void> logout() => _dev ? _leaveDeveloper() : signOutAccount();
+  Future<void> logout() => signOutAccount();
 
   /// 계정 삭제. 서버의 계정·기록과 이 기기의 기록을 함께 지운다.
   /// 성공하면 null, 실패하면 안내 문구 (계정은 그대로 둔다).
-  Future<String?> deleteAccount() async {
-    if (!_dev) return deleteSignedInAccount();
-    await kv.removePrefix(userPrefix(devUid));
-    await _leaveDeveloper();
-    return null;
-  }
+  Future<String?> deleteAccount() => deleteSignedInAccount();
 
   /// 개발용: 이 기기의 기록을 지우고 로그아웃한다.
   Future<void> debugReset() async {
     await kv.removePrefix('');
-    _dev = false;
     await signOutAccount();
   }
 

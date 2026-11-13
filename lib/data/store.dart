@@ -150,15 +150,6 @@ class AppState extends ChangeNotifier {
     await _kv.write(_kOnboarded, onboarded.toString());
   }
 
-  /// 개발용: 누를 때마다 코인 +10000, 레벨 +1 (디버그 빌드의 코인 칩 누르기).
-  /// 서버와 동기화하는 계정에서는 다음 동기화 때 서버 값으로 돌아간다. 개발자 모드 계정은 그대로 남는다.
-  void debugTopUp() {
-    profile
-      ..coins += 10000
-      ..level += 1;
-    _commit();
-  }
-
   void _commit({bool resync = false}) {
     _checkBadges();
     notifyListeners();

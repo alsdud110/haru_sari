@@ -257,29 +257,6 @@ void main() {
     await tester.pumpAndSettle();
   });
 
-  testWidgets('개발자 모드: 소개 마지막 장의 미니미를 두 번 누르면 로그인 없이 들어간다', (tester) async {
-    final kv = MemoryKeyValue();
-    final auth = DeviceAuthService(kv);
-    await pump(tester, kv, auth);
-    await tester.tap(find.text('건너뛰기'));
-    await settleish(tester);
-
-    final minimi = find.byKey(const ValueKey('intro-minimi'));
-    await tester.tap(minimi);
-    await tester.pump(const Duration(milliseconds: 80));
-    await tester.tap(minimi);
-    await settleish(tester);
-
-    expect(auth.current!.isDeveloper, isTrue);
-    expect(find.text('뭐라고 불러드릴까요?'), findsOneWidget);
-    // 다시 열어도 개발자 모드가 이어지고, 로그아웃하면 풀린다
-    expect(DeviceAuthService(kv).current?.uid, AuthService.devUid);
-    await auth.logout();
-    expect(auth.signedIn, isFalse);
-    expect(DeviceAuthService(kv).signedIn, isFalse);
-    await settleish(tester);
-  });
-
   testWidgets('소개 장면: 루틴이 차례로 체크되고, 달성률은 1/3에서 멈추고, 장을 다시 보면 처음부터 재생된다', (tester) async {
     final kv = MemoryKeyValue();
     await pump(tester, kv, DeviceAuthService(kv));
