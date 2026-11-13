@@ -1,0 +1,7 @@
+# 출시용 서명 정보 견본. 이 파일을 key.properties 로 복사한 뒤 값을 채운다.
+# key.properties 와 .jks 파일은 저장소에 올리지 않는다 (android/.gitignore 에 들어 있다).
+storePassword=키 저장소 비밀번호
+keyPassword=키 비밀번호 (보통 저장소 비밀번호와 같다)
+keyAlias=upload
+# android/app 폴더를 기준으로 한 키 파일 위치
+storeFile=../upload-keystore.jks
