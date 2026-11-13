@@ -2,7 +2,10 @@ import 'package:flutter/cupertino.dart' show CupertinoIcons;
 import 'package:flutter/foundation.dart' show kDebugMode;
 import 'package:flutter/material.dart' hide Text;
 
+import 'package:url_launcher/url_launcher.dart';
+
 import '../app.dart';
+import '../config.dart';
 import '../data/auth.dart';
 import '../data/badges.dart';
 import '../theme/tokens.dart';
@@ -118,6 +121,16 @@ class ProfileScreen extends StatelessWidget {
           ]),
           const SizedBox(height: Space.lg),
           _Section('앱 정보', [
+            _Tile(
+              icon: Icons.shield_outlined,
+              title: '개인정보 처리방침',
+              subtitle: '수집하는 정보와 계정 삭제 안내',
+              // 웹 페이지(docs/privacy)를 브라우저로 연다
+              onTap: () async {
+                final ok = await launchUrl(Uri.parse(AppLinks.privacy), mode: LaunchMode.externalApplication);
+                if (!ok && context.mounted) showAppToast(context, '페이지를 열지 못했어요. 잠시 뒤 다시 해 주세요');
+              },
+            ),
             _Tile(
               icon: Icons.description_outlined,
               title: '오픈소스 라이선스',

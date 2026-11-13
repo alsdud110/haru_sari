@@ -183,6 +183,7 @@ void main() {
     await tester.tap(find.text('나'));
     await tester.pumpAndSettle();
     await tester.scrollUntilVisible(find.textContaining('다시 시작하는 날이 곧 좋은 날이에요'), 200);
+    expect(find.text('개인정보 처리방침'), findsOneWidget); // 앱 정보에 처리방침 링크가 있다
     await tester.tap(find.text('오픈소스 라이선스'));
     await tester.pumpAndSettle();
     expect(find.text('LINE Seed Sans KR'), findsOneWidget);

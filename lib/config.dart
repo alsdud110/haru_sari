@@ -29,6 +29,13 @@ class AdConfig {
   }
 }
 
+/// 앱 밖의 안내 페이지.
+class AppLinks {
+  /// 개인정보 처리방침 (docs/privacy/index.html 을 GitHub Pages 로 공개한 주소).
+  /// 스토어 등록 정보에도 같은 주소를 넣는다. 계정 삭제 안내는 이 주소 뒤에 #delete.
+  static const privacy = 'https://alsdud110.github.io/haru_sari/privacy/';
+}
+
 /// 서버 연결 정보.
 ///
 /// 둘 다 앱에 들어가는 **공개용** 값이다 (데이터는 서버의 RLS 규칙이 지킨다).
