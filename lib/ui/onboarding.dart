@@ -268,9 +268,9 @@ class _PinnedMinimi extends SliverPersistentHeaderDelegate {
   final Minimi minimi;
 
   @override
-  double get maxExtent => 196;
+  double get maxExtent => 124;
   @override
-  double get minExtent => 132;
+  double get minExtent => 108;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => DecoratedBox(
