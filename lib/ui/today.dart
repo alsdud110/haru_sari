@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
 import '../app.dart';
+import '../data/cheers.dart';
 import '../data/models.dart';
 import '../data/rewards.dart';
 import '../theme/tokens.dart';
@@ -18,13 +19,14 @@ import 'widgets.dart';
 export '../theme/tokens.dart' show keepWords; // 예전부터 이 파일에서 가져다 쓰던 곳을 위해
 
 /// 달성률에 따라 고르는 부드러운 한마디. 실패라는 말은 쓰지 않는다. 문장마다 줄을 바꾼다.
-String gentleLine(int done, int total) {
+/// 같은 상태라도 날마다([day], cheers.dart 의 dayNumber) 다른 문장이 나온다.
+String gentleLine(int done, int total, {int day = 0}) {
   if (total == 0) return '';
   return keepWords(switch (done) {
-    0 => '천천히 시작해도 괜찮아요.\n하나만 해봐도 충분해요.',
-    _ when done == total => '오늘을 온전히 살아냈어요.\n정말 수고했어요.',
-    _ when done / total >= RewardRules.threshold => '오늘 몫의 하루를 해냈어요.\n남은 건 여유가 되면요.',
-    _ => '벌써 $done개나 했어요.\n이대로도 잘하고 있어요.',
+    0 => cheerOf(gentleNone, day),
+    _ when done == total => cheerOf(gentleAll, day),
+    _ when done / total >= RewardRules.threshold => cheerOf(gentleEnough, day),
+    _ => cheerOf(gentleSome, day).replaceAll('{n}', '$done'),
   });
 }
 
@@ -232,7 +234,7 @@ class _Summary extends StatelessWidget {
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.centerLeft,
                       child: Text(
-                        total == 0 ? '오늘은 기록할 루틴이 없어요' : gentleLine(done, total),
+                        total == 0 ? '오늘은 기록할 루틴이 없어요' : gentleLine(done, total, day: dayNumber(s.today)),
                         style: t.titleLarge?.copyWith(fontWeight: FontWeight.w400).cheer,
                         softWrap: false,
                       ),
@@ -465,12 +467,13 @@ class EncouragementScreen extends StatelessWidget {
     final log = s.todayLog;
     final t = Theme.of(context).textTheme;
     // 본문은 문장마다 줄을 바꾼다. 제목·본문 모두 낱말 중간에서는 끊지 않는다 (keepWords).
-    final (title, body) = switch (log) {
-      _ when log.total == 0 => ('쉬어가는 하루도 하루예요', '오늘은 정해 둔 루틴이 없어요.\n편하게 숨 고르는 것도 충분히 잘 사는 거예요.'),
-      _ when log.done == log.total => ('오늘을 온전히 살아냈어요', '작은 일 하나하나를 다 해낸 하루예요.\n스스로를 꼭 칭찬해 주세요.'),
-      _ when log.rewarded => ('오늘 몫을 해냈어요', '남은 건 여유가 될 때만 해도 괜찮아요.\n이미 충분해요.'),
-      _ => ('오늘도 충분히 잘 살아냈어요', '모든 루틴을 채우지 못해도 괜찮아요.\n평범한 하루를 살아낸 것만으로도 충분해요.'),
-    };
+    // 오늘의 상태에 맞는 묶음에서, 날마다 다른 문장을 고른다 (cheers.dart).
+    final (title, body) = cheerOf(switch (log) {
+      _ when log.total == 0 => cheerRest,
+      _ when log.done == log.total => cheerAll,
+      _ when log.rewarded => cheerEnough,
+      _ => cheerAnyway,
+    }, dayNumber(s.today));
     return Scaffold(
       appBar: AppBar(),
       body: SafeArea(
