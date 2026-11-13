@@ -126,7 +126,11 @@ class ProfileScreen extends StatelessWidget {
             ),
           ]),
           const SizedBox(height: Space.xl),
-          Text('루틴을 놓친 날에도 경험치·코인·가구는 그대로예요.\n다시 시작하는 날이 곧 좋은 날이에요.', style: t.bodySmall?.cheer, textAlign: TextAlign.center),
+          Text(
+            '루틴을 놓친 날에도 경험치·코인·가구는 그대로예요.\n다시 시작하는 날이 곧 좋은 날이에요.',
+            style: t.bodySmall?.cheer,
+            textAlign: TextAlign.center,
+          ),
           if (kDebugMode) ...[
             const SizedBox(height: Space.lg),
             TextButton(onPressed: () => _confirmReset(context, auth), child: const Text('초기화 (개발용)')),
@@ -157,21 +161,30 @@ class ProfileScreen extends StatelessWidget {
       isScrollControlled: false,
       builder: (ctx) {
         final s = AppScope.of(ctx);
+        final picker = MinimiPicker(minimi: s.profile.minimi, onChanged: s.updateMinimi);
+        // 눕힌 화면처럼 높이가 모자라면 미니미도 고르는 칸과 함께 넘겨 본다 (평소에는 위에 붙어 있다).
+        final short = MediaQuery.sizeOf(ctx).height < 500;
         return SafeArea(
           child: Padding(
             padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xl),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                MinimiView(profile: s.profile),
-                const SizedBox(height: Space.lg),
-                Flexible(
-                  child: SingleChildScrollView(
-                    child: MinimiPicker(minimi: s.profile.minimi, onChanged: s.updateMinimi),
+            child: short
+                ? SingleChildScrollView(
+                    child: Column(
+                      children: [
+                        MinimiView(profile: s.profile),
+                        const SizedBox(height: Space.lg),
+                        picker,
+                      ],
+                    ),
+                  )
+                : Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      MinimiView(profile: s.profile),
+                      const SizedBox(height: Space.lg),
+                      Flexible(child: SingleChildScrollView(child: picker)),
+                    ],
                   ),
-                ),
-              ],
-            ),
           ),
         );
       },
@@ -358,10 +371,7 @@ class BadgesScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Opacity(
-                  opacity: got != null ? 1 : 0.3,
-                  child: RoutineIcon(b.emoji, size: 48),
-                ),
+                Opacity(opacity: got != null ? 1 : 0.3, child: RoutineIcon(b.emoji, size: 48)),
                 const SizedBox(height: Space.sm),
                 Text(b.name, style: t.titleMedium, textAlign: TextAlign.center),
                 const SizedBox(height: 2),

@@ -26,6 +26,9 @@ class _IntroScreenState extends State<IntroScreen> {
     ('작은 성취가 쌓여\n나만의 공간이 돼요', '루틴을 이어갈수록 미니미 방이 따뜻하게 채워져요.\n오늘도 한 걸음이면 충분해요'),
   ];
 
+  /// 그림과 글을 한 화면에 다 놓기에 모자란 높이 (가로로 눕힌 폰). 이보다 낮으면 세로로 넘겨 본다.
+  static const _shortPage = 280.0;
+
   Widget _demo(BuildContext context, int i) => switch (i) {
     0 => IntroRoutinesDemo(active: _i == 0),
     1 => IntroProgressDemo(active: _i == 1),
@@ -56,32 +59,54 @@ class _IntroScreenState extends State<IntroScreen> {
                 onPageChanged: (i) => setState(() => _i = i),
                 itemBuilder: (context, i) {
                   final (title, body) = _slides[i];
-                  return Padding(
-                    // 앞 장은 화면 전체로 봐도 가운데에 오도록 조금 내린다 (마지막 장은 로그인 버튼 자리 때문에 그대로).
-                    padding: EdgeInsets.fromLTRB(Space.gutter, i == _slides.length - 1 ? 0 : 64, Space.gutter, 0),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        // 작은 화면에서는 장면을 줄여 글과 버튼 자리를 남긴다.
-                        Flexible(
-                          child: FittedBox(fit: BoxFit.scaleDown, child: _demo(context, i)),
-                        ),
-                        const SizedBox(height: Space.xl),
-                        Reveal(
-                          index: 1,
-                          child: Text(title, style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
-                        ),
-                        const SizedBox(height: Space.md),
-                        Reveal(
-                          index: 2,
-                          child: Text(
-                            keepWords(body),
-                            style: t.bodyLarge?.copyWith(color: AppColors.textMuted).cheer,
-                            textAlign: TextAlign.center,
-                          ),
-                        ),
-                      ],
+                  final words = [
+                    const SizedBox(height: Space.xl),
+                    Reveal(
+                      index: 1,
+                      child: Text(title, style: t.headlineMedium?.cheer, textAlign: TextAlign.center),
                     ),
+                    const SizedBox(height: Space.md),
+                    Reveal(
+                      index: 2,
+                      child: Text(
+                        keepWords(body),
+                        style: t.bodyLarge?.copyWith(color: AppColors.textMuted).cheer,
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  ];
+                  return LayoutBuilder(
+                    builder: (context, box) {
+                      // 가로로 눕힌 화면처럼 높이가 모자라면 글만으로도 넘치므로, 장면을 작게 두고 세로로 넘겨 보게 한다.
+                      if (box.maxHeight < _shortPage) {
+                        return SingleChildScrollView(
+                          padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: Space.md),
+                          child: Column(
+                            children: [
+                              SizedBox(
+                                height: 120,
+                                child: FittedBox(fit: BoxFit.scaleDown, child: _demo(context, i)),
+                              ),
+                              ...words,
+                            ],
+                          ),
+                        );
+                      }
+                      return Padding(
+                        // 앞 장은 화면 전체로 봐도 가운데에 오도록 조금 내린다 (마지막 장은 로그인 버튼 자리 때문에 그대로).
+                        padding: EdgeInsets.fromLTRB(Space.gutter, i == _slides.length - 1 ? 0 : 64, Space.gutter, 0),
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            // 작은 화면에서는 장면을 줄여 글과 버튼 자리를 남긴다.
+                            Flexible(
+                              child: FittedBox(fit: BoxFit.scaleDown, child: _demo(context, i)),
+                            ),
+                            ...words,
+                          ],
+                        ),
+                      );
+                    },
                   );
                 },
               ),
@@ -95,60 +120,57 @@ class _IntroScreenState extends State<IntroScreen> {
                 duration: Motion.normal,
                 curve: Motion.curve,
                 // 앞 장: 점 8 + 간격 16 + '다음' 52 + 간격 4 + '건너뛰기' 48
-                height: _i == _slides.length - 1 ? AuthScope.of(context).providers.length * 60 + 32 + 8 + Space.lg : 128,
+                height: _i == _slides.length - 1
+                    ? AuthScope.of(context).providers.length * 60 + 32 + 8 + Space.lg
+                    : 128,
                 // 자리가 줄어드는 동안 버튼 묶음이 잠깐 더 커도 넘침 경고 없이 아래에 붙어 있게 한다.
                 child: SingleChildScrollView(
                   reverse: true,
                   physics: const NeverScrollableScrollPhysics(),
                   child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: List.generate(
-                        _slides.length,
-                        (i) => AnimatedContainer(
-                          duration: Motion.normal,
-                          margin: const EdgeInsets.symmetric(horizontal: Space.xs),
-                          width: i == _i ? 22 : 8,
-                          height: 8,
-                          decoration: BoxDecoration(
-                            color: i == _i ? AppColors.primary : AppColors.line,
-                            borderRadius: BorderRadius.circular(99),
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: List.generate(
+                          _slides.length,
+                          (i) => AnimatedContainer(
+                            duration: Motion.normal,
+                            margin: const EdgeInsets.symmetric(horizontal: Space.xs),
+                            width: i == _i ? 22 : 8,
+                            height: 8,
+                            decoration: BoxDecoration(
+                              color: i == _i ? AppColors.primary : AppColors.line,
+                              borderRadius: BorderRadius.circular(99),
+                            ),
                           ),
                         ),
                       ),
-                    ),
-                    const SizedBox(height: Space.lg),
-                    AnimatedSize(
-                      duration: Motion.normal,
-                      curve: Motion.curve,
-                      alignment: Alignment.bottomCenter,
-                      child: AnimatedSwitcher(
+                      const SizedBox(height: Space.lg),
+                      AnimatedSize(
                         duration: Motion.normal,
-                        layoutBuilder: (current, previous) => Stack(
-                          alignment: Alignment.bottomCenter,
-                          children: [...previous, ?current],
+                        curve: Motion.curve,
+                        alignment: Alignment.bottomCenter,
+                        child: AnimatedSwitcher(
+                          duration: Motion.normal,
+                          layoutBuilder: (current, previous) =>
+                              Stack(alignment: Alignment.bottomCenter, children: [...previous, ?current]),
+                          child: _i == _slides.length - 1
+                              ? const SocialButtons(key: ValueKey('login'))
+                              : Column(
+                                  key: const ValueKey('next'),
+                                  mainAxisSize: MainAxisSize.min,
+                                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                                  children: [
+                                    FilledButton(onPressed: () => _to(_i + 1), child: const Text('다음')),
+                                    const SizedBox(height: Space.xs),
+                                    TextButton(onPressed: () => _to(_slides.length - 1), child: const Text('건너뛰기')),
+                                  ],
+                                ),
                         ),
-                        child: _i == _slides.length - 1
-                            ? const SocialButtons(key: ValueKey('login'))
-                            : Column(
-                                key: const ValueKey('next'),
-                                mainAxisSize: MainAxisSize.min,
-                                crossAxisAlignment: CrossAxisAlignment.stretch,
-                                children: [
-                                  FilledButton(onPressed: () => _to(_i + 1), child: const Text('다음')),
-                                  const SizedBox(height: Space.xs),
-                                  TextButton(
-                                    onPressed: () => _to(_slides.length - 1),
-                                    child: const Text('건너뛰기'),
-                                  ),
-                                ],
-                              ),
                       ),
-                    ),
-                  ],
+                    ],
                   ),
                 ),
               ),
@@ -446,4 +468,3 @@ Future<void> confirmLogout(BuildContext context) async {
   );
   if (ok == true && context.mounted) await AuthScope.read(context).logout();
 }
-

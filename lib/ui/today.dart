@@ -216,71 +216,71 @@ class _Summary extends StatelessWidget {
     final need = (total * RewardRules.threshold).ceil();
     // 면 없이 종이 위에 바로 놓는다: 격려 한마디가 화면의 주인공, 링은 그 옆에서 받친다.
     return Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    AnimatedSwitcher(
-                      duration: Motion.normal,
-                      // 한 문장이 한 줄에 안 들어가는 좁은 화면에서는 줄을 더 나누지 않고 글자를 줄인다.
-                      child: FittedBox(
-                        key: ValueKey('$done/$total'),
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          total == 0 ? '오늘은 기록할 루틴이 없어요' : gentleLine(done, total),
-                          style: t.titleLarge?.copyWith(fontWeight: FontWeight.w400).cheer,
-                          softWrap: false,
-                        ),
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  AnimatedSwitcher(
+                    duration: Motion.normal,
+                    // 한 문장이 한 줄에 안 들어가는 좁은 화면에서는 줄을 더 나누지 않고 글자를 줄인다.
+                    child: FittedBox(
+                      key: ValueKey('$done/$total'),
+                      fit: BoxFit.scaleDown,
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        total == 0 ? '오늘은 기록할 루틴이 없어요' : gentleLine(done, total),
+                        style: t.titleLarge?.copyWith(fontWeight: FontWeight.w400).cheer,
+                        softWrap: false,
                       ),
                     ),
-                    const SizedBox(height: Space.sm),
-                    if (total > 0 && !rewarded) Text('$need개를 마치면 경험치와 코인을 받아요', style: t.bodySmall),
-                  ],
-                ),
+                  ),
+                  const SizedBox(height: Space.sm),
+                  if (total > 0 && !rewarded) Text('$need개를 마치면 경험치와 코인을 받아요', style: t.bodySmall),
+                ],
               ),
-              const SizedBox(width: Space.lg),
-              ProgressRing(
-                value: rate,
-                size: 104,
-                child: total == 0
-                    ? Text('–', style: t.titleLarge?.copyWith(color: AppColors.textMuted))
-                    : Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text('$done/$total', style: t.titleLarge),
-                          Text('${(rate * 100).round()}%', style: t.bodySmall),
-                        ],
-                      ),
+            ),
+            const SizedBox(width: Space.lg),
+            ProgressRing(
+              value: rate,
+              size: 104,
+              child: total == 0
+                  ? Text('–', style: t.titleLarge?.copyWith(color: AppColors.textMuted))
+                  : Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Text('$done/$total', style: t.titleLarge),
+                        Text('${(rate * 100).round()}%', style: t.bodySmall),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+        if (rewarded) ...[
+          const SizedBox(height: Space.md),
+          Row(
+            children: [
+              const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.sage),
+              const SizedBox(width: Space.xs),
+              Expanded(
+                child: Text('오늘의 보상을 받았어요', style: t.bodyMedium?.copyWith(color: AppColors.sageInk)),
+              ),
+              TextButton(
+                onPressed: () {
+                  final r = s.todayReward;
+                  if (r != null) showRewardSheet(context, r);
+                },
+                child: const Text('보상 확인'),
               ),
             ],
           ),
-          if (rewarded) ...[
-            const SizedBox(height: Space.md),
-            Row(
-              children: [
-                const Icon(Icons.check_circle_rounded, size: 18, color: AppColors.sage),
-                const SizedBox(width: Space.xs),
-                Expanded(
-                  child: Text('오늘의 보상을 받았어요', style: t.bodyMedium?.copyWith(color: AppColors.sageInk)),
-                ),
-                TextButton(
-                  onPressed: () {
-                    final r = s.todayReward;
-                    if (r != null) showRewardSheet(context, r);
-                  },
-                  child: const Text('보상 확인'),
-                ),
-              ],
-            ),
-          ],
-          const SizedBox(height: Space.lg),
-          const XpBar(),
         ],
+        const SizedBox(height: Space.lg),
+        const XpBar(),
+      ],
     );
   }
 }
@@ -530,7 +530,8 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
     builder: (ctx) {
       final t = Theme.of(ctx).textTheme;
       return SafeArea(
-        child: Padding(
+        // 눕힌 화면처럼 높이가 모자라면 세로로 넘겨 본다
+        child: SingleChildScrollView(
           padding: const EdgeInsets.fromLTRB(Space.gutter, Space.xl, Space.gutter, Space.lg),
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -610,7 +611,7 @@ Future<void> showLevelUp(BuildContext context, DailyReward r) {
       return Dialog(
         backgroundColor: AppColors.background,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg)),
-        child: Padding(
+        child: SingleChildScrollView(
           padding: const EdgeInsets.all(Space.xl),
           child: Column(
             mainAxisSize: MainAxisSize.min,

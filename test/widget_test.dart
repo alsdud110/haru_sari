@@ -197,6 +197,65 @@ void main() {
     expect(tester.takeException(), isNull);
   });
 
+  testWidgets('가로로 눕힌 화면: 소개 세 장이 넘치지 않고, 가려진 글은 세로로 넘겨 본다', (tester) async {
+    final kv = MemoryKeyValue();
+    await pump(tester, kv, DeviceAuthService(kv));
+    tester.view.physicalSize = const Size(780 * 3, 360 * 3);
+    await settleish(tester); // 넘치면 여기서 테스트가 실패한다
+    expect(find.textContaining('평범한 하루도'), findsOneWidget);
+    await tester.tap(find.text('다음'));
+    await settleish(tester);
+    await tester.tap(find.text('다음'));
+    await settleish(tester);
+    expect(find.text('카카오로 시작하기'), findsOneWidget);
+    await tester.drag(find.byKey(const ValueKey('intro-minimi')), const Offset(0, -200));
+    await settleish(tester);
+  });
+
+  testWidgets('가로로 눕힌 화면: 키보드가 올라온 닉네임 화면과 보상 시트가 넘치지 않는다', (tester) async {
+    final kv = MemoryKeyValue();
+    await pump(tester, kv, DeviceAuthService(kv));
+    await tester.tap(find.text('건너뛰기'));
+    await settleish(tester);
+    await tester.tap(find.text('카카오로 시작하기'));
+    await settleish(tester);
+
+    // 눕히고 키보드를 올린다 (넘치면 여기서 테스트가 실패한다)
+    tester.view.physicalSize = const Size(780 * 3, 360 * 3);
+    tester.view.viewInsets = const FakeViewPadding(bottom: 200 * 3);
+    addTearDown(tester.view.resetViewInsets);
+    await settleish(tester);
+    await tester.enterText(find.byType(TextField), '민');
+    await tester.pump();
+    await tester.ensureVisible(find.text('다음')); // 자리가 모자라 버튼도 함께 넘겨 본다
+    await settleish(tester);
+    await tester.tap(find.text('다음'));
+    tester.view.resetViewInsets();
+    await settleish(tester);
+
+    await tester.tap(find.text('이 모습이 좋아요'));
+    await settleish(tester);
+    await tester.ensureVisible(find.text('일어나기'));
+    await settleish(tester);
+    await tester.tap(find.text('일어나기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('1개로 시작하기'));
+    await tester.pumpAndSettle();
+
+    // 세로에서 체크해 보상 시트를 띄운 뒤 눕힌다
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('일어나기'));
+    await tester.pumpAndSettle();
+    expect(find.text('오늘을 온전히 살아냈어요'), findsOneWidget);
+    tester.view.physicalSize = const Size(780 * 3, 360 * 3);
+    await tester.pumpAndSettle();
+    await tester.ensureVisible(find.text('닫기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('닫기'));
+    await tester.pumpAndSettle();
+  });
+
   testWidgets('개발자 모드: 소개 마지막 장의 미니미를 두 번 누르면 로그인 없이 들어간다', (tester) async {
     final kv = MemoryKeyValue();
     final auth = DeviceAuthService(kv);

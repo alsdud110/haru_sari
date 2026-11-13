@@ -16,7 +16,8 @@ Future<int?> showTimeSheet(BuildContext context, {required int initialMinute, St
   return showAppSheet<int>(
     context,
     builder: (ctx) => SafeArea(
-      child: Padding(
+      // 눕힌 화면처럼 높이가 모자라면 세로로 넘겨 본다
+      child: SingleChildScrollView(
         padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.lg),
         child: Column(
           mainAxisSize: MainAxisSize.min,

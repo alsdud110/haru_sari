@@ -141,33 +141,56 @@ class _Dots extends StatelessWidget {
   );
 }
 
+/// 첫 설정 한 장: 제목·설명·내용은 함께 세로로 넘겨 보고, 아래 버튼은 붙어 있다.
+/// 키보드가 올라오거나 화면을 눕혀 높이가 모자라도 넘치지 않는다.
 class _StepScaffold extends StatelessWidget {
   const _StepScaffold({required this.title, required this.body, required this.content, required this.bottom});
   final String title;
   final String body;
-  final Widget content;
+
+  /// 제목·설명 아래에 이어지는 내용 (스스로 스크롤하지 않는 위젯들)
+  final List<Widget> content;
   final Widget bottom;
+
+  /// 버튼을 아래에 붙여 두기에 모자란 높이 (눕힌 화면에 키보드까지 올라왔을 때). 이보다 낮으면 버튼도 함께 넘겨 본다.
+  static const _tooShort = 160.0;
 
   @override
   Widget build(BuildContext context) {
     final t = Theme.of(context).textTheme;
+    final scrolling = [
+      const SizedBox(height: Space.xl),
+      Reveal(index: 0, child: Text(title, style: t.headlineMedium)),
+      const SizedBox(height: Space.sm),
+      Reveal(
+        index: 1,
+        child: Text(keepWords(body), style: t.bodyLarge?.copyWith(color: AppColors.textMuted)),
+      ),
+      const SizedBox(height: Space.xl),
+      ...content,
+    ];
+    final fixed = [bottom, const SizedBox(height: Space.lg)];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          const SizedBox(height: Space.xl),
-          Reveal(index: 0, child: Text(title, style: t.headlineMedium)),
-          const SizedBox(height: Space.sm),
-          Reveal(
-            index: 1,
-            child: Text(keepWords(body), style: t.bodyLarge?.copyWith(color: AppColors.textMuted)),
-          ),
-          const SizedBox(height: Space.xl),
-          Expanded(child: content),
-          bottom,
-          const SizedBox(height: Space.lg),
-        ],
+      child: LayoutBuilder(
+        builder: (context, box) => box.maxHeight < _tooShort
+            ? SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    ...scrolling,
+                    const SizedBox(height: Space.md),
+                    ...fixed,
+                  ],
+                ),
+              )
+            : Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Expanded(child: ListView(children: scrolling)),
+                  ...fixed,
+                ],
+              ),
       ),
     );
   }
@@ -182,16 +205,15 @@ class _NameStep extends StatelessWidget {
   Widget build(BuildContext context) => _StepScaffold(
     title: '뭐라고 불러드릴까요?',
     body: '앱 안에서만 쓰는 이름이에요. 나중에 계정 정보에서 바꿀 수 있어요.',
-    content: Align(
-      alignment: Alignment.topCenter,
-      child: TextField(
+    content: [
+      TextField(
         controller: controller,
         maxLength: 10,
         autofocus: controller.text.isEmpty,
         textInputAction: TextInputAction.next,
         decoration: const InputDecoration(labelText: '닉네임', counterText: ''),
       ),
-    ),
+    ],
     bottom: ListenableBuilder(
       listenable: controller,
       builder: (context, _) => FilledButton(
@@ -435,46 +457,44 @@ class _TemplateStep extends StatelessWidget {
     return _StepScaffold(
       title: '하루를 이루는\n작은 일들을 골라요',
       body: '마음에 드는 것만 고르세요. 연필을 누르면 시간·요일을 고칠 수 있어요.',
-      content: ListView(
-        children: [
-          for (var i = 0; i < routineTemplates.length; i++) ...[
-            _TemplateRow(
-              routine: picked[i] ?? routineTemplates[i].toRoutine('t$i'),
-              on: picked.containsKey(i),
-              onTap: () => onToggle(i),
-              onEdit: () => onEdit(i),
-            ),
-            const SizedBox(height: Space.sm),
-          ],
-          const SizedBox(height: Space.lg),
-          Text('알림', style: t.titleMedium),
-          const SizedBox(height: Space.sm),
-          Panel(
-            padding: EdgeInsets.zero,
-            child: Column(
-              children: [
-                SwitchListTile.adaptive(
-                  title: const Text('루틴 시간에 알림 받기'),
-                  subtitle: const Text('고른 루틴의 시간에 살며시 알려드려요'),
-                  value: routineAlarm,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: onRoutineAlarm,
-                ),
-                SwitchListTile.adaptive(
-                  title: const Text('하루 마무리 알림'),
-                  subtitle: const Text('오후 10시, 오늘을 돌아볼 시간을 알려드려요'),
-                  value: dayEnd,
-                  activeThumbColor: AppColors.primary,
-                  onChanged: onDayEnd,
-                ),
-              ],
-            ),
+      content: [
+        for (var i = 0; i < routineTemplates.length; i++) ...[
+          _TemplateRow(
+            routine: picked[i] ?? routineTemplates[i].toRoutine('t$i'),
+            on: picked.containsKey(i),
+            onTap: () => onToggle(i),
+            onEdit: () => onEdit(i),
           ),
           const SizedBox(height: Space.sm),
-          Text('알림은 나중에 \'나\' 탭에서 바꿀 수 있어요', style: t.bodySmall),
-          const SizedBox(height: Space.md),
         ],
-      ),
+        const SizedBox(height: Space.lg),
+        Text('알림', style: t.titleMedium),
+        const SizedBox(height: Space.sm),
+        Panel(
+          padding: EdgeInsets.zero,
+          child: Column(
+            children: [
+              SwitchListTile.adaptive(
+                title: const Text('루틴 시간에 알림 받기'),
+                subtitle: const Text('고른 루틴의 시간에 살며시 알려드려요'),
+                value: routineAlarm,
+                activeThumbColor: AppColors.primary,
+                onChanged: onRoutineAlarm,
+              ),
+              SwitchListTile.adaptive(
+                title: const Text('하루 마무리 알림'),
+                subtitle: const Text('오후 10시, 오늘을 돌아볼 시간을 알려드려요'),
+                value: dayEnd,
+                activeThumbColor: AppColors.primary,
+                onChanged: onDayEnd,
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(height: Space.sm),
+        Text('알림은 나중에 \'나\' 탭에서 바꿀 수 있어요', style: t.bodySmall),
+        const SizedBox(height: Space.md),
+      ],
       bottom: Column(
         children: [
           const SizedBox(height: Space.md),
