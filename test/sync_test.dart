@@ -105,6 +105,24 @@ class FakeServer implements Remote {
     coins -= price;
     return BuyReply(ok: true, wallet: wallet);
   }
+
+  /// 날짜 → 그날 광고 보상을 준 횟수 (claim_ad_reward 와 같은 규칙: 하루 3번, 5코인)
+  final Map<String, int> adUsed = {};
+
+  /// 서버에 광고 보상 함수를 아직 올리지 않은 상태를 흉내 낸다
+  bool adFunctionMissing = false;
+
+  @override
+  Future<AdReply> adReward(String day) async {
+    _net();
+    calls.add('ad $day');
+    if (adFunctionMissing) throw const RemoteRejected('function not found');
+    final n = adUsed[day] ?? 0;
+    if (n >= 3) return AdReply(ok: false, used: n, wallet: wallet);
+    adUsed[day] = n + 1;
+    coins += 5;
+    return AdReply(ok: true, used: n + 1, wallet: wallet);
+  }
 }
 
 void main() {
@@ -209,6 +227,66 @@ void main() {
     expect(a.s.profile.owned, isNot(contains('rug_round')));
     expect(a.s.room.contains('rug_round'), isFalse);
     expect(a.s.profile.coins, 0);
+  });
+
+  test('광고 보상: 하루 3번까지 5코인씩 받고, 서버 지갑과 맞는다', () async {
+    final server = FakeServer();
+    final a = device(server);
+    await a.sync.start();
+    a.s.finishOnboarding(name: '민', minimi: const Minimi(), picked: [r('a')]);
+    expect(a.s.adsLeftToday, 3);
+    expect(a.s.grantAdReward(), isTrue);
+    expect(a.s.grantAdReward(), isTrue);
+    expect((a.s.adsLeftToday, a.s.profile.coins), (1, 10));
+    expect(a.s.grantAdReward(), isTrue);
+    expect(a.s.grantAdReward(), isFalse); // 네 번째는 주지 않는다
+    expect((a.s.adsLeftToday, a.s.profile.coins), (0, 15));
+    await settle(a.sync);
+    expect(server.adUsed['2026-11-11'], 3);
+    expect(server.coins, 15);
+    expect(a.s.profile.coins, 15);
+
+    // 다음 날에는 다시 3번
+    now = now.add(const Duration(days: 1));
+    expect(a.s.adsLeftToday, 3);
+    expect(a.s.grantAdReward(), isTrue);
+    await settle(a.sync);
+    expect(server.coins, 20);
+  });
+
+  test('광고 보상: 다른 기기에서 이미 다 봤으면 서버가 거절하고, 코인과 남은 횟수가 서버 값으로 돌아온다', () async {
+    final server = FakeServer();
+    final a = device(server), b = device(server);
+    await a.sync.start();
+    a.s.finishOnboarding(name: '민', minimi: const Minimi(), picked: [r('a')]);
+    for (var i = 0; i < 3; i++) {
+      a.s.grantAdReward();
+    }
+    await settle(a.sync);
+
+    // 기기 B는 아직 모른다 (오프라인으로 한 번 봤다)
+    server.offline = true;
+    expect(b.s.adsLeftToday, 3);
+    expect(b.s.grantAdReward(), isTrue);
+    expect(b.s.profile.coins, 5);
+    server.offline = false;
+    await settle(b.sync);
+    expect(server.coins, 15);
+    expect(b.s.profile.coins, 15); // 서버 지갑으로
+    expect(b.s.adsLeftToday, 0); // 서버가 센 횟수로
+  });
+
+  test('광고 보상: 서버에 함수가 아직 없어도 뒤에 쌓인 요청이 막히지 않는다', () async {
+    final server = FakeServer()..adFunctionMissing = true;
+    final a = device(server);
+    await a.sync.start();
+    a.s.finishOnboarding(name: '민', minimi: const Minimi(), picked: [r('a'), r('b')]);
+    expect(a.s.grantAdReward(), isTrue);
+    a.s.completeMany(['a', 'b']);
+    await settle(a.sync);
+    expect(server.calls, containsAllInOrder(['ad 2026-11-11', 'claim 2026-11-11']));
+    expect(server.grants, hasLength(1)); // 하루 보상은 그대로 올라갔다
+    expect(server.coins, 15);
   });
 
   test('동기화 전부터 쓰던 기기: 처음 연결하면 지난 보상과 구매를 서버로 옮긴다', () async {

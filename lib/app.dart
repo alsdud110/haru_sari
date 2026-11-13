@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
+import 'data/ads.dart';
 import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
@@ -47,6 +48,7 @@ class HaruSariApp extends StatefulWidget {
     required this.kv,
     required this.auth,
     this.reminders,
+    this.ads,
     this.clock,
     this.manifest,
     this.remoteFor,
@@ -54,6 +56,9 @@ class HaruSariApp extends StatefulWidget {
   final KeyValue kv;
   final AuthService auth;
   final Reminders? reminders;
+
+  /// 보상형 광고. 없으면 광고 버튼이 보이지 않는다 (테스트).
+  final RewardAds? ads;
   final DateTime Function()? clock;
   final PixelManifest? manifest;
 
@@ -80,6 +85,7 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
         kv,
         clock: widget.clock,
         reminders: widget.reminders,
+        ads: widget.ads,
         initialName: widget.auth.current?.nickname ?? '',
         manifest: widget.manifest,
       );
@@ -129,19 +135,18 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
     super.dispose();
   }
 
-  MaterialApp _app({Key? key, required Widget home}) =>
-      MaterialApp(
-        key: key,
-        title: '하루살이',
-        debugShowCheckedModeBanner: false,
-        theme: buildTheme(),
-        scrollBehavior: const _NoBounceScrollBehavior(),
-        // 시간 휠의 오전·오후, 기본 창의 버튼 글 등을 한국어로
-        locale: const Locale('ko', 'KR'),
-        supportedLocales: const [Locale('ko', 'KR')],
-        localizationsDelegates: GlobalMaterialLocalizations.delegates,
-        home: home,
-      );
+  MaterialApp _app({Key? key, required Widget home}) => MaterialApp(
+    key: key,
+    title: '하루살이',
+    debugShowCheckedModeBanner: false,
+    theme: buildTheme(),
+    scrollBehavior: const _NoBounceScrollBehavior(),
+    // 시간 휠의 오전·오후, 기본 창의 버튼 글 등을 한국어로
+    locale: const Locale('ko', 'KR'),
+    supportedLocales: const [Locale('ko', 'KR')],
+    localizationsDelegates: GlobalMaterialLocalizations.delegates,
+    home: home,
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -180,7 +185,10 @@ class _Gate extends StatelessWidget {
       builder: (context, busy, _) => AnimatedSwitcher(
         duration: Motion.slow,
         child: busy && !s.onboarded
-            ? const Scaffold(key: ValueKey('pulling'), body: Center(child: AppSpinner()))
+            ? const Scaffold(
+                key: ValueKey('pulling'),
+                body: Center(child: AppSpinner()),
+              )
             : pick(),
       ),
     );

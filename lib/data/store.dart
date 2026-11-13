@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import 'ads.dart';
 import 'badges.dart';
 import '../room/iso.dart';
 import '../room/layout.dart';
@@ -75,10 +76,12 @@ class AppState extends ChangeNotifier {
     this._kv, {
     DateTime Function()? clock,
     Reminders? reminders,
+    RewardAds? ads,
     String initialName = '',
     PixelManifest? manifest,
   }) : _clock = clock ?? DateTime.now,
        reminders = reminders ?? NoReminders(),
+       ads = ads ?? const NoRewardAds(),
        manifest = manifest ?? PixelManifest(version: 1, items: const {}, base: const {}) {
     _load();
     if (profile.name.isEmpty) profile.name = initialName;
@@ -87,6 +90,9 @@ class AppState extends ChangeNotifier {
   final KeyValue _kv;
   final DateTime Function() _clock;
   final Reminders reminders;
+
+  /// 보상형 광고 (없으면 광고 버튼이 보이지 않는다)
+  final RewardAds ads;
 
   /// 가구 점유·회전 정보 (assets/pixel/manifest.json)
   final PixelManifest manifest;
@@ -183,7 +189,11 @@ class AppState extends ChangeNotifier {
   }
 
   /// 다른 기기에서 고친 루틴·방·설정을 받는다. 지갑 값은 그대로 둔다 (applyWallet 이 맞춘다).
-  void applyRemoteState({required String nickname, required List<dynamic> routines, required Map<String, dynamic> profile}) {
+  void applyRemoteState({
+    required String nickname,
+    required List<dynamic> routines,
+    required Map<String, dynamic> profile,
+  }) {
     final keep = this.profile;
     final p = Profile.fromJson(profile)
       ..level = keep.level
@@ -426,6 +436,37 @@ class AppState extends ChangeNotifier {
       levelsGained: 0,
       newLevel: profile.level,
     );
+  }
+
+  // ───────── 광고 보상 ─────────
+
+  /// 오늘 광고 보상을 받은 횟수
+  int get adsUsedToday => profile.adDay == todayKey ? profile.adCount : 0;
+
+  /// 오늘 더 볼 수 있는 횟수 (하루 [AdRules.perDay]번)
+  int get adsLeftToday => (AdRules.perDay - adsUsedToday).clamp(0, AdRules.perDay);
+
+  /// 광고를 끝까지 봤을 때 코인을 준다. 오늘 횟수를 다 썼으면 주지 않고 false.
+  bool grantAdReward() {
+    if (adsLeftToday <= 0) return false;
+    final used = adsUsedToday;
+    profile
+      ..adDay = todayKey
+      ..adCount = used + 1
+      ..coins += AdRules.coins;
+    _commit();
+    sync?.queueAd(todayKey);
+    return true;
+  }
+
+  /// 서버가 센 오늘의 횟수로 맞춘다 (다른 기기에서 본 것까지 더해진 값).
+  void applyAdCount(String day, int used) {
+    if (day != todayKey || (profile.adDay == day && profile.adCount == used)) return;
+    profile
+      ..adDay = day
+      ..adCount = used;
+    notifyListeners();
+    _save();
   }
 
   // ───────── 상점·방·옷 ─────────

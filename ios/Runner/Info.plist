@@ -24,6 +24,18 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(FLUTTER_BUILD_NUMBER)</string>
+	<!-- AdMob 앱 ID (가운데가 ~). AdMob 에서 받은 iOS 앱 ID.
+	     이 값이 없으면 앱이 켜지자마자 꺼진다. -->
+	<key>GADApplicationIdentifier</key>
+	<string>ca-app-pub-7446781962805745~1106597792</string>
+	<!-- 광고 성과를 Google 에 알리는 데 쓰는 식별자 (Google 광고 네트워크) -->
+	<key>SKAdNetworkItems</key>
+	<array>
+		<dict>
+			<key>SKAdNetworkIdentifier</key>
+			<string>cstr6suwn9.skadnetwork</string>
+		</dict>
+	</array>
 	<key>LSRequiresIPhoneOS</key>
 	<true/>
 	<key>UIApplicationSceneManifest</key>

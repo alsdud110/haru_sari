@@ -5,6 +5,11 @@
         android:label="하루살이"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
+        <!-- AdMob 앱 ID (가운데가 ~). AdMob 에서 받은 Android 앱 ID.
+             이 값이 없으면 앱이 켜지자마자 꺼진다. -->
+        <meta-data
+            android:name="com.google.android.gms.ads.APPLICATION_ID"
+            android:value="ca-app-pub-7446781962805745~3779707649"/>
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationReceiver" />
         <receiver android:exported="false" android:name="com.dexterous.flutterlocalnotifications.ScheduledNotificationBootReceiver">
             <intent-filter>

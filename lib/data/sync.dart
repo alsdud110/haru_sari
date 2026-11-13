@@ -13,12 +13,8 @@ class Wallet {
   final int totalXp;
   final int coins;
 
-  factory Wallet.fromRow(Map<String, dynamic> r) => Wallet(
-    level: r['level'] as int,
-    xp: r['xp'] as int,
-    totalXp: r['total_xp'] as int,
-    coins: r['coins'] as int,
-  );
+  factory Wallet.fromRow(Map<String, dynamic> r) =>
+      Wallet(level: r['level'] as int, xp: r['xp'] as int, totalXp: r['total_xp'] as int, coins: r['coins'] as int);
 }
 
 /// 서버에서 내려받은 한 사용자의 전부.
@@ -52,6 +48,23 @@ class BuyReply {
   final Wallet wallet;
 }
 
+/// 광고 보상 요청의 답. [used]는 그날 서버가 지급한 횟수(이번 것 포함).
+class AdReply {
+  const AdReply({required this.ok, required this.used, required this.wallet});
+  final bool ok;
+  final int used;
+  final Wallet wallet;
+}
+
+/// 서버가 요청을 받았지만 처리하지 못했다 (함수가 없거나 값이 맞지 않음). 다시 보내도 같으므로 버린다.
+/// 연결이 끊긴 것과는 다르다 — 그때는 다른 예외가 나고, 요청을 남겨 두었다가 다시 보낸다.
+class RemoteRejected implements Exception {
+  const RemoteRejected(this.message);
+  final String message;
+  @override
+  String toString() => 'RemoteRejected: $message';
+}
+
 /// 서버 접근. 실제는 SupabaseRemote, 테스트는 가짜를 쓴다.
 abstract class Remote {
   Future<RemoteSnapshot> pull();
@@ -65,6 +78,9 @@ abstract class Remote {
   Future<void> pushLogs(Map<String, ({Map<String, dynamic> data, DateTime at})> logs);
   Future<({int gainedXp, int gainedCoins, Wallet wallet})> claim(String day, int done, int total);
   Future<BuyReply> buy(String itemId, int price, int minLevel);
+
+  /// 광고를 끝까지 본 보상. 하루 횟수를 넘으면 ok=false 로 지갑만 돌려준다.
+  Future<AdReply> adReward(String day);
 }
 
 /// 기기 ↔ 서버 동기화.
@@ -121,12 +137,26 @@ class SyncEngine {
   }
 
   void queueClaim(String day, int done, int total) {
-    _setPending([..._pending, {'op': 'claim', 'day': day, 'done': done, 'total': total}]);
+    _setPending([
+      ..._pending,
+      {'op': 'claim', 'day': day, 'done': done, 'total': total},
+    ]);
     _kick();
   }
 
   void queueBuy(String itemId, int price, int minLevel) {
-    _setPending([..._pending, {'op': 'buy', 'item': itemId, 'price': price, 'level': minLevel}]);
+    _setPending([
+      ..._pending,
+      {'op': 'buy', 'item': itemId, 'price': price, 'level': minLevel},
+    ]);
+    _kick();
+  }
+
+  void queueAd(String day) {
+    _setPending([
+      ..._pending,
+      {'op': 'ad', 'day': day},
+    ]);
     _kick();
   }
 
@@ -188,6 +218,15 @@ class SyncEngine {
             // 다른 기기에서 코인을 먼저 써서 서버가 거절하면 이 기기의 구매를 되돌린다.
             // (첫 동기화로 다시 보내는 예전 구매는 되돌리지 않는다)
             if (!r.ok && r.reason != 'already_owned' && op['seed'] != true) _s.revertPurchase(op['item'] as String);
+          case 'ad':
+            // 다른 기기에서 이미 다 봤으면 서버가 거절한다 → 서버 지갑과 횟수로 맞춘다.
+            try {
+              final r = await _remote.adReward(op['day'] as String);
+              last = r.wallet;
+              _s.applyAdCount(op['day'] as String, r.used);
+            } on RemoteRejected catch (e) {
+              debugPrint('ad reward dropped: $e');
+            }
         }
         _setPending(_pending..removeAt(0));
       }
@@ -210,8 +249,7 @@ class SyncEngine {
       if (days.isNotEmpty) {
         final at = _logsAt;
         await _remote.pushLogs({
-          for (final d in days)
-            d: (data: _s.logs[d]!.toJson(), at: DateTime.tryParse(at[d] ?? '') ?? _clock().toUtc()),
+          for (final d in days) d: (data: _s.logs[d]!.toJson(), at: DateTime.tryParse(at[d] ?? '') ?? _clock().toUtc()),
         });
       }
       if (_disposed) return;
@@ -234,8 +272,7 @@ class SyncEngine {
     final st = snap.state;
     final serverReady = st != null && st['onboarded'] == true;
     final takeServer =
-        serverReady &&
-        (localAt == null || !_s.onboarded || (snap.stateAt != null && snap.stateAt!.isAfter(localAt)));
+        serverReady && (localAt == null || !_s.onboarded || (snap.stateAt != null && snap.stateAt!.isAfter(localAt)));
     if (takeServer) {
       _s.applyRemoteState(
         nickname: st['nickname'] as String? ?? '',

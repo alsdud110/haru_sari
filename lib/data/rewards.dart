@@ -12,6 +12,17 @@ class RewardRules {
   static int xpToNext(int level) => level * 50;
 }
 
+/// 광고 보상 규칙. 광고를 끝까지 보면 코인을 받는다 (경험치는 주지 않는다).
+/// 서버(claim_ad_reward)도 같은 값으로 지급하고 하루 횟수를 지킨다.
+class AdRules {
+  /// 하루에 볼 수 있는 횟수
+  static const perDay = 3;
+
+  /// 한 번 볼 때 받는 코인. 세 번 다 보면 15코인으로, 하루를 모두 해낸 날의 코인과 같다
+  /// (루틴이 여전히 코인의 주된 길이 되게 그보다 크게 잡지 않는다).
+  static const coins = 5;
+}
+
 class DailyReward {
   const DailyReward({
     required this.xp,

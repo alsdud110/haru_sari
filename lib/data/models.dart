@@ -260,6 +260,8 @@ class Profile {
     Map<String, String>? acquired,
     AlarmSettings? alarms,
     this.room,
+    this.adDay,
+    this.adCount = 0,
   }) : owned = owned ?? {},
        placed = placed ?? {},
        badges = badges ?? {},
@@ -299,6 +301,10 @@ class Profile {
   /// [placed]는 기존 데이터 호환을 위해 지우지 않고 남겨 둔다.
   RoomLayout? room;
 
+  /// 광고 보상을 마지막으로 받은 날(yyyy-MM-dd)과 그날 받은 횟수. 날이 바뀌면 0번으로 본다.
+  String? adDay;
+  int adCount;
+
   Map<String, dynamic> toJson() => {
     'name': name,
     'xp': xp,
@@ -315,6 +321,8 @@ class Profile {
     'acquired': acquired,
     'alarms': alarms.toJson(),
     if (room != null) 'room': room!.toJson(),
+    if (adDay != null) 'adDay': adDay,
+    if (adDay != null) 'adCount': adCount,
   };
 
   factory Profile.fromJson(Map<String, dynamic> j) => Profile(
@@ -327,6 +335,8 @@ class Profile {
     outfitId: j['outfitId'] as String?,
     accessoryId: j['accessoryId'] as String?,
     earringId: j['earringId'] as String?,
+    adDay: j['adDay'] as String?,
+    adCount: j['adCount'] as int? ?? 0,
     owned: ((j['owned'] as List?) ?? []).cast<String>().toSet(),
     placed: ((j['placed'] as Map?) ?? {}).cast<String, String>(),
     badges: ((j['badges'] as Map?) ?? {}).cast<String, String>(),

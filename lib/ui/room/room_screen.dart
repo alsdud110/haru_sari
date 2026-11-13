@@ -7,6 +7,7 @@ import '../../data/store.dart';
 import '../../room/palette.dart';
 import '../../room/registry.dart';
 import '../../theme/tokens.dart';
+import '../ad_coin_button.dart';
 import '../settings.dart';
 import '../motion.dart';
 import '../widgets.dart';
@@ -680,6 +681,8 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
                 ],
                 const SizedBox(height: Space.lg),
                 SizedBox(width: double.infinity, child: action),
+                // 아직 사지 않은 물건: 코인이 모자라면 광고를 보고 채울 수 있다 (하루 3번)
+                if (!owned && s.ads.available) ...[const SizedBox(height: Space.sm), const AdCoinButton()],
               ],
             ),
           ),

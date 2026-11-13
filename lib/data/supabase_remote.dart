@@ -81,4 +81,16 @@ class SupabaseRemote implements Remote {
     final r = (rows.first as Map).cast<String, dynamic>();
     return BuyReply(ok: r['ok'] as bool, reason: r['reason'] as String?, wallet: Wallet.fromRow(r));
   }
+
+  @override
+  Future<AdReply> adReward(String day) async {
+    try {
+      final rows = await _c.rpc<List<dynamic>>('claim_ad_reward', params: {'p_day': day});
+      final r = (rows.first as Map).cast<String, dynamic>();
+      return AdReply(ok: r['ok'] as bool, used: r['used'] as int, wallet: Wallet.fromRow(r));
+    } on PostgrestException catch (e) {
+      // 서버가 답은 했지만 처리하지 못했다 (함수를 아직 올리지 않았거나 날짜가 범위를 벗어남)
+      throw RemoteRejected(e.message);
+    }
+  }
 }
