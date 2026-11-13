@@ -25,36 +25,38 @@ void main() {
   var now = DateTime(2026, 11, 11, 9);
   setUp(() => now = DateTime(2026, 11, 11, 9));
 
-  test('규칙: 하루 3번, 한 번에 5코인', () {
-    expect((AdRules.perDay, AdRules.coins), (3, 5));
+  test('규칙: 하루 5번, 한 번에 5코인', () {
+    expect((AdRules.perDay, AdRules.coins), (5, 5));
   });
 
   test('광고 보상: 횟수는 날마다 다시 차고, 저장했다 다시 열어도 이어진다', () async {
     final kv = MemoryKeyValue();
     final s = AppState(kv, clock: () => now);
-    expect((s.adsUsedToday, s.adsLeftToday), (0, 3));
+    expect((s.adsUsedToday, s.adsLeftToday), (0, 5));
     expect(s.grantAdReward(), isTrue);
-    expect((s.adsUsedToday, s.adsLeftToday, s.profile.coins), (1, 2, 5));
+    expect((s.adsUsedToday, s.adsLeftToday, s.profile.coins), (1, 4, 5));
     await Future<void>.delayed(Duration.zero); // 기기 저장이 끝나도록
 
     final again = AppState(kv, clock: () => now);
-    expect((again.adsLeftToday, again.profile.coins), (2, 5));
-    again
-      ..grantAdReward()
-      ..grantAdReward();
+    expect((again.adsLeftToday, again.profile.coins), (4, 5));
+    for (var i = 0; i < 4; i++) {
+      expect(again.grantAdReward(), isTrue);
+    }
     expect(again.grantAdReward(), isFalse);
-    expect((again.adsLeftToday, again.profile.coins), (0, 15));
+    expect((again.adsLeftToday, again.profile.coins), (0, 25));
 
     now = now.add(const Duration(days: 1));
-    expect(again.adsLeftToday, 3);
-    expect(Profile.fromJson(again.profile.toJson()).adCount, 3); // 어제 횟수는 날짜와 함께 남아 있을 뿐이다
+    expect(again.adsLeftToday, 5);
+    expect(Profile.fromJson(again.profile.toJson()).adCount, 5); // 어제 횟수는 날짜와 함께 남아 있을 뿐이다
   });
 
-  testWidgets('광고 버튼: (3/3)에서 끝까지 볼 때마다 5코인을 받고 줄어들다가, 다 보면 눌리지 않는다', (tester) async {
+  testWidgets('광고 버튼: (5/5)에서 끝까지 볼 때마다 5코인을 받고 줄어들다가, 다 보면 눌리지 않는다', (tester) async {
     final ads = FakeAds([
       AdOutcome.earned,
       AdOutcome.closedEarly, // 중간에 닫으면 코인도 횟수도 그대로
       AdOutcome.unavailable, // 광고를 못 불러와도 그대로
+      AdOutcome.earned,
+      AdOutcome.earned,
       AdOutcome.earned,
       AdOutcome.earned,
     ]);
@@ -77,23 +79,25 @@ void main() {
       await tester.pump(const Duration(seconds: 1));
     }
 
-    expect(find.text('광고 보고 코인 5개 받기 (3/3)'), findsOneWidget);
+    expect(find.text('광고 보고 코인 5개 받기 (5/5)'), findsOneWidget);
     await tap();
-    expect(find.text('광고 보고 코인 5개 받기 (2/3)'), findsOneWidget);
+    expect(find.text('광고 보고 코인 5개 받기 (4/5)'), findsOneWidget);
     expect(s.profile.coins, 5);
 
     await tap(); // 중간에 닫음
     await tap(); // 광고 없음
-    expect(find.text('광고 보고 코인 5개 받기 (2/3)'), findsOneWidget);
+    expect(find.text('광고 보고 코인 5개 받기 (4/5)'), findsOneWidget);
     expect(s.profile.coins, 5);
 
     await tap();
-    expect(find.text('광고 보고 코인 5개 받기 (1/3)'), findsOneWidget);
     await tap();
-    expect(find.text('오늘 광고는 다 봤어요 (0/3)'), findsOneWidget);
-    expect(s.profile.coins, 15);
+    await tap();
+    expect(find.text('광고 보고 코인 5개 받기 (1/5)'), findsOneWidget);
+    await tap();
+    expect(find.text('오늘 광고는 다 봤어요 (0/5)'), findsOneWidget);
+    expect(s.profile.coins, 25);
     expect(tester.widget<OutlinedButton>(find.byType(OutlinedButton)).onPressed, isNull);
-    expect(ads.shown, 5);
+    expect(ads.shown, 7);
   });
 
   testWidgets('광고를 쓸 수 없는 빌드에서는 버튼이 보이지 않는다', (tester) async {

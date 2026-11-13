@@ -16,10 +16,9 @@ class RewardRules {
 /// 서버(claim_ad_reward)도 같은 값으로 지급하고 하루 횟수를 지킨다.
 class AdRules {
   /// 하루에 볼 수 있는 횟수
-  static const perDay = 3;
+  static const perDay = 5;
 
-  /// 한 번 볼 때 받는 코인. 세 번 다 보면 15코인으로, 하루를 모두 해낸 날의 코인과 같다
-  /// (루틴이 여전히 코인의 주된 길이 되게 그보다 크게 잡지 않는다).
+  /// 한 번 볼 때 받는 코인. 다섯 번 다 보면 25코인이다 (하루를 모두 해낸 날의 코인은 15).
   static const coins = 5;
 }
 

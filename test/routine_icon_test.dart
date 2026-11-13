@@ -8,10 +8,10 @@ import 'package:haru_sari/data/reminders.dart';
 import 'package:haru_sari/ui/routine_icon.dart';
 
 void main() {
-  test('아이콘 32개가 모두 파일로 있고, 서로 다른 그림을 가리킨다', () {
+  test('아이콘 32개가 모두 파일로 있고, 서로 다른 그림을 가리킨다 (파일은 배지·안내·광고 버튼용까지 49개)', () {
     expect(routineIconChoices, hasLength(32));
     expect(routineIconAssets.values.toSet(), hasLength(32));
-    expect(Directory('assets/icons').listSync().where((f) => f.path.endsWith('.png')), hasLength(48));
+    expect(Directory('assets/icons').listSync().where((f) => f.path.endsWith('.png')), hasLength(49));
     for (final e in routineIconChoices) {
       expect(File(routineIconAsset(e)!).existsSync(), isTrue, reason: '$e 그림 없음');
     }

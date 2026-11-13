@@ -6,8 +6,9 @@ import '../data/ads.dart';
 import '../data/rewards.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
+import 'routine_icon.dart';
 
-/// '광고 보고 코인 받기' 버튼. 남은 횟수를 (3/3)처럼 함께 보여 준다.
+/// '광고 보고 코인 받기' 버튼. 남은 횟수를 (5/5)처럼 함께 보여 준다.
 ///
 /// - 하루 [AdRules.perDay]번. 다 보면 눌리지 않고 내일 다시 볼 수 있다고 알려 준다.
 /// - 끝까지 본 광고만 코인을 준다. 중간에 닫거나 광고를 못 불러오면 횟수는 줄지 않는다.
@@ -65,11 +66,17 @@ class _AdCoinButtonState extends State<AdCoinButton> {
             : Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(
-                    left == 0 ? Icons.nightlight_round : Icons.play_circle_outline_rounded,
-                    size: 20,
-                    color: left == 0 ? AppColors.textMuted : AppColors.text,
-                  ),
+                  // 앱 그림 스티커: 볼 수 있을 때는 재생 버튼, 다 봤으면 달 (내일 다시)
+                  if (left == 0)
+                    const Opacity(opacity: 0.6, child: RoutineIcon('🌙', size: 22))
+                  else
+                    Image.asset(
+                      'assets/icons/play.png',
+                      width: 24,
+                      height: 24,
+                      filterQuality: FilterQuality.medium,
+                      excludeFromSemantics: true,
+                    ),
                   const SizedBox(width: Space.sm),
                   Flexible(
                     child: Text(

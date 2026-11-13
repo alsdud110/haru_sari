@@ -2,7 +2,7 @@
 //
 //   dart run tool/make_icons.dart
 //
-// 입력: art/source/icons/*_sheet_original.png (흰 배경, 갈색 외곽선 아이콘 16개씩)
+// 입력: art/source/icons/*_sheet_original.png (흰 배경, 갈색 외곽선 아이콘 16개씩), 낱장은 *_original.png (아이콘 하나)
 // 출력: assets/icons/<이름>.png (256×256, 투명 배경), art/source/icons/_preview.png (확인용)
 //
 // 방법
@@ -37,6 +37,8 @@ const sheets = {
     'star', 'star_sparkle', 'mailbox', 'box',
     'letter', 'sun_full', 'check', 'trophy',
   ],
+  // 낱장 아이콘 (한 장에 하나)
+  'art/source/icons/play_original.png': ['play'], // 광고 보고 코인 받기 버튼
 };
 
 void main() {
@@ -44,6 +46,7 @@ void main() {
   for (final e in sheets.entries) {
     final src = img.decodePng(File(e.key).readAsBytesSync())!.convert(numChannels: 4);
     final w = src.width, h = src.height;
+    final grid = e.value.length == 1 ? 1 : 4; // 한 장에 아이콘 하나면 칸을 나누지 않는다
     bool white(int x, int y) {
       final p = src.getPixel(x, y);
       final lo = math.min(p.r, math.min(p.g, p.b)), hi = math.max(p.r, math.max(p.g, p.b));
@@ -116,7 +119,7 @@ void main() {
 
     // 3. 덩어리 → 칸
     final label = List.filled(w * h, -1);
-    final boxes = List.generate(16, (_) => [w, h, -1, -1]); // minX, minY, maxX, maxY
+    final boxes = List.generate(grid * grid, (_) => [w, h, -1, -1]); // minX, minY, maxX, maxY
     final owner = <int, int>{};
     var n = 0;
     for (var s = 0; s < w * h; s++) {
@@ -142,7 +145,8 @@ void main() {
         }
       }
       if (comp.length >= 12) {
-        final cell = (sy / comp.length * 4 ~/ h).clamp(0, 3) * 4 + (sx / comp.length * 4 ~/ w).clamp(0, 3);
+        final cell =
+            (sy / comp.length * grid ~/ h).clamp(0, grid - 1) * grid + (sx / comp.length * grid ~/ w).clamp(0, grid - 1);
         owner[n] = cell;
         final b = boxes[cell];
         b[0] = math.min(b[0], minX);
@@ -153,7 +157,7 @@ void main() {
       n++;
     }
 
-    for (var c = 0; c < 16; c++) {
+    for (var c = 0; c < grid * grid; c++) {
       final b = boxes[c];
       if (b[2] < 0) {
         stderr.writeln('${e.key}: 칸 $c 가 비어 있다');

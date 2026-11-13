@@ -1,8 +1,8 @@
 -- 광고 보상 (AdMob 보상형 광고를 끝까지 보면 코인)
 -- 여러 번 실행해도 안전하게 썼다.
 --
--- 규칙은 lib/data/rewards.dart 의 AdRules 와 같다: 하루 3번, 한 번에 5코인 (경험치 없음).
--- 횟수는 서버가 센다 → 기기를 바꾸거나 앱을 다시 깔아도 하루 3번을 넘지 못한다.
+-- 규칙은 lib/data/rewards.dart 의 AdRules 와 같다: 하루 5번, 한 번에 5코인 (경험치 없음).
+-- 횟수는 서버가 센다 → 기기를 바꾸거나 앱을 다시 깔아도 하루 5번을 넘지 못한다.
 
 create table if not exists public.ad_rewards (
   user_id    uuid not null references auth.users (id) on delete cascade,
@@ -41,7 +41,7 @@ begin
 
   select ad_rewards.used into n from public.ad_rewards where user_id = uid and day = p_day;
   n := coalesce(n, 0);
-  if n >= 3 then
+  if n >= 5 then
     return query select false, n, w.level, w.xp, w.total_xp, w.coins;
     return;
   end if;
