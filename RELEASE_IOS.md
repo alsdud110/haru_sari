@@ -80,14 +80,35 @@ App Store Connect → 일반 정보 → 앱 심사에 사유가 온다. 흔한 �
 
 **저작권**: 2026 Minyeong Hwang
 
-**심사 메모**:
+**심사 메모** (2026-11-14, Guideline 2.1 "Information Needed" 요청을 받고 아래로 바꿈. 화면 녹화 영상도 함께 첨부):
 
 ```
-This app supports social login only (Sign in with Apple, Google, Kakao). Please use Sign in with Apple to test.
+1. Screen recording
+Attached. Recorded on a physical iPhone. It shows: app launch, Sign in with Apple, creating a routine, checking routines, receiving the daily reward, the shop and room decoration, the records screen, a rewarded ad, and account deletion.
 
-Rewarded ads are shown only when the user taps "Watch ad to get coins" (up to 5 times a day).
+2. Purpose and target audience
+Harusari is a routine-tracking app for people in their 20s and 30s with repetitive daily lives. Users check off everyday routines (waking up, drinking water, commuting, meals). Completed days earn XP and coins, which are used to decorate a pixel-art character and its room. It is not a productivity tool: there are no penalties or broken streaks for missed days. The value is gentle encouragement to keep simple daily habits.
 
-Account deletion: Me tab → Account info → Delete account.
+3. How to access the main features
+No demo account is needed. The app supports social login only (Sign in with Apple, Google, Kakao). Please use Sign in with Apple.
+- Today tab: add a routine with the + button, then tap a routine to check it.
+- Completing 70% or more of the day's routines gives XP and coins (once a day).
+- Room tab: buy items in the shop with coins and place them in the room.
+- Records tab: view past completion history.
+- Me tab → Account info → Delete account: deletes the account and all data.
+- "Watch ad to get coins" shows a rewarded ad (up to 5 times a day).
+
+4. External services
+- Supabase: authentication and database
+- Sign in with Apple, Google Sign-In, Kakao Login: sign-in
+- Google AdMob: rewarded ads
+The app has no in-app purchases, no payment processor, and no AI services. Coins are earned only in the app and cannot be bought.
+
+5. Regional differences
+The app is available in South Korea only and works the same for all users.
+
+6. Regulated industry / third-party material
+Not applicable. The app is not in a regulated industry. All artwork is original, and the app contains no user-generated content shared between users.
 ```
 
 **개인정보 설문** (추적은 전부 "아니요"):
