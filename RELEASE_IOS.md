@@ -57,6 +57,24 @@ App Store Connect → 일반 정보 → 앱 심사에 사유가 온다. 흔한 �
 | 추적하는데 동의 팝업(ATT)이 없음 | 개인정보 설문의 추적은 전부 "아니요"여야 한다. 앱은 IDFA를 쓰지 않는다. |
 | iPad에서 화면이 깨짐 | iPad 지원으로 출시했다. 고치거나, 아직 출시 전이면 iPhone 전용으로 바꾼다. |
 
+### 2026-11-16 반려: Guideline 4 - Design (iPad Air 11-inch M3, 1.0 (1))
+
+사유: 카카오·구글 로그인이 기본 브라우저(Safari 앱)로 나가서 열린다. 앱 안에서 로그인하게 하거나 Safari View Controller 를 쓰라는 요구.
+
+고친 것: `lib/data/supabase_auth.dart` 에서 iOS 는 `LaunchMode.inAppBrowserView` (SFSafariViewController)로 로그인 화면을 열고, 로그인이 끝나면 `closeInAppWebView()` 로 닫는다. Android 는 그대로 기본 브라우저. 빌드 번호를 `1.0.0+2` 로 올렸다.
+
+다시 낼 때: 새 빌드를 올려 버전 1.0 의 빌드를 2로 바꾸고, 반려 메시지에 아래로 답한 뒤 심사에 다시 제출한다.
+
+```
+Hello,
+
+Thank you for the review. We have fixed the issue in build 1.0 (2).
+
+Kakao and Google sign-in no longer open the default web browser. Both now open inside the app using the Safari View Controller API (SFSafariViewController), and the sheet closes automatically when sign-in completes. Sign in with Apple continues to use the native system sheet.
+
+Account deletion is available in the app: Me tab → Account info → Delete account.
+```
+
 ## 다음 버전 올리는 법
 
 1. `pubspec.yaml` 의 버전을 올린다. 예: `1.0.1+2`. `+` 뒤 빌드 번호가 전과 같으면 업로드가 거부된다.

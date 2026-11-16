@@ -6,6 +6,7 @@ import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:sign_in_with_apple/sign_in_with_apple.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' hide AuthUser;
+import 'package:url_launcher/url_launcher.dart' show closeInAppWebView;
 
 import '../config.dart';
 import 'auth.dart';
@@ -13,12 +14,34 @@ import 'store.dart';
 
 /// Supabase 로그인.
 ///
-/// - 카카오·구글: Supabase 웹 로그인 (브라우저로 열고 [SupabaseConfig.redirectUrl] 로 돌아온다).
+/// - 카카오·구글: Supabase 웹 로그인. iOS 는 앱 안의 Safari 창(SFSafariViewController)으로,
+///   Android 는 기본 브라우저로 열고 [SupabaseConfig.redirectUrl] 로 돌아온다.
 ///   앱에 카카오·구글 SDK 를 넣지 않아도 된다.
 /// - Apple: iOS 기본 로그인 창 → ID 토큰을 Supabase 에 넘긴다. iOS 에서만 버튼을 보인다.
 class SupabaseAuthService extends AuthService {
   SupabaseAuthService(super.kv) {
-    _sub = _auth.onAuthStateChange.listen((_) => notifyListeners());
+    _sub = _auth.onAuthStateChange.listen(
+      (_) {
+        _closeLoginSheet();
+        notifyListeners();
+      },
+      onError: (Object e) {
+        debugPrint('auth state error: $e');
+        _closeLoginSheet();
+      },
+    );
+  }
+
+  static bool get _isIOS => !kIsWeb && defaultTargetPlatform == TargetPlatform.iOS;
+
+  /// 앱 안 Safari 창으로 로그인 화면을 열어 둔 동안만 true
+  bool _loginSheetOpen = false;
+
+  /// 로그인을 마치고 앱으로 돌아와도 Safari 창은 저절로 닫히지 않는다 → 직접 닫는다.
+  void _closeLoginSheet() {
+    if (!_loginSheetOpen) return;
+    _loginSheetOpen = false;
+    unawaited(closeInAppWebView().catchError((Object _) {}));
   }
 
   late final StreamSubscription<AuthState> _sub;
@@ -53,8 +76,10 @@ class SupabaseAuthService extends AuthService {
           final opened = await _auth.signInWithOAuth(
             provider == SocialProvider.kakao ? OAuthProvider.kakao : OAuthProvider.google,
             redirectTo: SupabaseConfig.redirectUrl,
-            authScreenLaunchMode: LaunchMode.externalApplication,
+            // iOS: 기본 브라우저로 내보내면 App Store 심사(Guideline 4)에서 반려된다.
+            authScreenLaunchMode: _isIOS ? LaunchMode.inAppBrowserView : LaunchMode.externalApplication,
           );
+          _loginSheetOpen = opened && _isIOS;
           // 로그인 결과는 앱으로 돌아올 때 onAuthStateChange 로 들어온다.
           return opened ? null : '로그인 화면을 열지 못했어요';
         case SocialProvider.apple:
