@@ -106,6 +106,20 @@ class FakeServer implements Remote {
     return BuyReply(ok: true, wallet: wallet);
   }
 
+  bool roomIsPublic = false;
+
+  @override
+  Future<bool> roomPublic() async {
+    _net();
+    return roomIsPublic;
+  }
+
+  @override
+  Future<void> setRoomPublic(bool on) async {
+    _net();
+    roomIsPublic = on;
+  }
+
   /// 날짜 → 그날 광고 보상을 준 횟수 (claim_ad_reward 와 같은 규칙: 하루 5번, 5코인)
   final Map<String, int> adUsed = {};
 

@@ -93,4 +93,14 @@ class SupabaseRemote implements Remote {
       throw RemoteRejected(e.message);
     }
   }
+
+  // supabase/migrations/20261115000000_room_shares.sql
+
+  @override
+  Future<bool> roomPublic() async =>
+      await _c.from('room_shares').select('user_id').eq('user_id', uid).maybeSingle() != null;
+
+  @override
+  Future<void> setRoomPublic(bool on) =>
+      on ? _c.rpc<void>('publish_room') : _c.from('room_shares').delete().eq('user_id', uid);
 }

@@ -14,6 +14,7 @@ import '../widgets.dart';
 import 'iso_room_view.dart';
 import 'room_editor_screen.dart';
 import 'room_painter.dart';
+import 'room_share.dart';
 
 /// 내 방: 방 그림 · 미니미 상태 · 방 꾸밈 현황 · 보유 아이템 요약
 class RoomScreen extends StatelessWidget {
@@ -85,6 +86,17 @@ class RoomScreen extends StatelessWidget {
                 ),
               ],
             ),
+            const SizedBox(height: Space.sm),
+            // 버튼 자신의 context 를 넘긴다 (iPad 공유 창이 뜰 자리)
+            Builder(
+              builder: (context) => OutlinedButton.icon(
+                onPressed: () => shareRoomImage(context),
+                icon: const Icon(Icons.ios_share_rounded),
+                label: const Text('이미지로 공유'),
+              ),
+            ),
+            const SizedBox(height: Space.sm),
+            const RoomVisitSwitch(),
             const SizedBox(height: Space.xl),
             Text('미니미 상태', style: t.titleMedium),
             const SizedBox(height: Space.sm),

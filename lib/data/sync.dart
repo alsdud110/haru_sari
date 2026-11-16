@@ -81,6 +81,12 @@ abstract class Remote {
 
   /// 광고를 끝까지 본 보상. 하루 횟수를 넘으면 ok=false 로 지갑만 돌려준다.
   Future<AdReply> adReward(String day);
+
+  /// 내 방이 방문 공개 상태인지.
+  Future<bool> roomPublic();
+
+  /// 방문 공개를 켜거나 끈다. 끄면 방문 경로가 사라지고, 다시 켜면 새로 만들어진다.
+  Future<void> setRoomPublic(bool on);
 }
 
 /// 기기 ↔ 서버 동기화.
@@ -95,6 +101,9 @@ class SyncEngine {
 
   final AppState _s;
   final Remote _remote;
+
+  /// 동기화를 거치지 않고 바로 서버에 묻는 것(방 방문 공개)에 쓴다.
+  Remote get remote => _remote;
   final KeyValue _kv;
   final DateTime Function() _clock;
 
