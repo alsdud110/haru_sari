@@ -43,9 +43,20 @@ enum ShopCategory {
   window('창문'),
   wallpaper('벽지'),
   floor('바닥'),
-  outfit('의상'),
-  accessory('액세서리'),
+  // 미니미 상점 분류 (ShopItem.group)
+  top('상의'),
+  bottom('하의'),
+  set('원피스·세트'),
+  pin('머리핀'),
+  headband('머리띠'),
+  hat('모자'),
+  glasses('안경'),
+  sunglasses('선글라스'),
+  earring('귀고리'),
   all('전체');
+
+  /// 미니미 상점(옷·액세서리) 분류인지
+  bool get isMinimi => index >= ShopCategory.top.index && this != ShopCategory.all;
 
   const ShopCategory(this.label);
   final String label;
@@ -81,6 +92,7 @@ class ShopItem {
     this.assetPath,
     this.color,
     this.accent,
+    this.group,
   });
   final String id;
   final String name;
@@ -99,6 +111,13 @@ class ShopItem {
   /// 원래 색이 어느 색인지 정해 둔 가구 (무늬 가구·벽 장식·벽지·바닥). 색을 고르면 이 색이 고른 색으로 바뀐다.
   /// null이면 그림에서 가장 많이 쓰인 색을 찾아 바꾼다 (registry.dart 의 recolorRamp).
   final ItemColor? accent;
+
+  /// 옷·액세서리의 미니미 상점 분류 (상의·하의·머리핀…). 가구는 null
+  final ShopCategory? group;
+
+  /// 하의는 상의와 따로 입고, 원피스·세트는 위아래를 함께 입는다
+  bool get isBottom => group == ShopCategory.bottom;
+  bool get isSet => group == ShopCategory.set;
 
   /// 고를 수 있는 색마다의 id (원래 색 포함). [accent]가 없으면 원래 id뿐이다.
   List<String> get colorIds => [
@@ -131,23 +150,21 @@ class ShopItem {
   /// 귀고리는 다른 액세서리(안경·모자 등)와 함께 찰 수 있다
   bool get isEarring => id.startsWith('acc_ear_');
 
-  ShopCategory get category => switch (kind) {
-    ItemKind.outfit => ShopCategory.outfit,
-    ItemKind.accessory => ShopCategory.accessory,
-    ItemKind.furniture => ShopCategory.values.byName(slot!.name),
-  };
+  ShopCategory get category => group ?? ShopCategory.values.byName(slot!.name);
 
   /// 카드에 쓰는 짧은 분류 이름
-  String get typeLabel => switch (kind) {
-    ItemKind.outfit => '의상',
-    ItemKind.accessory => '액세서리',
-    ItemKind.furniture => slot!.label,
-  };
+  String get typeLabel => group?.label ?? slot!.label;
 }
 
 const _f = ItemKind.furniture;
 const _coral = ItemColor.coral, _sage = ItemColor.sage, _butter = ItemColor.butter, _sky = ItemColor.sky;
 const _lavender = ItemColor.lavender;
+
+/// 미니미 상점 옷·액세서리. [variant]는 그림 에셋이 없을 때 쓰는 기존 그림 번호 (없으면 기본 차림)
+ShopItem _wear(String id, String name, ShopCategory group, int price, int level, [int variant = 0]) =>
+    ShopItem(id: id, name: name, kind: ItemKind.outfit, group: group, price: price, level: level, variant: variant);
+ShopItem _acc(String id, String name, ShopCategory group, int price, int level, [int variant = 0]) =>
+    ShopItem(id: id, name: name, kind: ItemKind.accessory, group: group, price: price, level: level, variant: variant);
 
 /// 무늬 가구 한 줄 (땡땡이·체크·줄무늬). [accent]가 원래 색이고, 다른 색으로도 살 수 있다.
 ShopItem _pat(String id, String name, RoomSlot slot, int price, int level, ItemColor accent) =>
@@ -343,29 +360,70 @@ final shopCatalog = <ShopItem>[
   _pat('floor_hstripe', '횡단보도 장판', RoomSlot.floor, 55, 4, _sky),
   _pat('floor_heart', '설레는 걸음 장판', RoomSlot.floor, 55, 5, _coral),
   _pat('floor_floral', '꽃잎 장판', RoomSlot.floor, 60, 7, _lavender),
-  // 의상
-  ShopItem(id: 'outfit_knit', name: '크림 니트', kind: ItemKind.outfit, price: 30, level: 1, variant: 1),
-  ShopItem(id: 'outfit_stripe', name: '줄무늬 셔츠', kind: ItemKind.outfit, price: 40, level: 3, variant: 2),
-  ShopItem(id: 'outfit_overall', name: '멜빵 바지', kind: ItemKind.outfit, price: 50, level: 5, variant: 3),
-  ShopItem(id: 'outfit_hoodie', name: '포근한 후드티', kind: ItemKind.outfit, price: 55, level: 7, variant: 4),
-  ShopItem(id: 'outfit_pajama', name: '별무늬 잠옷', kind: ItemKind.outfit, price: 60, level: 9, variant: 5),
-  // 액세서리
-  ShopItem(id: 'acc_starpin', name: '별 머리핀', kind: ItemKind.accessory, price: 20, level: 1, variant: 1),
-  ShopItem(id: 'acc_ribbon', name: '리본', kind: ItemKind.accessory, price: 30, level: 2, variant: 2),
-  ShopItem(id: 'acc_beanie', name: '니트 비니', kind: ItemKind.accessory, price: 35, level: 4, variant: 3),
-  ShopItem(id: 'acc_glasses', name: '동그란 안경', kind: ItemKind.accessory, price: 35, level: 5, variant: 4),
-  ShopItem(id: 'acc_headphone', name: '헤드폰', kind: ItemKind.accessory, price: 55, level: 9, variant: 5),
+  // 미니미 상점: 의상 (상의·하의·원피스·세트)
+  _wear('outfit_knit', '크림 니트', ShopCategory.top, 30, 1, 1),
+  _wear('outfit_blouse', '하얀 블라우스', ShopCategory.top, 25, 1),
+  _wear('outfit_sweatshirt', '하트 맨투맨', ShopCategory.top, 35, 2),
+  _wear('outfit_check_shirt', '빨간 체크 셔츠', ShopCategory.top, 35, 2),
+  _wear('outfit_stripe', '줄무늬 셔츠', ShopCategory.top, 40, 3, 2),
+  _wear('outfit_cardigan', '버터 가디건', ShopCategory.top, 40, 3),
+  _wear('outfit_denim_jacket', '데님 재킷', ShopCategory.top, 45, 4),
+  _wear('outfit_sailor', '세일러 블라우스', ShopCategory.top, 45, 5),
+  _wear('outfit_vest', '니트 조끼', ShopCategory.top, 45, 5),
+  _wear('outfit_turtleneck', '브라운 터틀넥', ShopCategory.top, 50, 6),
+  _wear('outfit_floral_blouse', '꽃무늬 블라우스', ShopCategory.top, 55, 7),
+  _wear('outfit_hoodie', '포근한 후드티', ShopCategory.top, 55, 7, 4),
+  _wear('outfit_varsity', '야구 점퍼', ShopCategory.top, 60, 8),
+  _wear('outfit_puffer', '버터 패딩', ShopCategory.top, 70, 10),
+  _wear('outfit_jeans', '진청 청바지', ShopCategory.bottom, 25, 1),
+  _wear('outfit_denim_shorts', '데님 반바지', ShopCategory.bottom, 30, 2),
+  _wear('outfit_cargo', '카고 바지', ShopCategory.bottom, 35, 3),
+  _wear('outfit_tennis_skirt', '테니스 스커트', ShopCategory.bottom, 35, 3),
+  _wear('outfit_check_pants', '체크 바지', ShopCategory.bottom, 40, 4),
+  _wear('outfit_floral_long', '꽃무늬 롱스커트', ShopCategory.bottom, 50, 6),
+  _wear('outfit_leather_mini', '가죽 미니스커트', ShopCategory.bottom, 50, 7),
+  _wear('outfit_dress_floral', '꽃무늬 원피스', ShopCategory.set, 50, 3),
+  _wear('outfit_overall', '멜빵 바지', ShopCategory.set, 50, 5, 3),
+  _wear('outfit_dress_sailor', '세일러 원피스', ShopCategory.set, 55, 5),
+  _wear('outfit_raincoat', '노랑 우비', ShopCategory.set, 60, 6),
+  _wear('outfit_pajama', '별무늬 잠옷', ShopCategory.set, 60, 9, 5),
+  _wear('outfit_hanbok', '노랑 저고리 한복', ShopCategory.set, 80, 8),
+  _wear('outfit_suit', '차콜 정장', ShopCategory.set, 80, 9),
+  // 미니미 상점: 액세서리
+  _acc('acc_pin_heart', '하트 머리핀', ShopCategory.pin, 15, 1),
+  _acc('acc_starpin', '별 머리핀', ShopCategory.pin, 20, 1, 1),
+  _acc('acc_pin_flower', '꽃 머리핀', ShopCategory.pin, 20, 2),
+  _acc('acc_ribbon', '리본', ShopCategory.pin, 30, 2, 2),
+  _acc('acc_pin_pearl', '진주 머리핀', ShopCategory.pin, 30, 4),
+  _acc('acc_band_ribbon', '리본 머리띠', ShopCategory.headband, 30, 2),
+  _acc('acc_band_pearl', '진주 머리띠', ShopCategory.headband, 40, 4),
+  _acc('acc_band_cat', '고양이 귀 머리띠', ShopCategory.headband, 45, 5),
+  _acc('acc_band_bunny', '토끼 귀 머리띠', ShopCategory.headband, 50, 6),
+  _acc('acc_band_flower', '꽃 화관', ShopCategory.headband, 55, 8),
+  _acc('acc_headphone', '헤드폰', ShopCategory.headband, 55, 9, 5),
+  _acc('acc_cap', '야구 모자', ShopCategory.hat, 35, 3),
+  _acc('acc_beanie', '니트 비니', ShopCategory.hat, 35, 4, 3),
+  _acc('acc_beret', '빨간 베레모', ShopCategory.hat, 45, 5),
+  _acc('acc_bucket', '버킷햇', ShopCategory.hat, 50, 6),
+  _acc('acc_straw', '밀짚모자', ShopCategory.hat, 55, 7),
   // 안경 (기존 그림에서는 모두 동그란 안경으로 보인다)
-  ShopItem(id: 'acc_glasses_horn', name: '뿔테 안경', kind: ItemKind.accessory, price: 35, level: 4, variant: 4),
-  ShopItem(id: 'acc_glasses_rimless', name: '무테 안경', kind: ItemKind.accessory, price: 40, level: 7, variant: 4),
-  ShopItem(id: 'acc_sunglasses', name: '선글라스', kind: ItemKind.accessory, price: 50, level: 9, variant: 4),
-  ShopItem(id: 'acc_sunglasses_heart', name: '하트 선글라스', kind: ItemKind.accessory, price: 60, level: 10, variant: 4),
+  _acc('acc_glasses_pink', '핑크 뿔테 안경', ShopCategory.glasses, 35, 3, 4),
+  _acc('acc_glasses_horn', '뿔테 안경', ShopCategory.glasses, 35, 4, 4),
+  _acc('acc_glasses', '동그란 안경', ShopCategory.glasses, 35, 5, 4),
+  _acc('acc_glasses_gold', '금테 안경', ShopCategory.glasses, 45, 6, 4),
+  _acc('acc_glasses_rimless', '무테 안경', ShopCategory.glasses, 40, 7, 4),
+  _acc('acc_sunglasses_round', '동그란 선글라스', ShopCategory.sunglasses, 45, 5, 4),
+  _acc('acc_sunglasses_star', '별 선글라스', ShopCategory.sunglasses, 55, 8, 4),
+  _acc('acc_sunglasses', '선글라스', ShopCategory.sunglasses, 50, 9, 4),
+  _acc('acc_sunglasses_heart', '하트 선글라스', ShopCategory.sunglasses, 60, 10, 4),
   // 귀고리 (기존 그림에는 없다)
-  ShopItem(id: 'acc_ear_pearl', name: '진주 귀고리', kind: ItemKind.accessory, price: 25, level: 2, variant: 0),
-  ShopItem(id: 'acc_ear_hoop', name: '링 귀고리', kind: ItemKind.accessory, price: 30, level: 3, variant: 0),
-  ShopItem(id: 'acc_ear_heart', name: '하트 귀고리', kind: ItemKind.accessory, price: 35, level: 6, variant: 0),
-  ShopItem(id: 'acc_ear_star', name: '별 귀고리', kind: ItemKind.accessory, price: 40, level: 7, variant: 0),
-  ShopItem(id: 'acc_ear_drop', name: '물방울 귀고리', kind: ItemKind.accessory, price: 45, level: 8, variant: 0),
+  _acc('acc_ear_pearl', '진주 귀고리', ShopCategory.earring, 25, 2),
+  _acc('acc_ear_hoop', '링 귀고리', ShopCategory.earring, 30, 3),
+  _acc('acc_ear_cherry', '체리 귀고리', ShopCategory.earring, 35, 4),
+  _acc('acc_ear_ribbon', '리본 귀고리', ShopCategory.earring, 40, 5),
+  _acc('acc_ear_heart', '하트 귀고리', ShopCategory.earring, 35, 6),
+  _acc('acc_ear_star', '별 귀고리', ShopCategory.earring, 40, 7),
+  _acc('acc_ear_drop', '물방울 귀고리', ShopCategory.earring, 45, 8),
 ];
 
 ShopItem? itemById(String? id) {

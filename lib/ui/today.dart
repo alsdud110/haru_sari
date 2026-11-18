@@ -607,6 +607,11 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
 Future<void> showLevelUp(BuildContext context, DailyReward r) {
   final s = AppScope.read(context);
   final unlocked = [for (var l = r.newLevel - r.levelsGained + 1; l <= r.newLevel; l++) ...s.unlockedAt(l)];
+  // 미니미 상점이면 true
+  final shops = [
+    if (unlocked.isEmpty || unlocked.any((i) => i.isFurniture)) false,
+    if (unlocked.any((i) => !i.isFurniture)) true,
+  ];
   return showAppDialog<void>(
     context,
     builder: (ctx) {
@@ -667,12 +672,22 @@ Future<void> showLevelUp(BuildContext context, DailyReward r) {
                 ),
               ],
               const SizedBox(height: Space.xl),
-              FilledButton(
-                onPressed: () {
-                  Navigator.pop(ctx);
-                  HomeShell.openShop(context);
-                },
-                child: const Text('가구 보러 가기'),
+              // 새로 열린 것에 맞춰 가구 상점·미니미 상점으로 (아무것도 안 열렸으면 가구 상점)
+              Row(
+                children: [
+                  for (final minimi in shops) ...[
+                    if (minimi != shops.first) const SizedBox(width: Space.sm),
+                    Expanded(
+                      child: FilledButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          HomeShell.openShop(context, minimi: minimi);
+                        },
+                        child: Text(minimi ? '미니미 상점' : '가구 상점'),
+                      ),
+                    ),
+                  ],
+                ],
               ),
               TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫기')),
             ],

@@ -26,12 +26,12 @@ class HomeShell extends StatefulWidget {
     s._select(records);
   }
 
-  /// 내 방 탭에서 가구 상점을 연다.
-  static void openShop(BuildContext context) {
+  /// 내 방 탭에서 가구 상점(또는 [minimi]면 미니미 상점)을 연다.
+  static void openShop(BuildContext context, {bool minimi = false}) {
     final s = _of(context);
     if (s == null) return;
     s._select(room);
-    Navigator.of(context).push(MaterialPageRoute(builder: (_) => const ShopScreen()));
+    Navigator.of(context).push(MaterialPageRoute(builder: (_) => ShopScreen(minimi: minimi)));
   }
 
   @override

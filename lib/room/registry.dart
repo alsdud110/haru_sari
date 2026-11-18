@@ -205,6 +205,7 @@ class MinimiSheet {
     'base',
     'eyes',
     'mouth',
+    'bottom',
     'outfit',
     'hair_front',
     'acc_ear',
@@ -230,6 +231,10 @@ extension MinimiAssets on AssetRegistry {
     int eyes = 0,
     int mouth = 0,
     String? earringId,
+    int pattern = 0,
+    int bottom = 0,
+    String? bottomId,
+    Map<String, int> itemColors = const {},
   ]) {
     final out = <(String, String, bool, String?, bool)>[];
     void base(String name, String key, String? swap) {
@@ -243,7 +248,10 @@ extension MinimiAssets on AssetRegistry {
       final a = manifest[id];
       final left = f == MinimiFacing.sideLeft && a != null && !a.mirror;
       final path = a?.sheets[left ? 'idle_left' : 'idle'];
-      out.add((name, path ?? '', a?.mirror ?? true, null, path != null));
+      // 산 옷에 색을 골랐으면 'recolor:색번호:아이템id' 로 바꿔 칠한다
+      final color = itemColors[id];
+      final swap = color != null && a?.recolor != null ? 'recolor:$color:$id' : null;
+      out.add((name, path ?? '', a?.mirror ?? true, swap, path != null));
     }
 
     final acc = accessoryId == null ? null : manifest[accessoryId];
@@ -255,21 +263,32 @@ extension MinimiAssets on AssetRegistry {
       base('eyes', 'minimi_eyes_$eyes', null);
       base('mouth', 'minimi_mouth_$mouth', null);
     }
-    // 옷을 안 입었으면 기본 옷 (Minimi.outfit 색으로 바꿔 칠한다)
-    if (outfitId == null && manifest.base.containsKey('minimi_outfit')) base('outfit', 'minimi_outfit', 'outfit');
+    // 상의: 상점 옷이 없으면 기본 상의 (Minimi.outfit 색으로 바꿔 칠한다)
+    if (outfitId == null && manifest.base.containsKey('minimi_outfit')) {
+      base('outfit', pattern == 0 ? 'minimi_outfit' : 'minimi_outfit_$pattern', 'outfit');
+    }
     item('outfit', outfitId);
+    // 하의: 원피스·세트를 입으면 없음, 상점 하의가 있으면 그것, 아니면 기본 하의 (Minimi.bottomColor 색)
+    if (!(itemById(outfitId)?.isSet ?? false)) {
+      if (bottomId != null) {
+        item('bottom', bottomId);
+      } else if (manifest.base.containsKey('minimi_bottom_0')) {
+        base('bottom', 'minimi_bottom_$bottom', 'bottom');
+      }
+    }
     if (!(acc?.hides.contains('hair_front') ?? false)) base('hair_front', 'minimi_hair_front$style', 'hair');
     item('acc_ear', earringId);
     if (acc != null) item(acc.slot == 'face' ? 'acc_face' : 'acc_head', accessoryId);
     return out;
   }
 
-  static String _sheetKey(String path, String? swap, int skin, int hair, int outfit) =>
+  static String _sheetKey(String path, String? swap, int skin, int hair, int outfit, int bottomColor) =>
       '$path|${switch (swap) {
         'skin' => skin,
         'hair' => hair,
         'outfit' => outfit,
-        _ => '-',
+        'bottom' => bottomColor,
+        _ => swap ?? '-',
       }}';
 
   /// 미니미 레이어 시트를 읽고 피부·머리·기본 옷 색을 바꿔 캐시한다.
@@ -283,6 +302,11 @@ extension MinimiAssets on AssetRegistry {
     int eyes = 0,
     int mouth = 0,
     String? earringId,
+    int pattern = 0,
+    int bottom = 0,
+    int bottomColor = 0,
+    String? bottomId,
+    Map<String, int> itemColors = const {},
   }) async {
     var changed = false;
     for (final f in [MinimiFacing.front, MinimiFacing.sideLeft]) {
@@ -294,9 +318,13 @@ extension MinimiAssets on AssetRegistry {
         eyes,
         mouth,
         earringId,
+        pattern,
+        bottom,
+        bottomId,
+        itemColors,
       )) {
         if (!usable) continue;
-        final key = _sheetKey(path, swap, skin, hair, outfit);
+        final key = _sheetKey(path, swap, skin, hair, outfit, bottomColor);
         if (_minimiCache.containsKey(key) || !_minimiTried.add(key)) continue;
         try {
           final data = await _bundleOf(this).load('${PixelManifest.assetRoot}$path');
@@ -310,6 +338,11 @@ extension MinimiAssets on AssetRegistry {
             final table = switch (swap) {
               'skin' => PixelPalette.swapFor(skinIndex: skin, hairIndex: 0),
               'hair' => PixelPalette.swapFor(skinIndex: 0, hairIndex: hair),
+              'bottom' => PixelPalette.bottomSwap(bottomColor),
+              _ when swap.startsWith('recolor:') => PixelPalette.recolorSwap(
+                manifest[swap.split(':')[2]]!.recolor!,
+                int.parse(swap.split(':')[1]),
+              ),
               _ => PixelPalette.outfitSwap(outfit),
             };
             img = await paletteSwap(img, table);
@@ -335,6 +368,11 @@ extension MinimiAssets on AssetRegistry {
     int eyes = 0,
     int mouth = 0,
     String? earringId,
+    int pattern = 0,
+    int bottom = 0,
+    int bottomColor = 0,
+    String? bottomId,
+    Map<String, int> itemColors = const {},
     MinimiFacing facing = MinimiFacing.front,
   }) {
     final out = <MinimiLayer>[];
@@ -346,9 +384,13 @@ extension MinimiAssets on AssetRegistry {
       eyes,
       mouth,
       earringId,
+      pattern,
+      bottom,
+      bottomId,
+      itemColors,
     )) {
       if (!usable) return null;
-      final img = _minimiCache[_sheetKey(path, swap, skin, hair, outfit)];
+      final img = _minimiCache[_sheetKey(path, swap, skin, hair, outfit, bottomColor)];
       if (img == null) return null;
       final isLeftSheet = path.contains('_left');
       out.add(MinimiLayer(name, img, mirror: facing == MinimiFacing.sideLeft && mirrorable && !isLeftSheet));

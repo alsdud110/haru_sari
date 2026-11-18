@@ -136,4 +136,25 @@ void main() {
     expect(swap[0xFBE3D0], 0xD9A57E);
     expect(swap.containsKey(0x3B2E28), isFalse); // 머리 0번은 그대로
   });
+
+  test('기본 옷 색 스왑: 바탕 세 색과 무늬 색이 함께 바뀐다', () {
+    expect(PixelPalette.outfitSwap(0), {0xF8DCCB: 0xFFF8EE}); // 테라코타는 무늬만 흰색으로
+    final white = PixelPalette.outfitSwap(5);
+    expect(white[0xE08A5B], 0xF6EBDD);
+    expect(white[0xF8DCCB], 0x9DBBD8); // 흰 옷의 무늬는 하늘색 (흰 무늬는 안 보여서)
+    expect(PixelPalette.outfitSwap(12), PixelPalette.outfitSwap(0)); // 넘으면 처음부터
+  });
+
+  test('산 옷 색 바꾸기: 옷의 세 색이 고른 기본 옷 색으로', () {
+    expect(PixelPalette.recolorSwap(const [0xD9694F, 0xB94A36, 0x8C3323], 1), {
+      0xD9694F: 0xA9C4A3,
+      0xB94A36: 0x8FAE8B,
+      0x8C3323: 0x6F8F6B,
+    });
+  });
+
+  test('하의 색 스왑: 하늘색 천이 고른 색으로, 데님은 그대로', () {
+    expect(PixelPalette.bottomSwap(0), {0xBCD3E8: 0x8E6240, 0x9DBBD8: 0x6A4630, 0x6F8FB8: 0x4A3628}); // 기본은 갈색
+    expect(PixelPalette.bottomSwap(1), isEmpty);
+  });
 }

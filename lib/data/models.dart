@@ -170,7 +170,17 @@ class DayLog {
 
 /// 미니미 기본 외형. 값은 모두 번호다 (색은 PixelPalette, 모양은 tool/draw_minimi.dart와 같은 순서).
 class Minimi {
-  const Minimi({this.skin = 0, this.hair = 0, this.outfit = 0, this.hairStyle = 0, this.eyes = 0, this.mouth = 0});
+  const Minimi({
+    this.skin = 0,
+    this.hair = 0,
+    this.outfit = 0,
+    this.hairStyle = 0,
+    this.eyes = 0,
+    this.mouth = 0,
+    this.pattern = 0,
+    this.bottom = 0,
+    this.bottomColor = 0,
+  });
   final int skin;
 
   /// 머리색
@@ -182,19 +192,79 @@ class Minimi {
   final int eyes;
   final int mouth;
 
+  /// 기본 상의 무늬
+  final int pattern;
+
+  /// 하의 (기본 상의를 입었을 때만 보인다. 상점 옷은 위아래 한 벌)
+  final int bottom;
+
+  /// 하의 색 (PixelPalette.bottom)
+  final int bottomColor;
+
   static const skinNames = ['크림', '헬시', '태닝', '브론즈', '밀키', '스산', '창백', '노블레스'];
-  static const hairStyleNames = ['단발', '짧은 머리', '긴 머리', '스크래치', '포니테일', '양갈래', '똥머리', '곱슬', '가르마', '삐죽'];
+  static const hairStyleNames = [
+    '단발',
+    '짧은 머리',
+    '긴 생머리',
+    '스크래치',
+    '포니테일',
+    '양갈래',
+    '똥머리',
+    '곱슬',
+    '가르마',
+    '삐죽',
+    '단발 웨이브',
+    '긴 웨이브',
+    '양쪽 똥머리',
+  ];
+
+  /// 고르는 화면에 보일 머리 모양 순서 (번호는 저장값이라 바꾸지 않는다)
+  static const hairStyleOrder = [0, 10, 8, 2, 11, 4, 5, 6, 12, 1, 7, 9, 3];
+  static const hairNames = ['흑갈색', '갈색', '금발', '회색', '핑크', '블루', '레드', '퍼플'];
+  static const outfitNames = ['테라코타', '세이지', '하늘', '라벤더', '버터', '화이트', '핑크', '블루', '레드', '퍼플', '그레이', '브라운'];
+  static const patternNames = ['무지', '줄무늬', '땡땡이', '체크', '하트'];
+  static const bottomNames = ['긴 바지', '와이드 바지', '반바지', '플리츠 치마', '체크 치마', '트레이닝', '롱 스커트', '미디 스커트'];
+  static const bottomColorNames = ['브라운', '데님', '베이지', '차콜', '그레이', '화이트', '블루', '세이지', '핑크', '라벤더', '버터', '테라코타'];
   static const eyeNames = ['기본', '반짝', '감은 눈', '웃는 눈', '윙크', '졸린 눈'];
   static const mouthNames = ['미소', '활짝', '시무룩', '놀람', '무표정', '고양이'];
 
-  Minimi copyWith({int? skin, int? hair, int? outfit, int? hairStyle, int? eyes, int? mouth}) => Minimi(
+  Minimi copyWith({
+    int? skin,
+    int? hair,
+    int? outfit,
+    int? hairStyle,
+    int? eyes,
+    int? mouth,
+    int? pattern,
+    int? bottom,
+    int? bottomColor,
+  }) => Minimi(
     skin: skin ?? this.skin,
     hair: hair ?? this.hair,
     outfit: outfit ?? this.outfit,
     hairStyle: hairStyle ?? this.hairStyle,
     eyes: eyes ?? this.eyes,
     mouth: mouth ?? this.mouth,
+    pattern: pattern ?? this.pattern,
+    bottom: bottom ?? this.bottom,
+    bottomColor: bottomColor ?? this.bottomColor,
   );
+
+  @override
+  bool operator ==(Object other) =>
+      other is Minimi &&
+      other.skin == skin &&
+      other.hair == hair &&
+      other.outfit == outfit &&
+      other.hairStyle == hairStyle &&
+      other.eyes == eyes &&
+      other.mouth == mouth &&
+      other.pattern == pattern &&
+      other.bottom == bottom &&
+      other.bottomColor == bottomColor;
+
+  @override
+  int get hashCode => Object.hash(skin, hair, outfit, hairStyle, eyes, mouth, pattern, bottom, bottomColor);
 
   Map<String, dynamic> toJson() => {
     'skin': skin,
@@ -203,6 +273,9 @@ class Minimi {
     'hairStyle': hairStyle,
     'eyes': eyes,
     'mouth': mouth,
+    'pattern': pattern,
+    'bottom': bottom,
+    'bottomColor': bottomColor,
   };
   factory Minimi.fromJson(Map<String, dynamic> j) => Minimi(
     skin: j['skin'] as int? ?? 0,
@@ -211,6 +284,9 @@ class Minimi {
     hairStyle: j['hairStyle'] as int? ?? 0,
     eyes: j['eyes'] as int? ?? 0,
     mouth: j['mouth'] as int? ?? 0,
+    pattern: j['pattern'] as int? ?? 0,
+    bottom: j['bottom'] as int? ?? 0,
+    bottomColor: j['bottomColor'] as int? ?? 0,
   );
 }
 
@@ -254,6 +330,8 @@ class Profile {
     this.outfitId,
     this.accessoryId,
     this.earringId,
+    this.bottomId,
+    Map<String, int>? itemColors,
     Set<String>? owned,
     Map<String, String>? placed,
     Map<String, String>? badges,
@@ -262,7 +340,8 @@ class Profile {
     this.room,
     this.adDay,
     this.adCount = 0,
-  }) : owned = owned ?? {},
+  }) : itemColors = itemColors ?? {},
+       owned = owned ?? {},
        placed = placed ?? {},
        badges = badges ?? {},
        acquired = acquired ?? {},
@@ -283,6 +362,12 @@ class Profile {
   String? outfitId;
   String? accessoryId;
   String? earringId;
+
+  /// 따로 입은 상점 하의 (없으면 기본 하의). 원피스·세트를 입으면 비운다
+  String? bottomId;
+
+  /// 산 옷에 고른 색 (아이템 id → PixelPalette.outfit 번호). 없으면 원래 색
+  final Map<String, int> itemColors;
 
   /// 산 아이템 id.
   final Set<String> owned;
@@ -315,6 +400,8 @@ class Profile {
     'outfitId': outfitId,
     'accessoryId': accessoryId,
     'earringId': earringId,
+    'bottomId': bottomId,
+    'itemColors': itemColors,
     'owned': owned.toList(),
     'placed': placed,
     'badges': badges,
@@ -335,6 +422,8 @@ class Profile {
     outfitId: j['outfitId'] as String?,
     accessoryId: j['accessoryId'] as String?,
     earringId: j['earringId'] as String?,
+    bottomId: j['bottomId'] as String?,
+    itemColors: ((j['itemColors'] as Map?) ?? {}).map((k, v) => MapEntry(k as String, (v as num).toInt())),
     adDay: j['adDay'] as String?,
     adCount: j['adCount'] as int? ?? 0,
     owned: ((j['owned'] as List?) ?? []).cast<String>().toSet(),

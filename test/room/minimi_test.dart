@@ -57,6 +57,7 @@ void main() {
       p(m.base['minimi_hair_front']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(18, 8, 28, 12), hair0light)]),
       p(m.base['minimi_eyes_0']!.sheets['idle']!): await sheet(const []),
       p(m.base['minimi_mouth_0']!.sheets['idle']!): await sheet(const []),
+      p(m.base['minimi_bottom_0']!.sheets['idle']!): await sheet(const []), // 니트는 상의라 기본 하의가 함께 온다
       p(m['outfit_knit']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(16, 50, 32, 30), sage)]),
       p(m['acc_glasses']!.sheets['idle']!): await sheet(const [], sideMarker: (const Rect.fromLTWH(50, 30, 4, 4), sky)),
       p(m['acc_starpin']!.sheets['idle']!): await sheet(const [(Rect.fromLTWH(40, 4, 8, 6), butter)]),
@@ -85,7 +86,7 @@ void main() {
       final p = profile(acc: 'acc_glasses', skin: 2);
       await reg.preloadMinimi(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0);
       final layers = reg.minimiLayers(outfitId: p.outfitId, accessoryId: p.accessoryId, skin: 2, hair: 0)!;
-      expect(layers.map((l) => l.name), ['hair_back', 'base', 'eyes', 'mouth', 'outfit', 'hair_front', 'acc_face']);
+      expect(layers.map((l) => l.name), ['hair_back', 'base', 'eyes', 'mouth', 'bottom', 'outfit', 'hair_front', 'acc_face']);
 
       final get = await render(minimiDrawer(p, frame: 1, registry: reg));
       expect(get(30, 14), hair0light, reason: '앞머리가 뒷머리 위');

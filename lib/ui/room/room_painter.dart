@@ -466,7 +466,8 @@ bool _drawPatternWall(Canvas c, ShopItem item, Rect Function(double, double, dou
 
 final skinTones = [for (final r in PixelPalette.skin) Color(0xFF000000 | r[1])];
 final hairColors = [for (final r in PixelPalette.hair) Color(0xFF000000 | r[1])];
-const outfitColors = [AppColors.primary, AppColors.sage, AppColors.sky, Color(0xFFC9A3C9)];
+final outfitColors = [for (final r in PixelPalette.outfit) Color(0xFF000000 | r[1])];
+final bottomColors = [for (final r in PixelPalette.bottom) Color(0xFF000000 | r[1])];
 
 /// 벽에 거는 2차 아이템 (id로 구분). 그렸으면 true.
 bool _drawWallExtra(Canvas c, ShopItem item, Rect Function(double, double, double, double) f) {
@@ -868,7 +869,9 @@ class _MinimiViewState extends State<MinimiView> {
   void didUpdateWidget(MinimiView old) {
     super.didUpdateWidget(old);
     final a = old.profile, b = widget.profile;
-    if (a.outfitId != b.outfitId || a.accessoryId != b.accessoryId || a.earringId != b.earringId) _last = null;
+    if (a.outfitId != b.outfitId || a.bottomId != b.bottomId || a.accessoryId != b.accessoryId || a.earringId != b.earringId) {
+      _last = null;
+    }
   }
 
   @override
@@ -887,6 +890,11 @@ class _MinimiViewState extends State<MinimiView> {
       hairStyle: m.hairStyle,
       eyes: m.eyes,
       mouth: m.mouth,
+      pattern: m.pattern,
+      bottom: m.bottom,
+      bottomColor: m.bottomColor,
+      bottomId: profile.bottomId,
+      itemColors: profile.itemColors,
     );
     final layers =
         reg?.minimiLayers(
@@ -899,6 +907,11 @@ class _MinimiViewState extends State<MinimiView> {
           hairStyle: m.hairStyle,
           eyes: m.eyes,
           mouth: m.mouth,
+          pattern: m.pattern,
+          bottom: m.bottom,
+          bottomColor: m.bottomColor,
+          bottomId: profile.bottomId,
+          itemColors: profile.itemColors,
         ) ??
         _last;
     _last = layers;
@@ -923,8 +936,8 @@ class _MinimiSpritePainter extends CustomPainter {
   _MinimiSpritePainter(this.layers);
   final List<MinimiLayer> layers;
 
-  /// 프레임 64×96 중 그림이 있는 부분 (머리 장식 y 4 ~ 발 y 88)
-  static const _src = Rect.fromLTWH(10, 4, 44, 85);
+  /// 프레임 64×96 중 그림이 있는 부분 (머리 장식 y 2 ~ 발 y 88). 양옆은 늘어뜨린 머리(포니테일·양갈래)까지.
+  static const _src = Rect.fromLTWH(3, 2, 58, 87);
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -987,7 +1000,8 @@ class ItemThumb extends StatelessWidget {
             width: size * 0.66,
             profile: Profile(
               minimi: minimi,
-              outfitId: item.kind == ItemKind.outfit ? item.id : null,
+              outfitId: item.kind == ItemKind.outfit && !item.isBottom ? item.id : null,
+              bottomId: item.isBottom ? item.id : null,
               accessoryId: item.kind == ItemKind.accessory && !item.isEarring ? item.id : null,
               earringId: item.isEarring ? item.id : null,
             ),

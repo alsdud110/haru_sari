@@ -1,17 +1,22 @@
 import 'package:flutter/cupertino.dart' show CupertinoIcons;
+import 'package:flutter/foundation.dart' show mapEquals;
 import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/services.dart';
 
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
 import '../config.dart';
 import '../data/badges.dart';
+import '../data/catalog.dart';
+import '../data/models.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
 import 'auth_screens.dart';
 import 'licenses.dart';
 import 'onboarding.dart';
 import 'room/room_painter.dart';
+import 'room/room_screen.dart';
 import 'routines.dart';
 import 'routine_icon.dart';
 import 'time_sheet.dart';
@@ -77,9 +82,9 @@ class ProfileScreen extends StatelessWidget {
             ),
             _Tile(
               icon: Icons.palette_outlined,
-              title: '미니미 색 바꾸기',
-              subtitle: '피부·머리·옷 색',
-              onTap: () => _editMinimi(context),
+              title: '미니미 꾸미기',
+              subtitle: '헤어·얼굴·옷',
+              onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MinimiEditScreen())),
             ),
           ]),
           const SizedBox(height: Space.lg),
@@ -146,40 +151,155 @@ class ProfileScreen extends StatelessWidget {
       ),
     );
   }
+}
 
-  void _editMinimi(BuildContext context) {
-    showAppSheet<void>(
+/// 미니미 꾸미기 페이지. 고르는 동안은 미리보기만 바뀌고, 저장을 눌러야 내 미니미가 바뀐다.
+class MinimiEditScreen extends StatefulWidget {
+  const MinimiEditScreen({super.key});
+
+  @override
+  State<MinimiEditScreen> createState() => _MinimiEditScreenState();
+}
+
+class _MinimiEditScreenState extends State<MinimiEditScreen> {
+  late Minimi _draft = AppScope.read(context).profile.minimi;
+
+  /// 산 옷의 색 (아이템 id → 색 번호)
+  late Map<String, int> _colors = {...AppScope.read(context).profile.itemColors};
+
+  /// 입을 산 옷 (없으면 기본 옷)
+  late String? _top = AppScope.read(context).profile.outfitId;
+  late String? _bottom = AppScope.read(context).profile.bottomId;
+
+  bool get _dirty {
+    final p = AppScope.read(context).profile;
+    return _draft != p.minimi || !mapEquals(_colors, p.itemColors) || _top != p.outfitId || _bottom != p.bottomId;
+  }
+
+  void _save() {
+    AppScope.read(context)
+      ..updateMinimi(_draft)
+      ..updateItemColors(_colors)
+      ..dress(top: _top, bottom: _bottom);
+    HapticFeedback.mediumImpact();
+    showAppToast(context, '새 모습을 저장했어요');
+    Navigator.pop(context);
+  }
+
+  /// 저장하지 않고 나가려 하면 물어본다
+  Future<void> _leave() async {
+    final save = await showAppDialog<bool>(
       context,
-      isScrollControlled: false,
-      builder: (ctx) {
-        final s = AppScope.of(ctx);
-        final picker = MinimiPicker(minimi: s.profile.minimi, onChanged: s.updateMinimi);
-        // 눕힌 화면처럼 높이가 모자라면 미니미도 고르는 칸과 함께 넘겨 본다 (평소에는 위에 붙어 있다).
-        final short = MediaQuery.sizeOf(ctx).height < 500;
-        return SafeArea(
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(Space.gutter, 0, Space.gutter, Space.xl),
-            child: short
-                ? SingleChildScrollView(
-                    child: Column(
-                      children: [
-                        MinimiView(profile: s.profile),
-                        const SizedBox(height: Space.lg),
-                        picker,
-                      ],
-                    ),
-                  )
-                : Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      MinimiView(profile: s.profile),
-                      const SizedBox(height: Space.lg),
-                      Flexible(child: SingleChildScrollView(child: picker)),
-                    ],
-                  ),
-          ),
-        );
+      builder: (ctx) => AlertDialog(
+        backgroundColor: AppColors.surface,
+        title: const Text('바꾼 모습을 저장할까요?'),
+        content: const Text('저장하지 않으면 원래 모습으로 돌아가요.'),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('저장 안 함')),
+          TextButton(onPressed: () => Navigator.pop(ctx, true), child: const Text('저장')),
+        ],
+      ),
+    );
+    if (save == null || !mounted) return;
+    if (save) return _save();
+    Navigator.pop(context);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final s = AppScope.of(context);
+    final p = s.profile;
+    final dirty = _dirty;
+    // 산 옷 (상의·하의·원피스)
+    final clothes = s.ownedItems.where((i) => i.kind == ItemKind.outfit).toList()
+      // 최근에 산 옷이 맨 앞 (들인 날 'yyyy-mm-dd' 는 글자 순서가 날짜 순서)
+      ..sort((a, b) => (p.acquired[b.id] ?? '').compareTo(p.acquired[a.id] ?? ''));
+    // 눕힌 화면에서도 고르는 칸이 보이게 미리보기 높이를 화면에 맞춘다
+    final stage = (MediaQuery.sizeOf(context).height * 0.28).clamp(120.0, 240.0);
+    return PopScope(
+      canPop: !dirty,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) _leave();
       },
+      child: Scaffold(
+        appBar: AppBar(
+          title: const Text('미니미 꾸미기'),
+          actions: [
+            if (dirty)
+              TextButton(
+                onPressed: () => setState(() {
+                  _draft = p.minimi;
+                  _colors = {...p.itemColors};
+                  _top = p.outfitId;
+                  _bottom = p.bottomId;
+                }),
+                child: const Text('되돌리기'),
+              ),
+            IconButton(
+              tooltip: '미니미 상점',
+              onPressed: () =>
+                  Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen(minimi: true))),
+              icon: const Icon(Icons.checkroom_rounded),
+            ),
+          ],
+        ),
+        body: SafeArea(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Space.gutter),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                // 미리보기: 상점 옷·액세서리도 입은 채로 보여 준다
+                Container(
+                  height: stage,
+                  margin: const EdgeInsets.only(bottom: Space.lg),
+                  decoration: BoxDecoration(
+                    color: AppColors.surfaceMuted,
+                    borderRadius: BorderRadius.circular(Radii.lg),
+                  ),
+                  padding: const EdgeInsets.all(Space.lg),
+                  child: FittedBox(
+                    child: Breathing(
+                      child: MinimiView(
+                        profile: Profile(
+                          minimi: _draft,
+                          outfitId: _top,
+                          bottomId: _bottom,
+                          accessoryId: p.accessoryId,
+                          earringId: p.earringId,
+                          itemColors: _colors,
+                        ),
+                        happy: true,
+                        width: 160,
+                      ),
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: MinimiPicker(
+                    minimi: _draft,
+                    onChanged: (m) => setState(() => _draft = m),
+                    fill: true,
+                    clothes: clothes,
+                    top: _top,
+                    bottom: _bottom,
+                    itemColors: _colors,
+                    onDress: (top, bottom, colors) => setState(() {
+                      _top = top;
+                      _bottom = bottom;
+                      _colors = colors;
+                    }),
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.only(top: Space.sm, bottom: Space.lg),
+                  child: FilledButton(onPressed: dirty ? _save : null, child: const Text('저장')),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }

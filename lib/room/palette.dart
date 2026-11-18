@@ -35,20 +35,68 @@ class PixelPalette {
     [0xB79AD6, 0x9378BD, 0x6C5693], // 퍼플
   ];
 
-  /// 기본 옷 색 4종 × (밝음, 기본, 그늘). 에셋은 0번(테라코타)으로 그린다.
+  /// 기본 상의 시트에 쓴 색 (밝음, 기본, 그늘, 무늬). 앱이 [outfit] 색으로 바꾼다.
+  static const outfitSheet = [0xEDA77F, 0xE08A5B, 0xB9663D, 0xF8DCCB];
+
+  /// 기본 옷 색 12종 × (밝음, 기본, 그늘, 무늬). 이름은 Minimi.outfitNames.
   static const outfit = [
-    [0xEDA77F, 0xE08A5B, 0xB9663D],
-    [0xA9C4A3, 0x8FAE8B, 0x6F8F6B],
-    [0xBCD3E8, 0x9DBBD8, 0x6F8FB8],
-    [0xE6D6E6, 0xC9A3C9, 0x9C789C],
+    [0xEDA77F, 0xE08A5B, 0xB9663D, 0xFFF8EE], // 테라코타
+    [0xA9C4A3, 0x8FAE8B, 0x6F8F6B, 0xFFF8EE], // 세이지
+    [0xBCD3E8, 0x9DBBD8, 0x6F8FB8, 0xFFF8EE], // 하늘
+    [0xE6D6E6, 0xC9A3C9, 0x9C789C, 0xFFF8EE], // 라벤더
+    [0xFBEFCB, 0xF2D27A, 0xE5B547, 0xFFF8EE], // 버터
+    [0xFFF8EE, 0xF6EBDD, 0xEADBC7, 0x9DBBD8], // 화이트 (무늬는 하늘색)
+    [0xF4B8C8, 0xE893AC, 0xBF6A85, 0xFFF8EE], // 핑크
+    [0x8FB4E0, 0x6A93C9, 0x4A6FA3, 0xFFF8EE], // 블루
+    [0xD9694F, 0xB94A36, 0x8C3323, 0xFFF8EE], // 레드
+    [0xB79AD6, 0x9378BD, 0x6C5693, 0xFFF8EE], // 퍼플
+    [0xBDBDC6, 0x9A9AA6, 0x77778A, 0xFFF8EE], // 그레이
+    [0xB98559, 0x8E6240, 0x6A4630, 0xF2D27A], // 브라운 (무늬는 버터색)
   ];
 
   /// 기본 옷 색 인덱스로 바꿀 색 표.
   static Map<int, int> outfitSwap(int index) {
     final to = outfit[index % outfit.length];
     return {
-      if (index % outfit.length != 0)
-        for (var i = 0; i < 3; i++) outfit[0][i]: to[i],
+      for (var i = 0; i < 4; i++)
+        if (outfitSheet[i] != to[i]) outfitSheet[i]: to[i],
+    };
+  }
+
+  /// 하의 시트에 쓴 천 색 (밝음, 기본, 그늘). 앱이 [bottom] 색으로 바꾼다.
+  static const bottomSheet = [0xBCD3E8, 0x9DBBD8, 0x6F8FB8];
+
+  /// 하의 색 12종 × (밝음, 기본, 그늘). 이름은 Minimi.bottomColorNames.
+  static const bottom = [
+    [0x8E6240, 0x6A4630, 0x4A3628], // 브라운
+    [0xBCD3E8, 0x9DBBD8, 0x6F8FB8], // 데님
+    [0xE8C9A0, 0xD9B993, 0xC49E74], // 베이지
+    [0x5A463C, 0x3B2E28, 0x251C18], // 차콜
+    [0xBDBDC6, 0x9A9AA6, 0x77778A], // 그레이
+    [0xFFF8EE, 0xF6EBDD, 0xEADBC7], // 화이트
+    [0x8FB4E0, 0x6A93C9, 0x4A6FA3], // 블루
+    [0xA9C4A3, 0x8FAE8B, 0x6F8F6B], // 세이지
+    [0xF4B8C8, 0xE893AC, 0xBF6A85], // 핑크
+    [0xE6D6E6, 0xC9A3C9, 0x9C789C], // 라벤더
+    [0xFBEFCB, 0xF2D27A, 0xE5B547], // 버터
+    [0xEDA77F, 0xE08A5B, 0xB9663D], // 테라코타
+  ];
+
+  /// 하의 색 인덱스로 바꿀 색 표.
+  static Map<int, int> bottomSwap(int index) {
+    final to = bottom[index % bottom.length];
+    return {
+      for (var i = 0; i < 3; i++)
+        if (bottomSheet[i] != to[i]) bottomSheet[i]: to[i],
+    };
+  }
+
+  /// 산 옷의 색 바꾸기: 옷 그림의 [from] 세 색(밝음, 기본, 그늘)을 기본 옷 색 [index]번으로.
+  static Map<int, int> recolorSwap(List<int> from, int index) {
+    final to = outfit[index % outfit.length];
+    return {
+      for (var i = 0; i < 3; i++)
+        if (from[i] != to[i]) from[i]: to[i],
     };
   }
 

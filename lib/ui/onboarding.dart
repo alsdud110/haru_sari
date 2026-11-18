@@ -1,8 +1,13 @@
+import 'dart:math' as math;
+
+import 'package:flutter/cupertino.dart' show CupertinoSlidingSegmentedControl;
 import 'package:flutter/material.dart' hide Text;
+import 'package:flutter/services.dart';
 
 import '../app.dart';
 import '../data/catalog.dart';
 import '../data/models.dart';
+import '../room/registry.dart';
 import '../theme/tokens.dart';
 import 'motion.dart';
 import 'room/room_painter.dart';
@@ -270,7 +275,7 @@ class _MinimiStep extends StatelessWidget {
                 SliverToBoxAdapter(
                   child: Padding(
                     padding: const EdgeInsets.only(top: Space.md, bottom: Space.lg),
-                    child: MinimiPicker(minimi: minimi, onChanged: onChanged, basic: true),
+                    child: MinimiPicker(minimi: minimi, onChanged: onChanged),
                   ),
                 ),
               ],
@@ -290,9 +295,9 @@ class _PinnedMinimi extends SliverPersistentHeaderDelegate {
   final Minimi minimi;
 
   @override
-  double get maxExtent => 124;
+  double get maxExtent => 168;
   @override
-  double get minExtent => 108;
+  double get minExtent => 132;
 
   @override
   Widget build(BuildContext context, double shrinkOffset, bool overlapsContent) => DecoratedBox(
@@ -316,116 +321,423 @@ class _PinnedMinimi extends SliverPersistentHeaderDelegate {
   bool shouldRebuild(_PinnedMinimi old) => old.minimi != minimi;
 }
 
-/// 피부·머리·얼굴·옷 색 고르기. 설정 화면에서도 쓴다.
-class MinimiPicker extends StatelessWidget {
-  const MinimiPicker({super.key, required this.minimi, required this.onChanged, this.basic = false});
+/// 미니미 꾸미기: 헤어·얼굴·옷 탭. 고를 것마다 그 모습의 미리보기를 보여 줘서 눌러 보지 않아도 고를 수 있다.
+/// 첫 설정과 설정 화면에서 같이 쓴다.
+class MinimiPicker extends StatefulWidget {
+  const MinimiPicker({
+    super.key,
+    required this.minimi,
+    required this.onChanged,
+    this.fill = false,
+    this.clothes = const [],
+    this.top,
+    this.bottom,
+    this.itemColors = const {},
+    this.onDress,
+  });
   final Minimi minimi;
   final ValueChanged<Minimi> onChanged;
 
-  /// 첫 설정에서는 피부·머리·눈·입만 고른다 (염색·옷 색은 설정 화면에서)
-  final bool basic;
+  /// 산 옷 (상의·하의·원피스). 기본 옷과 같은 칸에 상점 표시를 달고 보여 준다
+  final List<ShopItem> clothes;
+
+  /// 입은 산 옷 (없으면 기본 옷)과 산 옷에 고른 색
+  final String? top, bottom;
+  final Map<String, int> itemColors;
+
+  /// 입을 옷·산 옷 색이 바뀔 때 (상의, 하의, 색). 없으면 산 옷을 보이지 않는다 (첫 설정)
+  final void Function(String? top, String? bottom, Map<String, int> colors)? onDress;
+
+  /// 남은 높이를 채우고 탭은 위에 둔 채 고르는 칸만 넘겨 본다 (꾸미기 페이지). 아니면 부모가 통째로 넘긴다 (첫 설정).
+  final bool fill;
 
   @override
-  Widget build(BuildContext context) => Column(
-    children: [
-      _row(context, '피부', skinTones, minimi.skin, (i) => onChanged(minimi.copyWith(skin: i)), Minimi.skinNames),
-      _chips(context, '머리', Minimi.hairStyleNames, minimi.hairStyle, (i) => onChanged(minimi.copyWith(hairStyle: i))),
-      if (!basic) _row(context, '염색', hairColors, minimi.hair, (i) => onChanged(minimi.copyWith(hair: i))),
-      _chips(context, '눈', Minimi.eyeNames, minimi.eyes, (i) => onChanged(minimi.copyWith(eyes: i))),
-      _chips(context, '입', Minimi.mouthNames, minimi.mouth, (i) => onChanged(minimi.copyWith(mouth: i))),
-      if (!basic) _row(context, '옷 색', outfitColors, minimi.outfit, (i) => onChanged(minimi.copyWith(outfit: i))),
-    ],
-  );
+  State<MinimiPicker> createState() => _MinimiPickerState();
+}
 
-  Widget _chips(BuildContext context, String label, List<String> names, int sel, ValueChanged<int> on) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: Space.md),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+enum _Tab { hair, face, outfit }
+
+/// 썸네일에서 보여 줄 부분 (미니미 그림 높이 대비 위·아래 비율)
+typedef _Crop = (double, double);
+const _Crop _hairCrop = (0, 0.74), _faceCrop = (0.18, 0.52), _topCrop = (0.5, 0.77), _bottomCrop = (0.66, 1);
+const _Crop _setCrop = (0.5, 1);
+
+class _MinimiPickerState extends State<MinimiPicker> {
+  var _tab = _Tab.hair;
+
+  Minimi get m => widget.minimi;
+  void _set(Minimi v) => widget.onChanged(v);
+
+  /// 피부는 그대로 두고 나머지를 아무렇게나 골라 본다. 옷은 기본 옷과 산 옷 중에서 같은 확률로 고른다.
+  void _shuffle() {
+    final r = math.Random();
+    int pick(int n) => r.nextInt(n);
+    HapticFeedback.selectionClick();
+    final tops = _clothes.where((i) => !i.isBottom).toList(), bottoms = _clothes.where((i) => i.isBottom).toList();
+    // 상의: 기본 티셔츠 무늬 5칸 + 산 상의·원피스 / 하의: 기본 하의 8칸 + 산 하의 (화면의 칸 하나하나가 같은 확률)
+    final t = pick(Minimi.patternNames.length + tops.length);
+    final b = pick(Minimi.bottomNames.length + bottoms.length);
+    final top = t < Minimi.patternNames.length ? null : tops[t - Minimi.patternNames.length];
+    final bottom = (top?.isSet ?? false) || b < Minimi.bottomNames.length
+        ? null
+        : bottoms[b - Minimi.bottomNames.length];
+    _set(
+      m.copyWith(
+        hairStyle: Minimi.hairStyleOrder[pick(Minimi.hairStyleOrder.length)],
+        hair: pick(Minimi.hairNames.length),
+        eyes: pick(Minimi.eyeNames.length),
+        mouth: pick(Minimi.mouthNames.length),
+        outfit: pick(Minimi.outfitNames.length),
+        pattern: t < Minimi.patternNames.length ? t : pick(Minimi.patternNames.length),
+        bottom: b < Minimi.bottomNames.length ? b : pick(Minimi.bottomNames.length),
+        bottomColor: pick(Minimi.bottomColorNames.length),
+      ),
+    );
+    if (!_shop) return;
+    // 산 옷 색도 섞는다 (원래 색 포함)
+    final colors = {...widget.itemColors};
+    for (final i in [top, bottom].nonNulls) {
+      final c = pick(Minimi.outfitNames.length + 1);
+      c == 0 ? colors.remove(i.id) : colors[i.id] = c - 1;
+    }
+    _dress(top?.id, bottom?.id, colors);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final tabs = Row(
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: Space.md),
-          child: SizedBox(width: 64, child: Text(label, style: Theme.of(context).textTheme.titleMedium)),
+        Expanded(child: _tabs()),
+        const SizedBox(width: Space.sm),
+        IconButton.outlined(
+          tooltip: '아무렇게나 꾸며 보기',
+          onPressed: _shuffle,
+          style: IconButton.styleFrom(side: const BorderSide(color: AppColors.line)),
+          icon: const Icon(Icons.casino_outlined),
         ),
+      ],
+    );
+    // 탭마다 따로 둔다: 같은 자리의 동그라미가 썸네일로 늘어나는 애니메이션이 생기지 않게
+    final content = KeyedSubtree(
+      key: ValueKey(_tab),
+      child: Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: _options()),
+    );
+    if (!widget.fill) return Column(crossAxisAlignment: CrossAxisAlignment.stretch, children: [tabs, content]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        tabs,
         Expanded(
-          child: Wrap(
-            spacing: Space.sm,
-            runSpacing: Space.xs,
-            children: [
-              for (var i = 0; i < names.length; i++)
-                ChoiceChip(
-                  label: Text(names[i]),
-                  selected: i == sel,
-                  onSelected: (_) => on(i),
-                  showCheckmark: false,
-                  backgroundColor: AppColors.surface,
-                  selectedColor: AppColors.selected,
-                  side: const BorderSide(color: AppColors.line),
-                ),
-            ],
+          child: SingleChildScrollView(
+            key: PageStorageKey(_tab),
+            padding: const EdgeInsets.only(bottom: Space.lg),
+            child: content,
           ),
         ),
       ],
-    ),
-  );
+    );
+  }
 
-  Widget _row(
-    BuildContext context,
+  Widget _tabs() {
+    const labels = {_Tab.hair: '헤어', _Tab.face: '얼굴', _Tab.outfit: '옷'};
+    if (isApple) {
+      return CupertinoSlidingSegmentedControl<_Tab>(
+        groupValue: _tab,
+        backgroundColor: AppColors.surfaceMuted,
+        thumbColor: AppColors.surface,
+        children: {
+          for (final e in labels.entries)
+            e.key: Padding(
+              padding: const EdgeInsets.symmetric(vertical: Space.sm),
+              child: Text(e.value),
+            ),
+        },
+        onValueChanged: (v) => setState(() => _tab = v ?? _tab),
+      );
+    }
+    return SegmentedButton<_Tab>(
+      showSelectedIcon: false,
+      style: SegmentedButton.styleFrom(
+        selectedBackgroundColor: AppColors.selected,
+        side: const BorderSide(color: AppColors.line),
+      ),
+      segments: [for (final e in labels.entries) ButtonSegment(value: e.key, label: Text(e.value))],
+      selected: {_tab},
+      onSelectionChanged: (v) => setState(() => _tab = v.first),
+    );
+  }
+
+  List<Widget> _options() => switch (_tab) {
+    _Tab.hair => [
+      _title('스타일'),
+      _thumbs([
+        for (final i in Minimi.hairStyleOrder) (Minimi.hairStyleNames[i], m.copyWith(hairStyle: i), i == m.hairStyle),
+      ], _hairCrop),
+      _title('머리색', Minimi.hairNames[m.hair % Minimi.hairNames.length]),
+      _swatches(hairColors, m.hair, Minimi.hairNames, (i) => _set(m.copyWith(hair: i))),
+    ],
+    _Tab.face => [
+      _title('피부', Minimi.skinNames[m.skin % Minimi.skinNames.length]),
+      _swatches(skinTones, m.skin, Minimi.skinNames, (i) => _set(m.copyWith(skin: i))),
+      _title('눈'),
+      _thumbs([
+        for (var i = 0; i < Minimi.eyeNames.length; i++) (Minimi.eyeNames[i], m.copyWith(eyes: i), i == m.eyes),
+      ], _faceCrop),
+      _title('입'),
+      _thumbs([
+        for (var i = 0; i < Minimi.mouthNames.length; i++) (Minimi.mouthNames[i], m.copyWith(mouth: i), i == m.mouth),
+      ], _faceCrop),
+    ],
+    _Tab.outfit => _outfitOptions(),
+  };
+
+  bool get _shop => widget.onDress != null;
+  List<ShopItem> get _clothes => _shop ? widget.clothes : const [];
+  ShopItem? _worn(String? id) => _clothes.where((i) => i.id == id).firstOrNull;
+  void _dress(String? top, String? bottom, [Map<String, int>? colors]) =>
+      widget.onDress?.call(top, bottom, colors ?? widget.itemColors);
+
+  /// 옷 탭: 상의(기본 티셔츠 + 산 상의·원피스) → 색 → 무늬, 하의(기본 하의 + 산 하의) → 색
+  List<Widget> _outfitOptions() {
+    final top = _worn(widget.top), bottom = _worn(widget.bottom);
+    final setOn = top?.isSet ?? false; // 원피스·세트를 입으면 하의 없음
+    // 옷 썸네일은 긴 머리가 옷을 가리지 않게 짧은 머리로 보여 준다
+    Profile look({Minimi? mm, String? t, String? b}) =>
+        Profile(minimi: (mm ?? m).copyWith(hairStyle: 1), outfitId: t, bottomId: b, itemColors: widget.itemColors);
+    return [
+      _title('상의'),
+      _grid(cell: 76, gap: Space.sm, [
+        // 산 옷이 앞, 기본 옷은 뒤로 (살수록 기본 옷이 밀려난다)
+        for (final i in _clothes.where((i) => !i.isBottom))
+          _tile(
+            name: i.name,
+            selected: i.id == top?.id,
+            shop: true,
+            onTap: () => _dress(i.id, i.isSet ? null : bottom?.id),
+            child: _CroppedMinimi(look(t: i.id), i.isSet ? _setCrop : _topCrop),
+          ),
+        // 기본 티셔츠는 무늬마다 한 칸씩 (색은 아래에서)
+        for (var i = 0; i < Minimi.patternNames.length; i++)
+          _tile(
+            name: '${Minimi.patternNames[i]} 티셔츠',
+            selected: top == null && m.pattern == i,
+            onTap: () {
+              _set(m.copyWith(pattern: i));
+              if (top != null) _dress(null, bottom?.id);
+            },
+            child: _CroppedMinimi(look(mm: m.copyWith(pattern: i)), _topCrop),
+          ),
+      ]),
+      ..._colors('상의 색상', top, outfitColors, Minimi.outfitNames, m.outfit, (i) => _set(m.copyWith(outfit: i))),
+      _title('하의', setOn ? '원피스·세트를 입는 동안에는 하의가 없어요' : null),
+      _grid(cell: 76, gap: Space.sm, [
+        for (final i in _clothes.where((i) => i.isBottom))
+          _tile(
+            name: i.name,
+            selected: i.id == bottom?.id,
+            shop: true,
+            onTap: () => _dress(setOn ? null : top?.id, i.id),
+            child: _CroppedMinimi(look(b: i.id), _bottomCrop),
+          ),
+        for (var i = 0; i < Minimi.bottomNames.length; i++)
+          _tile(
+            name: Minimi.bottomNames[i],
+            selected: !setOn && bottom == null && m.bottom == i,
+            onTap: () {
+              _set(m.copyWith(bottom: i));
+              if (setOn || bottom != null) _dress(setOn ? null : top?.id, null);
+            },
+            child: _CroppedMinimi(look(mm: m.copyWith(bottom: i)), _bottomCrop),
+          ),
+      ]),
+      if (!setOn)
+        ..._colors(
+          '하의 색상',
+          bottom,
+          bottomColors,
+          Minimi.bottomColorNames,
+          m.bottomColor,
+          (i) => _set(m.copyWith(bottomColor: i)),
+        ),
+    ];
+  }
+
+  /// 색 고르기. 기본 옷이면 기본 옷 색, 산 옷이면 원래 색 + 기본 옷 색 12가지
+  List<Widget> _colors(
     String label,
+    ShopItem? item,
     List<Color> colors,
+    List<String> names,
     int sel,
-    ValueChanged<int> on, [
-    List<String>? names,
-  ]) => Padding(
-    padding: const EdgeInsets.symmetric(vertical: Space.md),
-    child: Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Padding(
-          padding: const EdgeInsets.only(top: Space.sm),
-          child: SizedBox(
-            width: 64,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+    ValueChanged<int> onDefault,
+  ) {
+    if (item == null) {
+      return [_title(label, names[sel % names.length]), _swatches(colors, sel, names, onDefault)];
+    }
+    final picked = widget.itemColors[item.id];
+    final original = RegistryScope.of(context)?.manifest[item.id]?.recolor?[1] ?? 0xEADBC7;
+    return [
+      _title(
+        label,
+        '${item.name} · ${picked == null ? '원래 색' : Minimi.outfitNames[picked % Minimi.outfitNames.length]}',
+      ),
+      _swatches(
+        [Color(0xFF000000 | original), ...outfitColors],
+        picked == null ? 0 : picked % outfitColors.length + 1,
+        ['원래 색', ...Minimi.outfitNames],
+        firstIcon: Icons.replay_rounded, // 원래 색: 같은 색 동그라미와 헷갈리지 않게
+        (i) {
+          final next = {...widget.itemColors};
+          i == 0 ? next.remove(item.id) : next[item.id] = i - 1; // 0번 = 원래 색
+          _dress(widget.top, widget.bottom, next);
+        },
+      ),
+    ];
+  }
+
+  Widget _title(String label, [String? value]) {
+    final t = Theme.of(context).textTheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: Space.lg, bottom: Space.sm),
+      child: Row(
+        children: [
+          Text(label, style: t.titleMedium),
+          if (value != null) ...[const SizedBox(width: Space.sm), Text(value, style: t.bodySmall)],
+        ],
+      ),
+    );
+  }
+
+  /// 고를 것마다 그 모습의 미니미 일부를 보여 준다. 누르면 [options]의 모습으로 바뀐다.
+  Widget _thumbs(List<(String, Minimi, bool)> options, _Crop crop) => _grid(cell: 76, gap: Space.sm, [
+    for (final (name, look, selected) in options)
+      _tile(
+        name: name,
+        selected: selected,
+        onTap: () => _set(look),
+        child: _CroppedMinimi(Profile(minimi: look), crop),
+      ),
+  ]);
+
+  /// 썸네일 한 칸. [shop]이면 오른쪽 위에 작은 상점 표시를 단다 (기본 옷과 구별)
+  Widget _tile({
+    required String name,
+    required bool selected,
+    required VoidCallback onTap,
+    required Widget child,
+    bool shop = false,
+  }) => Semantics(
+    // 칸이 밀려 같은 자리에 색 동그라미가 오더라도 서로 재사용하지 않게 (원↔둥근 네모 애니메이션은 깨진다)
+    key: ValueKey(('tile', name)),
+    button: true,
+    selected: selected,
+    label: shop ? '$name, 산 옷' : name,
+    child: GestureDetector(
+      onTap: onTap,
+      child: AnimatedContainer(
+        duration: Motion.fast,
+        padding: const EdgeInsets.only(bottom: Space.xs),
+        decoration: BoxDecoration(
+          color: selected ? AppColors.selected : AppColors.surface,
+          borderRadius: BorderRadius.circular(Radii.sm),
+          border: Border.all(color: selected ? AppColors.text : AppColors.line, width: selected ? 2 : 1),
+        ),
+        child: Stack(
+          children: [
+            Column(
               children: [
-                Text(label, style: Theme.of(context).textTheme.titleMedium),
-                if (names != null) Text(names[sel % names.length], style: Theme.of(context).textTheme.bodySmall),
+                ExcludeSemantics(child: child),
+                Text(name, style: Theme.of(context).textTheme.bodySmall, maxLines: 1, overflow: TextOverflow.ellipsis),
               ],
             ),
-          ),
+            if (shop) const Positioned(top: 4, right: 4, child: _ShopBadge()),
+          ],
         ),
-        Expanded(
-          child: Wrap(
-            spacing: Space.md,
-            runSpacing: Space.md,
-            children: [
-              for (var i = 0; i < colors.length; i++)
-                Semantics(
-                  button: true,
-                  selected: i == sel,
-                  label: names != null ? '${names[i]} $label' : '$label ${i + 1}번',
-                  child: GestureDetector(
-                    onTap: () => on(i),
-                    child: AnimatedContainer(
-                      duration: Motion.fast,
-                      width: 44,
-                      height: 44,
-                      decoration: BoxDecoration(
-                        color: colors[i],
-                        shape: BoxShape.circle,
-                        // 밝은 피부색도 바탕과 구분되게 옅은 테두리를 둔다
-                        border: Border.all(
-                          color: i == sel ? AppColors.text : AppColors.line,
-                          width: i == sel ? 2.5 : 1,
-                        ),
-                      ),
-                    ),
+      ),
+    ),
+  );
+
+  Widget _swatches(List<Color> colors, int sel, List<String> names, ValueChanged<int> onPick, {IconData? firstIcon}) =>
+      _grid(cell: 40, gap: Space.md, [
+        for (var i = 0; i < colors.length; i++)
+          Semantics(
+            key: ValueKey(('swatch', names[i])),
+            button: true,
+            selected: i == sel % colors.length,
+            label: names[i],
+            child: GestureDetector(
+              onTap: () => onPick(i),
+              child: AnimatedContainer(
+                duration: Motion.fast,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: colors[i],
+                  shape: BoxShape.circle,
+                  // 밝은 색도 바탕과 구분되게 옅은 테두리를 둔다
+                  border: Border.all(
+                    color: i == sel % colors.length ? AppColors.text : AppColors.line,
+                    width: i == sel % colors.length ? 2.5 : 1,
                   ),
                 ),
-            ],
+                child: i == 0 && firstIcon != null ? Icon(firstIcon, size: 20, color: AppColors.text) : null,
+              ),
+            ),
+          ),
+      ]);
+
+  /// 칸을 폭에 맞게 나눠([cell] 이상) 양 끝을 위 탭·아래 버튼과 맞춘다
+  Widget _grid(List<Widget> cells, {required double cell, required double gap}) => LayoutBuilder(
+    builder: (context, c) {
+      final n = math.max(1, ((c.maxWidth + gap) / (cell + gap)).floor());
+      final w = ((c.maxWidth - gap * (n - 1)) / n).floorToDouble(); // 반올림으로 줄이 일찍 넘어가지 않게 내림
+      return Wrap(
+        spacing: gap,
+        runSpacing: gap,
+        children: [for (final x in cells) SizedBox(width: w, child: x)],
+      );
+    },
+  );
+}
+
+/// 미니미 그림의 [crop] 부분만 64px 높이로 키워 보여 준다.
+class _CroppedMinimi extends StatelessWidget {
+  const _CroppedMinimi(this.profile, this.crop);
+  final Profile profile;
+  final _Crop crop;
+
+  static const _h = 64.0;
+
+  @override
+  Widget build(BuildContext context) {
+    final (top, bottom) = crop;
+    final figure = _h / (bottom - top); // 미니미 그림 전체 높이
+    final width = figure / 1.2; // MinimiView 높이 = 너비 × 1.2
+    return SizedBox(
+      height: _h,
+      child: ClipRect(
+        child: OverflowBox(
+          alignment: Alignment.topCenter,
+          maxWidth: width,
+          maxHeight: figure,
+          child: Transform.translate(
+            offset: Offset(0, -top * figure),
+            child: MinimiView(profile: profile, width: width),
           ),
         ),
-      ],
-    ),
+      ),
+    );
+  }
+}
+
+/// 상점에서 산 옷 표시 (썸네일 오른쪽 위): 코인 색 동그라미 안 상점 아이콘
+class _ShopBadge extends StatelessWidget {
+  const _ShopBadge();
+
+  @override
+  Widget build(BuildContext context) => Container(
+    padding: const EdgeInsets.all(3),
+    decoration: const BoxDecoration(color: AppColors.coinSoft, shape: BoxShape.circle),
+    child: const Icon(Icons.storefront_rounded, size: 11, color: AppColors.text),
   );
 }
 

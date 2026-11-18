@@ -61,7 +61,7 @@ List<String> newlyEarned({required Profile profile, required Map<String, DayLog>
   final placedFurniture = profile.room?.count ?? profile.placed.length;
   check('first_item', profile.owned.isNotEmpty);
   check('room_5', placedFurniture >= 5);
-  check('first_outfit', profile.outfitId != null);
+  check('first_outfit', profile.outfitId != null || profile.bottomId != null);
   check('level_5', profile.level >= 5);
   check('level_10', profile.level >= 10);
   return out;

@@ -72,9 +72,18 @@ void main() {
     expect(find.text('민의 방'), findsOneWidget);
     expect(find.text('미니미 상태'), findsOneWidget);
 
+    // 미니미 상점에는 옷·액세서리만, 가구 상점에는 가구만
+    await tester.tap(find.text('미니미 상점').first);
+    await settleish(tester);
+    expect(find.text('크림 니트'), findsOneWidget);
+    expect(find.text('동그란 러그'), findsNothing);
+    await tester.tap(find.byTooltip('뒤로'));
+    await settleish(tester);
+
     await tester.tap(find.text('가구 상점'));
     await settleish(tester);
     expect(find.text('동그란 러그'), findsOneWidget);
+    expect(find.text('크림 니트'), findsNothing);
     await tester.ensureVisible(find.text('동그란 러그')); // 싼 물건이 늘어 아래로 밀렸다
     await settleish(tester);
     await tester.tap(find.text('동그란 러그'));

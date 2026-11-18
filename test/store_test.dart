@@ -181,6 +181,46 @@ void main() {
   });
 
   group('상점·방·옷', () {
+    test('미니미 상점: 상의와 하의는 따로 입고, 원피스·세트는 위아래를 함께 바꾼다', () {
+      s.profile
+        ..level = 10
+        ..coins = 1000;
+      ShopItem it(String id) => itemById(id)!;
+      expect(s.buy(it('outfit_blouse')), BuyResult.ok);
+      expect(s.buy(it('outfit_jeans')), BuyResult.ok);
+      expect((s.profile.outfitId, s.profile.bottomId), ('outfit_blouse', 'outfit_jeans'));
+      expect(s.isInUse(it('outfit_jeans')), isTrue);
+
+      expect(s.buy(it('outfit_hanbok')), BuyResult.ok); // 세트는 하의를 벗긴다
+      expect((s.profile.outfitId, s.profile.bottomId), ('outfit_hanbok', null));
+
+      expect(s.use(it('outfit_jeans')), isTrue); // 하의를 입으면 세트를 벗는다
+      expect((s.profile.outfitId, s.profile.bottomId), (null, 'outfit_jeans'));
+
+      s.putAway(it('outfit_jeans'));
+      expect(s.profile.bottomId, isNull);
+    });
+
+    test('꾸미기 화면에서 고른 옷 입기: 가진 옷만, 원피스면 하의는 벗는다', () {
+      s.profile
+        ..level = 10
+        ..coins = 1000;
+      s.buy(itemById('outfit_jeans')!);
+      s.buy(itemById('outfit_dress_floral')!);
+      s.dress(top: null, bottom: 'outfit_jeans');
+      expect((s.profile.outfitId, s.profile.bottomId), (null, 'outfit_jeans'));
+      s.dress(top: 'outfit_dress_floral', bottom: 'outfit_jeans');
+      expect((s.profile.outfitId, s.profile.bottomId), ('outfit_dress_floral', null));
+      s.dress(top: 'outfit_suit', bottom: null); // 안 산 옷은 무시
+      expect(s.profile.outfitId, 'outfit_dress_floral');
+    });
+
+    test('산 옷에 고른 색이 저장된다', () async {
+      s.updateItemColors({'outfit_knit': 3});
+      await Future<void>.delayed(Duration.zero);
+      expect(AppState(kv, clock: () => now, manifest: manifest).profile.itemColors, {'outfit_knit': 3});
+    });
+
     test('가구는 레벨과 코인이 충분해야 산다', () {
       final rug = itemById('rug_stripe')!; // Lv3, 30
       expect(s.buy(rug), BuyResult.levelTooLow);

@@ -48,6 +48,11 @@ MinimiDraw minimiDrawer(
     hairStyle: p.minimi.hairStyle,
     eyes: p.minimi.eyes,
     mouth: p.minimi.mouth,
+    pattern: p.minimi.pattern,
+    bottom: p.minimi.bottom,
+    bottomColor: p.minimi.bottomColor,
+    bottomId: p.bottomId,
+    itemColors: p.itemColors,
     facing: facing,
   );
   if (layers != null) {
@@ -97,4 +102,9 @@ void preloadMinimi(AssetRegistry? reg, Profile p) => reg?.preloadMinimi(
   hairStyle: p.minimi.hairStyle,
   eyes: p.minimi.eyes,
   mouth: p.minimi.mouth,
+  pattern: p.minimi.pattern,
+  bottom: p.minimi.bottom,
+  bottomColor: p.minimi.bottomColor,
+  bottomId: p.bottomId,
+  itemColors: p.itemColors,
 );

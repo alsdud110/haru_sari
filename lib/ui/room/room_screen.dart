@@ -77,14 +77,20 @@ class RoomScreen extends StatelessWidget {
                 ),
                 const SizedBox(width: Space.sm),
                 Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorageScreen())),
-                    icon: const Icon(Icons.inventory_2_outlined),
-                    label: const Text('보관함'),
-                    style: OutlinedButton.styleFrom(minimumSize: const Size.fromHeight(52)),
+                  child: FilledButton.icon(
+                    onPressed: () =>
+                        Navigator.push(context, MaterialPageRoute(builder: (_) => const ShopScreen(minimi: true))),
+                    icon: const Icon(Icons.checkroom_rounded),
+                    label: const Text('미니미 상점'),
                   ),
                 ),
               ],
+            ),
+            const SizedBox(height: Space.sm),
+            OutlinedButton.icon(
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const StorageScreen())),
+              icon: const Icon(Icons.inventory_2_outlined),
+              label: const Text('보관함'),
             ),
             const SizedBox(height: Space.sm),
             // 버튼 자신의 context 를 넘긴다 (iPad 공유 창이 뜰 자리)
@@ -118,9 +124,9 @@ class RoomScreen extends StatelessWidget {
                   TextButton(
                     onPressed: () => Navigator.push(
                       context,
-                      MaterialPageRoute(builder: (_) => const ShopScreen(initial: ShopCategory.outfit)),
+                      MaterialPageRoute(builder: (_) => const ShopScreen(minimi: true)),
                     ),
-                    child: const Text('옷 고르기'),
+                    child: const Text('미니미 상점'),
                   ),
                 ],
               ),
@@ -304,8 +310,11 @@ class _RoomViewState extends State<RoomView> {
 // ───────── 상점 ─────────
 
 class ShopScreen extends StatefulWidget {
-  const ShopScreen({super.key, this.initial = ShopCategory.all});
+  const ShopScreen({super.key, this.initial = ShopCategory.all, this.minimi = false});
   final ShopCategory initial;
+
+  /// true 면 미니미 상점(옷·액세서리), 아니면 가구 상점
+  final bool minimi;
   @override
   State<ShopScreen> createState() => _ShopScreenState();
 }
@@ -318,13 +327,15 @@ class _ShopScreenState extends State<ShopScreen> {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final t = Theme.of(context).textTheme;
-    var items = shopCatalog.where((i) => _cat == ShopCategory.all || i.category == _cat).toList()
+    var items = shopCatalog
+        .where((i) => i.isFurniture != widget.minimi && (_cat == ShopCategory.all || i.category == _cat))
+        .toList()
       ..sort((a, b) => a.level != b.level ? a.level.compareTo(b.level) : a.price.compareTo(b.price));
     if (_affordableOnly) items = items.where((i) => s.canBuy(i) == BuyResult.ok).toList();
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('가구 상점'),
+        title: Text(widget.minimi ? '미니미 상점' : '가구 상점'),
         actions: const [
           Padding(
             padding: EdgeInsets.only(right: Space.gutter),
@@ -336,6 +347,10 @@ class _ShopScreenState extends State<ShopScreen> {
         children: [
           _CategoryBar(
             value: _cat,
+            categories: [
+              for (final c in ShopCategory.values)
+                if (c == ShopCategory.all || c.isMinimi == widget.minimi) c,
+            ],
             onChanged: (c) => setState(() => _cat = c),
             trailing: FilterChip(
               label: const Text('살 수 있는 것'),
@@ -377,8 +392,14 @@ class _ShopScreenState extends State<ShopScreen> {
 }
 
 class _CategoryBar extends StatelessWidget {
-  const _CategoryBar({required this.value, required this.onChanged, this.trailing});
+  const _CategoryBar({
+    required this.value,
+    required this.onChanged,
+    this.categories = ShopCategory.values,
+    this.trailing,
+  });
   final ShopCategory value;
+  final List<ShopCategory> categories;
   final ValueChanged<ShopCategory> onChanged;
   final Widget? trailing;
 
@@ -389,7 +410,7 @@ class _CategoryBar extends StatelessWidget {
       scrollDirection: Axis.horizontal,
       padding: const EdgeInsets.symmetric(horizontal: Space.gutter, vertical: Space.xs),
       children: [
-        for (final c in ShopCategory.values) ...[
+        for (final c in categories) ...[
           ChoiceChip(
             label: Text(c.label),
             selected: c == value,
@@ -548,7 +569,7 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
       final inUse = owned && s.isInUse(item);
       final current = switch (item.kind) {
         ItemKind.furniture => itemById(p.placed[item.slot!.name]),
-        ItemKind.outfit => itemById(p.outfitId),
+        ItemKind.outfit => itemById(item.isBottom ? p.bottomId : p.outfitId),
         ItemKind.accessory => itemById(item.isEarring ? p.earringId : p.accessoryId),
       };
       final useVerb = item.isFurniture ? '방에 놓기' : '입기';

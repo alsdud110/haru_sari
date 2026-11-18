@@ -26,6 +26,7 @@ class ItemArt {
     this.sheets = const {},
     this.hides = const [],
     this.mirror = true,
+    this.recolor,
   });
 
   final String id;
@@ -53,6 +54,9 @@ class ItemArt {
   final Map<String, String> sheets;
   final List<String> hides;
   final bool mirror;
+
+  /// 상점 옷: 산 뒤 색을 바꿀 때 바뀌는 색 (밝음, 기본, 그늘). PixelPalette.recolorSwap
+  final List<int>? recolor;
 
   /// 바닥에 놓는 것은 모두 네 방향으로 돌릴 수 있다 (그림이 없는 방향은 대체 그림).
   bool get rotatable => isFloor;
@@ -95,6 +99,7 @@ class ItemArt {
       sheets: ((j['sheets'] as Map?) ?? {}).cast<String, String>(),
       hides: ((j['hides'] as List?) ?? []).cast<String>(),
       mirror: j['mirror'] as bool? ?? true,
+      recolor: (j['recolor'] as List?)?.map((c) => int.parse(c as String, radix: 16)).toList(),
     );
   }
 }

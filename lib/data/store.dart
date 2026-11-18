@@ -308,6 +308,24 @@ class AppState extends ChangeNotifier {
     _commit();
   }
 
+  /// 꾸미기 화면에서 고른 산 옷 입기 (null = 기본 옷). 가진 옷만 입고, 원피스·세트를 입으면 하의는 벗는다.
+  void dress({String? top, String? bottom}) {
+    bool owned(String? id) => id == null || profile.owned.contains(id);
+    if (!owned(top) || !owned(bottom)) return;
+    profile
+      ..outfitId = top
+      ..bottomId = top != null && (itemById(top)?.isSet ?? false) ? null : bottom;
+    _commit();
+  }
+
+  /// 산 옷의 색 (아이템 id → 기본 옷 색 번호). 들어 있지 않은 옷은 원래 색
+  void updateItemColors(Map<String, int> colors) {
+    profile.itemColors
+      ..clear()
+      ..addAll(colors);
+    _commit();
+  }
+
   void updateAlarms(AlarmSettings a) {
     profile.alarms = a;
     _commit(resync: true);
@@ -487,7 +505,14 @@ class AppState extends ChangeNotifier {
   bool _use(ShopItem item) {
     switch (item.kind) {
       case ItemKind.outfit:
-        profile.outfitId = item.id;
+        // 하의는 상의와 따로 입는다. 원피스·세트는 위아래 한 벌이라 서로 바꿔 입는다.
+        if (item.isBottom) {
+          profile.bottomId = item.id;
+          if (profile.outfitId != null && (itemById(profile.outfitId!)?.isSet ?? false)) profile.outfitId = null;
+        } else {
+          profile.outfitId = item.id;
+          if (item.isSet) profile.bottomId = null;
+        }
         return true;
       case ItemKind.accessory:
         item.isEarring ? profile.earringId = item.id : profile.accessoryId = item.id;
@@ -536,6 +561,7 @@ class AppState extends ChangeNotifier {
         if (r.floorSurface == item.id) r.floorSurface = null;
       case ItemKind.outfit:
         if (profile.outfitId == item.id) profile.outfitId = null;
+        if (profile.bottomId == item.id) profile.bottomId = null;
       case ItemKind.accessory:
         if (profile.accessoryId == item.id) profile.accessoryId = null;
         if (profile.earringId == item.id) profile.earringId = null;
@@ -545,7 +571,7 @@ class AppState extends ChangeNotifier {
 
   bool isInUse(ShopItem item) => switch (item.kind) {
     ItemKind.furniture => room.contains(item.id),
-    ItemKind.outfit => profile.outfitId == item.id,
+    ItemKind.outfit => profile.outfitId == item.id || profile.bottomId == item.id,
     ItemKind.accessory => profile.accessoryId == item.id || profile.earringId == item.id,
   };
 
