@@ -56,6 +56,7 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName(if (keyPropertiesFile.exists()) "release" else "debug")
+            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
         }
     }
 }
@@ -72,4 +73,8 @@ flutter {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
+    // play-services-ads 가 끌고 오는 work-runtime 2.7.0(Room 2.2.5)은 R8 full mode(AGP 8+)에서
+    // WorkDatabase_Impl 생성자가 제거돼 앱 시작 시 "Failed to create an instance of WorkManager"로 죽는다.
+    // 2.8+ 는 Room keep 규칙을 포함하므로 최신 안정판으로 올려 고정한다.
+    implementation("androidx.work:work-runtime:2.11.2")
 }
