@@ -235,8 +235,26 @@ class AppState extends ChangeNotifier {
     _save();
   }
 
-  Future<void> syncReminders() =>
-      reminders.sync(routines: routines, settings: profile.alarms, doneToday: todayLog.completed.toSet());
+  Future<void> _reminderRun = Future.value();
+  bool _closed = false;
+
+  /// 알림을 다시 건다. 알림 걸기는 모두 지우고 하나씩 거는 데 시간이 걸려서, 동시에 돌면 늦게 끝난 쪽의
+  /// 옛 상태가 남는다. 그래서 한 번에 하나씩 차례로 돌리고, 차례가 오면 그때의 상태로 건다.
+  Future<void> syncReminders() => _reminderRun = _reminderRun
+      .then<void>((_) async {
+        if (_closed) return; // 로그아웃 뒤에는 다시 걸지 않는다
+        await reminders.sync(routines: routines, settings: profile.alarms, doneToday: todayLog.completed.toSet());
+      })
+      .onError((e, _) => debugPrint('reminder sync failed: $e'));
+
+  @override
+  void dispose() {
+    _closed = true;
+    super.dispose();
+  }
+
+  /// 체크가 알림에 영향을 주는지 (알림을 켠 루틴일 때만 다시 건다).
+  bool _hasAlarm(Iterable<String> ids) => routines.any((r) => ids.contains(r.id) && r.alarmOn && r.minuteOfDay != null);
 
   void _checkBadges() {
     final ids = newlyEarned(profile: profile, logs: logs, todayKey: todayKey);
@@ -378,7 +396,7 @@ class AppState extends ChangeNotifier {
     if (!log.scheduled.containsKey(id)) return null;
     if (!log.completed.remove(id)) log.completed.add(id);
     final reward = _maybeReward(log);
-    _commit(resync: true); // 한 루틴의 오늘 알림은 끈다
+    _commit(resync: _hasAlarm([id])); // 한 루틴의 오늘 알림은 끈다
     return reward;
   }
 
@@ -387,7 +405,7 @@ class AppState extends ChangeNotifier {
     final log = todayLog;
     log.completed.addAll(ids.where(log.scheduled.containsKey));
     final reward = _maybeReward(log);
-    _commit(resync: true);
+    _commit(resync: _hasAlarm(ids));
     return reward;
   }
 

@@ -32,7 +32,7 @@ class AdConfig {
 /// 지금 빌드 번호. pubspec.yaml version 의 + 뒤 숫자와 같아야 한다 (test/app_update_test.dart 가 확인).
 /// 업데이트 안내 팝업이 서버의 app_updates 와 비교한다.
 class AppVersion {
-  static const build = 5;
+  static const build = 6;
 }
 
 /// 앱 밖의 안내 페이지.

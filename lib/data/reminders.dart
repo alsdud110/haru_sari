@@ -35,6 +35,26 @@ String routineAlarmBody(Routine r) => '${r.name}, 할 수 있을 때 해봐요.'
 const dayEndTitle = '💌 오늘 하루도 수고했어요';
 const dayEndBody = '잠깐 오늘을 돌아볼까요? 한 개만 했어도 충분해요.';
 
+/// [now] 다음의 [minute]분 (그날 0시부터) 시각. [weekday] 가 있으면 그 요일로.
+tz.TZDateTime nextAt(int minute, tz.TZDateTime now, {int? weekday}) {
+  var t = tz.TZDateTime(now.location, now.year, now.month, now.day, minute ~/ 60, minute % 60);
+  while (!t.isAfter(now) || (weekday != null && t.weekday != weekday)) {
+    t = t.add(const Duration(days: 1));
+  }
+  return t;
+}
+
+/// [weekday] 요일 [minute]분 루틴 알림을 언제, 매주 반복으로 걸지.
+/// 오늘 이미 한 루틴([doneToday])은 오늘 알림을 건너뛴다. iOS 의 매주 반복 알림은 시작 날짜를 미룰 수 없어서
+/// 다음 주 한 번만 건다. 체크하거나 앱을 켤 때마다 다시 걸리므로 그때 매주 반복으로 돌아온다.
+/// shortcut: 앱을 일주일 넘게 안 열면 이 요일 알림이 그 뒤로 멈춘다, 문제가 되면 몇 주치를 미리 건다.
+({tz.TZDateTime at, bool weekly}) routineSlot(int minute, int weekday, {required bool doneToday, required tz.TZDateTime now}) {
+  final t = nextAt(minute, now, weekday: weekday);
+  final today = t.year == now.year && t.month == now.month && t.day == now.day;
+  if (!doneToday || !today) return (at: t, weekly: true);
+  return (at: tz.TZDateTime(t.location, t.year, t.month, t.day + 7, t.hour, t.minute), weekly: false);
+}
+
 class LocalReminders implements Reminders {
   LocalReminders({this.iconAssetFor});
 
@@ -128,16 +148,6 @@ class LocalReminders implements Reminders {
     await _plugin.cancelAll();
   }
 
-  /// 다음 [weekday] [minute] 시각 (지금 이후).
-  static tz.TZDateTime _next(int minute, {int? weekday}) {
-    final now = tz.TZDateTime.now(tz.local);
-    var t = tz.TZDateTime(tz.local, now.year, now.month, now.day, minute ~/ 60, minute % 60);
-    while (!t.isAfter(now) || (weekday != null && t.weekday != weekday)) {
-      t = t.add(const Duration(days: 1));
-    }
-    return t;
-  }
-
   @override
   Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
     try {
@@ -151,19 +161,15 @@ class LocalReminders implements Reminders {
           if (!r.active || !r.alarmOn || r.minuteOfDay == null) continue;
           for (final d in r.weekdays) {
             final nid = id++;
-            final t = _next(r.minuteOfDay!, weekday: d);
-            // 오늘 이미 한 루틴은 오늘 알림을 건너뛴다. iOS 의 매주 반복 알림은 시작 날짜를 미룰 수 없어서
-            // 다음 주 한 번만 건다. 체크하거나 앱을 켤 때마다 다시 걸리므로 그때 매주 반복으로 돌아온다.
-            // shortcut: 앱을 일주일 넘게 안 열면 이 요일 알림이 그 뒤로 멈춘다, 문제가 되면 몇 주치를 미리 건다.
-            final skip = doneToday.contains(r.id) && t.year == now.year && t.month == now.month && t.day == now.day;
+            final slot = routineSlot(r.minuteOfDay!, d, doneToday: doneToday.contains(r.id), now: now);
             await _plugin.zonedSchedule(
               id: nid,
               title: '하루살이',
               body: routineAlarmBody(r),
-              scheduledDate: skip ? tz.TZDateTime(tz.local, t.year, t.month, t.day + 7, t.hour, t.minute) : t,
+              scheduledDate: slot.at,
               notificationDetails: await _details(nid, iconAssetFor?.call(r.emoji), routineAlarmBody(r)),
               androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-              matchDateTimeComponents: skip ? null : DateTimeComponents.dayOfWeekAndTime,
+              matchDateTimeComponents: slot.weekly ? DateTimeComponents.dayOfWeekAndTime : null,
             );
           }
         }
@@ -173,7 +179,7 @@ class LocalReminders implements Reminders {
           id: 0,
           title: dayEndTitle,
           body: dayEndBody,
-          scheduledDate: _next(settings.dayEndMinute),
+          scheduledDate: nextAt(settings.dayEndMinute, now),
           notificationDetails: await _details(0, null, dayEndBody), // 마감 알림은 그림 없이 글 앞의 💌만
           androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
           matchDateTimeComponents: DateTimeComponents.time,

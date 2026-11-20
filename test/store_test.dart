@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -21,10 +22,19 @@ class FakeReminders implements Reminders {
   List<Routine> lastRoutines = [];
   AlarmSettings? lastSettings;
   Set<String> lastDone = {};
+
+  /// 있으면 알림 걸기가 이것이 끝날 때까지 멈춰 있다 (오래 걸리는 알림 걸기를 흉내 낸다).
+  Completer<void>? gate;
+  int running = 0, maxRunning = 0;
+
   @override
   Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
     syncs++;
+    running++;
+    if (running > maxRunning) maxRunning = running;
     lastDone = doneToday;
+    await gate?.future;
+    running--;
     lastRoutines = routines;
     lastSettings = settings;
   }
@@ -169,7 +179,8 @@ void main() {
       expect(e.category, '건강');
     });
 
-    test('루틴이나 알림 설정이 바뀌면 알림을 다시 건다', () {
+    test('루틴이나 알림 설정이 바뀌면 알림을 다시 건다', () async {
+      await pumpEventQueue();
       final before = rem.syncs;
       s.upsertRoutine(
         r('a')
@@ -177,6 +188,7 @@ void main() {
           ..minuteOfDay = 420,
       );
       s.updateAlarms(s.profile.alarms..dayEnd = true);
+      await pumpEventQueue();
       expect(rem.syncs, before + 2);
       expect(rem.lastSettings!.dayEnd, isTrue);
     });
@@ -188,13 +200,85 @@ void main() {
       expect(s.isBeforeTime(r('x')..minuteOfDay = 9 * 60 + 1), isTrue);
     });
 
-    test('체크하면 그 루틴의 오늘 알림을 빼고, 해제하면 되돌린다', () {
+    void alarmOn(String id) => s.routines.firstWhere((x) => x.id == id)
+      ..alarmOn = true
+      ..minuteOfDay = 600;
+
+    test('체크하면 그 루틴의 오늘 알림을 빼고, 해제하면 되돌린다', () async {
+      for (final id in ['a', 'b', 'c']) {
+        alarmOn(id);
+      }
       s.toggle('a');
+      await pumpEventQueue();
       expect(rem.lastDone, {'a'});
       s.completeMany(['b', 'c']);
+      await pumpEventQueue();
       expect(rem.lastDone, {'a', 'b', 'c'});
       s.toggle('a');
+      await pumpEventQueue();
       expect(rem.lastDone, {'b', 'c'});
+    });
+
+    test('알림을 안 켠 루틴은 체크해도 알림을 다시 걸지 않는다', () async {
+      alarmOn('a');
+      await pumpEventQueue();
+      final before = rem.syncs;
+      s.toggle('b'); // 알림 없음
+      s.completeMany(['c', 'd']); // 알림 없음
+      await pumpEventQueue();
+      expect(rem.syncs, before);
+      s.completeMany(['a']); // 알림 있음
+      await pumpEventQueue();
+      expect(rem.syncs, before + 1);
+    });
+
+    test('알림 걸기는 한 번에 하나씩, 앞의 것이 끝난 뒤 그때의 상태로 건다', () async {
+      for (final id in ['a', 'b']) {
+        alarmOn(id);
+      }
+      await pumpEventQueue();
+      final before = rem.syncs;
+      rem.gate = Completer();
+      s.toggle('a'); // 첫 번째가 오래 걸리는 사이에
+      await pumpEventQueue();
+      s.toggle('b'); // 두 번째 체크
+      await pumpEventQueue();
+      expect(rem.syncs, before + 1); // 두 번째는 아직 시작하지 않았다
+      expect(rem.lastDone, {'a'});
+      rem.gate!.complete();
+      await pumpEventQueue();
+      expect(rem.syncs, before + 2);
+      expect(rem.maxRunning, 1); // 겹쳐 돈 적이 없다
+      expect(rem.lastDone, {'a', 'b'}); // 마지막으로 걸린 것이 최신 상태다
+    });
+
+    test('알림 걸기가 실패해도 다음 알림 걸기는 돈다', () async {
+      alarmOn('a');
+      await pumpEventQueue();
+      final before = rem.syncs;
+      rem.gate = Completer();
+      s.toggle('a');
+      await pumpEventQueue();
+      rem.gate!.completeError(Exception('plugin')); // 첫 번째가 실패한다
+      rem.gate = null;
+      s.toggle('a');
+      await pumpEventQueue();
+      expect(rem.syncs, before + 2);
+      expect(rem.lastDone, isEmpty);
+    });
+
+    test('로그아웃(상태 닫기) 뒤에는 기다리던 알림 걸기를 하지 않는다', () async {
+      alarmOn('a');
+      await pumpEventQueue();
+      final before = rem.syncs;
+      rem.gate = Completer();
+      s.toggle('a');
+      await pumpEventQueue();
+      s.toggle('a'); // 기다리는 중
+      s.dispose();
+      rem.gate!.complete();
+      await pumpEventQueue();
+      expect(rem.syncs, before + 1);
     });
   });
 
