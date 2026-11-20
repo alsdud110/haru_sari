@@ -77,7 +77,7 @@ Account deletion is available in the app: Me tab → Account info → Delete acc
 
 ## 다음 버전 올리는 법
 
-1. `pubspec.yaml` 의 버전을 올린다. 예: `1.0.1+2`. `+` 뒤 빌드 번호가 전과 같으면 업로드가 거부된다.
+1. `pubspec.yaml` 의 버전을 올린다. 예: `1.0.1+2`. `+` 뒤 빌드 번호가 전과 같으면 업로드가 거부된다. 같은 번호를 `lib/config.dart` 의 `AppVersion.build` 에도 넣는다 (다르면 테스트가 실패한다).
 2. `flutter build ipa --release`
 3. Transporter 앱에 `build/ios/ipa/haru_sari.ipa` 를 끌어다 놓고 전송한다.
 4. App Store Connect에서 새 버전을 만들고, 처리가 끝난 빌드를 선택해 심사에 추가한다.

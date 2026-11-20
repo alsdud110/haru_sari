@@ -6,6 +6,7 @@ import 'package:supabase_flutter/supabase_flutter.dart';
 import 'app.dart';
 import 'config.dart';
 import 'data/admob_ads.dart';
+import 'data/app_update.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
 import 'data/supabase_auth.dart';
@@ -29,6 +30,7 @@ Future<void> main() async {
       ads: AdMobRewardAds(),
       manifest: manifest,
       remoteFor: SupabaseRemote.new,
+      checkUpdate: () => fetchAppUpdate(kv),
     ),
   );
 }

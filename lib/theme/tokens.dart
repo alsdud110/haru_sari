@@ -99,6 +99,7 @@ ThemeData buildTheme() {
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.surface,
       surfaceTintColor: Colors.transparent,
+      titleTextStyle: TextStyle(fontFamily: AppFonts.cheer, color: AppColors.text, fontSize: ios ? 22 : 24, fontWeight: FontWeight.w600),
       shape: ios ? RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.md)) : null,
     ),
     switchTheme: SwitchThemeData(

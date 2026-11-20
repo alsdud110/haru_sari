@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 
 import 'data/ads.dart';
+import 'data/app_update.dart';
 import 'data/auth.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
@@ -13,6 +14,7 @@ import 'ui/auth_screens.dart';
 import 'ui/motion.dart';
 import 'ui/onboarding.dart';
 import 'ui/shell.dart';
+import 'ui/update_prompt.dart';
 
 /// 위젯 트리 어디서나 AppState를 꺼내 쓰고, 바뀌면 다시 그린다.
 class AppScope extends InheritedNotifier<AppState> {
@@ -52,6 +54,7 @@ class HaruSariApp extends StatefulWidget {
     this.clock,
     this.manifest,
     this.remoteFor,
+    this.checkUpdate,
   });
   final KeyValue kv;
   final AuthService auth;
@@ -65,6 +68,9 @@ class HaruSariApp extends StatefulWidget {
   /// 로그인한 사용자의 서버 저장소. 없으면 기기에만 저장한다 (테스트).
   final Remote? Function(String uid)? remoteFor;
 
+  /// 서버에 업데이트 안내를 묻는다. 없으면 묻지 않는다 (테스트).
+  final Future<AppUpdate?> Function()? checkUpdate;
+
   @override
   State<HaruSariApp> createState() => _HaruSariAppState();
 }
@@ -75,6 +81,15 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
   /// 픽셀 에셋 이미지 캐시 (계정과 무관하므로 앱 전체에서 하나)
   late final AssetRegistry? _registry = widget.manifest == null ? null : AssetRegistry(widget.manifest!);
   String? _uid;
+
+  /// 업데이트 안내는 앱을 켤 때 한 번만 묻고 한 번만 띄운다.
+  late Future<AppUpdate?>? _update = widget.checkUpdate?.call();
+
+  Future<AppUpdate?>? _takeUpdate() {
+    final f = _update;
+    _update = null;
+    return f;
+  }
 
   AppState _stateFor(String uid) {
     if (_uid != uid || _state == null) {
@@ -145,7 +160,7 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
     locale: const Locale('ko', 'KR'),
     supportedLocales: const [Locale('ko', 'KR')],
     localizationsDelegates: GlobalMaterialLocalizations.delegates,
-    home: home,
+    home: UpdatePrompt(take: _takeUpdate, kv: widget.kv, child: home),
   );
 
   @override
