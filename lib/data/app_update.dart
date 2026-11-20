@@ -18,12 +18,20 @@ class AppUpdate {
 
   static const dismissedKey = 'update_dismissed_build';
 
+  /// 업데이트 버튼이 열 수 있는 주소. 서버 값이 잘못되거나 바뀌어도 스토어 밖으로 보내지 않는다.
+  static const _storeHosts = {'apps.apple.com', 'play.google.com'};
+
+  static bool isStoreUrl(String url) {
+    final uri = Uri.tryParse(url);
+    return uri != null && uri.scheme == 'https' && _storeHosts.contains(uri.host);
+  }
+
   /// 서버 줄과 지금 빌드로 띄울 안내를 고른다. 띄울 게 없으면 null.
   static AppUpdate? decide(Map<String, dynamic> row, {required int build, int? dismissed}) {
     final latest = row['latest_build'] as int? ?? 0;
     final min = row['min_build'] as int? ?? 0;
     final url = row['store_url'] as String? ?? '';
-    if (url.isEmpty) return null;
+    if (!isStoreUrl(url)) return null;
     final force = build < min;
     if (!force && (build >= latest || dismissed == latest)) return null;
     return AppUpdate(latest: latest, force: force, message: row['message'] as String? ?? '', storeUrl: url);

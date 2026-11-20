@@ -11,7 +11,7 @@ void main() {
   });
 
   group('AppUpdate.decide', () {
-    Map<String, dynamic> row({int latest = 0, int min = 0, String url = 'https://store'}) => {
+    Map<String, dynamic> row({int latest = 0, int min = 0, String url = 'https://apps.apple.com/app/id6834387060'}) => {
       'latest_build': latest,
       'min_build': min,
       'message': '',
@@ -27,5 +27,19 @@ void main() {
       expect(u.force, isTrue);
     });
     test('스토어 주소가 없으면 띄우지 않는다', () => expect(AppUpdate.decide(row(latest: 9, min: 9, url: ''), build: 3), isNull));
+    test('Play 스토어 주소도 연다', () {
+      final u = AppUpdate.decide(row(latest: 9, url: 'https://play.google.com/store/apps/details?id=com.harusari.app'), build: 3);
+      expect(u, isNotNull);
+    });
+    test('스토어가 아닌 주소는 띄우지 않는다', () {
+      for (final url in [
+        'https://evil.example.com/app',
+        'http://apps.apple.com/app/id6834387060',
+        'https://apps.apple.com.evil.example/app',
+        'javascript:alert(1)',
+      ]) {
+        expect(AppUpdate.decide(row(latest: 9, min: 9, url: url), build: 3), isNull, reason: url);
+      }
+    });
   });
 }

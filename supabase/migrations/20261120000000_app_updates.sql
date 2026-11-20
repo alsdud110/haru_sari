@@ -22,7 +22,9 @@ drop policy if exists "anyone reads app updates" on public.app_updates;
 create policy "anyone reads app updates" on public.app_updates
   for select to anon, authenticated using (true);
 
+-- android 는 Play 비공개 테스트 중이라 store_url 을 비워 둔다 (팝업 안 뜸).
+-- 프로덕션 출시 후 Table Editor 에서 https://play.google.com/store/apps/details?id=com.harusari.app 로 채운다.
 insert into public.app_updates (platform, store_url) values
-  ('android', 'https://play.google.com/store/apps/details?id=com.harusari.app'),
+  ('android', ''),
   ('ios', 'https://apps.apple.com/app/id6834387060')
 on conflict do nothing;
