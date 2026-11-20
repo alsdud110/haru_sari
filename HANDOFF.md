@@ -29,7 +29,7 @@
 
 ## 남은 일
 
-- [ ] Supabase 대시보드 SQL Editor에서 `supabase/migrations/20261120000000_app_updates.sql` 실행 (아직 안 함)
+- [x] Supabase 대시보드 SQL Editor에서 `supabase/migrations/20261120000000_app_updates.sql` 실행 (2026-11-20, android/ios 두 줄 확인)
 - [x] Android 는 Play 비공개 테스트 중(프로덕션 전) → 마이그레이션의 android `store_url` 을 비움. 프로덕션 출시 후 Table Editor 에서 채운다
 - [x] 버전을 `1.1.1+5` 로, `AppVersion.build` 를 5 로 올림 (iOS 1.1.0 이 이미 출시돼 버전 이름도 올림)
 - [x] 업데이트 버튼이 `https://apps.apple.com`, `https://play.google.com` 주소만 열게 막음 (`AppUpdate.isStoreUrl`, 테스트 추가)
