@@ -40,6 +40,30 @@ class _TodayScreenState extends State<TodayScreen> {
   /// 한 번에 기록하기 모드에서 고른 루틴
   Set<String>? _batch;
 
+  /// 시간이 아직 안 된 루틴을 체크할 때 한 번 묻는다. 했다고 하면 true.
+  Future<bool> _confirmEarly(List<Routine> early) async {
+    final r = early.first;
+    final ok = await showAppDialog<bool>(
+      context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('아직 루틴 시간 전이에요'),
+        content: Text(
+          early.length == 1
+              ? '‘${r.name}’${josa(r.name, '은', '는')} ${formatMinute(r.minuteOfDay)}에 하기로 했어요.\n벌써 했다면 완료로 기록할게요.'
+              : '‘${r.name}’ 외 ${early.length - 1}개는 아직 시간 전이에요.\n벌써 했다면 완료로 기록할게요.',
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('아직이에요')),
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            child: const Text('했어요', style: TextStyle(color: AppColors.primaryInk)),
+          ),
+        ],
+      ),
+    );
+    return ok == true;
+  }
+
   void _after(DailyReward? r) {
     if (!mounted) return;
     final badges = AppScope.read(context).takePendingBadges();
@@ -153,7 +177,8 @@ class _TodayScreenState extends State<TodayScreen> {
                     return _RoutineRow(
                       routine: r,
                       done: done,
-                      onTap: () {
+                      onTap: () async {
+                        if (!done && s.isBeforeTime(r) && !await _confirmEarly([r])) return;
                         HapticFeedback.selectionClick();
                         _after(s.toggle(r.id));
                       },
@@ -190,7 +215,9 @@ class _TodayScreenState extends State<TodayScreen> {
                 child: FilledButton(
                   onPressed: _batch!.isEmpty
                       ? null
-                      : () {
+                      : () async {
+                          final early = list.where((r) => _batch!.contains(r.id) && s.isBeforeTime(r)).toList();
+                          if (early.isNotEmpty && !await _confirmEarly(early)) return;
                           final reward = s.completeMany(_batch!);
                           setState(() => _batch = null);
                           _after(reward);

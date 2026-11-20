@@ -235,7 +235,8 @@ class AppState extends ChangeNotifier {
     _save();
   }
 
-  Future<void> syncReminders() => reminders.sync(routines: routines, settings: profile.alarms);
+  Future<void> syncReminders() =>
+      reminders.sync(routines: routines, settings: profile.alarms, doneToday: todayLog.completed.toSet());
 
   void _checkBadges() {
     final ids = newlyEarned(profile: profile, logs: logs, todayKey: todayKey);
@@ -368,13 +369,16 @@ class AppState extends ChangeNotifier {
 
   bool isDoneToday(String id) => todayLog.completed.contains(id);
 
+  /// 정해 둔 시간이 아직 안 된 루틴인지 (시간을 안 정한 루틴은 아니다). 체크 전에 한 번 묻는 데 쓴다.
+  bool isBeforeTime(Routine r) => r.minuteOfDay != null && now.hour * 60 + now.minute < r.minuteOfDay!;
+
   /// 체크/해제. 기준을 처음 넘으면 그날 보상을 돌려준다.
   DailyReward? toggle(String id) {
     final log = todayLog;
     if (!log.scheduled.containsKey(id)) return null;
     if (!log.completed.remove(id)) log.completed.add(id);
     final reward = _maybeReward(log);
-    _commit();
+    _commit(resync: true); // 한 루틴의 오늘 알림은 끈다
     return reward;
   }
 
@@ -383,7 +387,7 @@ class AppState extends ChangeNotifier {
     final log = todayLog;
     log.completed.addAll(ids.where(log.scheduled.containsKey));
     final reward = _maybeReward(log);
-    _commit();
+    _commit(resync: true);
     return reward;
   }
 

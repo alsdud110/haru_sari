@@ -120,7 +120,7 @@ class FakeServer implements Remote {
     roomIsPublic = on;
   }
 
-  /// 날짜 → 그날 광고 보상을 준 횟수 (claim_ad_reward 와 같은 규칙: 하루 5번, 5코인)
+  /// 날짜 → 그날 광고 보상을 준 횟수 (claim_ad_reward 와 같은 규칙: 하루 5번, 20코인)
   final Map<String, int> adUsed = {};
 
   /// 서버에 광고 보상 함수를 아직 올리지 않은 상태를 흉내 낸다
@@ -134,7 +134,7 @@ class FakeServer implements Remote {
     final n = adUsed[day] ?? 0;
     if (n >= 5) return AdReply(ok: false, used: n, wallet: wallet);
     adUsed[day] = n + 1;
-    coins += 5;
+    coins += 20;
     return AdReply(ok: true, used: n + 1, wallet: wallet);
   }
 }
@@ -243,7 +243,7 @@ void main() {
     expect(a.s.profile.coins, 0);
   });
 
-  test('광고 보상: 하루 5번까지 5코인씩 받고, 서버 지갑과 맞는다', () async {
+  test('광고 보상: 하루 5번까지 20코인씩 받고, 서버 지갑과 맞는다', () async {
     final server = FakeServer();
     final a = device(server);
     await a.sync.start();
@@ -251,23 +251,23 @@ void main() {
     expect(a.s.adsLeftToday, 5);
     expect(a.s.grantAdReward(), isTrue);
     expect(a.s.grantAdReward(), isTrue);
-    expect((a.s.adsLeftToday, a.s.profile.coins), (3, 10));
+    expect((a.s.adsLeftToday, a.s.profile.coins), (3, 40));
     for (var i = 0; i < 3; i++) {
       expect(a.s.grantAdReward(), isTrue);
     }
     expect(a.s.grantAdReward(), isFalse); // 여섯 번째는 주지 않는다
-    expect((a.s.adsLeftToday, a.s.profile.coins), (0, 25));
+    expect((a.s.adsLeftToday, a.s.profile.coins), (0, 100));
     await settle(a.sync);
     expect(server.adUsed['2026-11-11'], 5);
-    expect(server.coins, 25);
-    expect(a.s.profile.coins, 25);
+    expect(server.coins, 100);
+    expect(a.s.profile.coins, 100);
 
     // 다음 날에는 다시 5번
     now = now.add(const Duration(days: 1));
     expect(a.s.adsLeftToday, 5);
     expect(a.s.grantAdReward(), isTrue);
     await settle(a.sync);
-    expect(server.coins, 30);
+    expect(server.coins, 120);
   });
 
   test('광고 보상: 다른 기기에서 이미 다 봤으면 서버가 거절하고, 코인과 남은 횟수가 서버 값으로 돌아온다', () async {
@@ -284,11 +284,11 @@ void main() {
     server.offline = true;
     expect(b.s.adsLeftToday, 5);
     expect(b.s.grantAdReward(), isTrue);
-    expect(b.s.profile.coins, 5);
+    expect(b.s.profile.coins, 20);
     server.offline = false;
     await settle(b.sync);
-    expect(server.coins, 25);
-    expect(b.s.profile.coins, 25); // 서버 지갑으로
+    expect(server.coins, 100);
+    expect(b.s.profile.coins, 100); // 서버 지갑으로
     expect(b.s.adsLeftToday, 0); // 서버가 센 횟수로
   });
 

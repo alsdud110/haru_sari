@@ -20,9 +20,11 @@ class FakeReminders implements Reminders {
   int syncs = 0;
   List<Routine> lastRoutines = [];
   AlarmSettings? lastSettings;
+  Set<String> lastDone = {};
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings}) async {
+  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
     syncs++;
+    lastDone = doneToday;
     lastRoutines = routines;
     lastSettings = settings;
   }
@@ -177,6 +179,22 @@ void main() {
       s.updateAlarms(s.profile.alarms..dayEnd = true);
       expect(rem.syncs, before + 2);
       expect(rem.lastSettings!.dayEnd, isTrue);
+    });
+
+    test('정해 둔 시간 전인지: 시간이 없으면 늘 아니다', () {
+      // now 는 오전 9:00
+      expect(s.isBeforeTime(r('x')), isFalse);
+      expect(s.isBeforeTime(r('x')..minuteOfDay = 9 * 60), isFalse);
+      expect(s.isBeforeTime(r('x')..minuteOfDay = 9 * 60 + 1), isTrue);
+    });
+
+    test('체크하면 그 루틴의 오늘 알림을 빼고, 해제하면 되돌린다', () {
+      s.toggle('a');
+      expect(rem.lastDone, {'a'});
+      s.completeMany(['b', 'c']);
+      expect(rem.lastDone, {'a', 'b', 'c'});
+      s.toggle('a');
+      expect(rem.lastDone, {'b', 'c'});
     });
   });
 

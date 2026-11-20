@@ -127,7 +127,7 @@ class RoutineManageScreen extends StatelessWidget {
       context,
       builder: (ctx) => AlertDialog(
         backgroundColor: AppColors.surface,
-        title: Text('‘${r.name}’을(를) 지울까요?'),
+        title: Text('‘${r.name}’${josa(r.name, '을', '를')} 지울까요?'),
         content: const Text('지금까지의 기록은 그대로 남아요.\n오늘 목록과 앞으로의 하루에서만 빠져요.\n잠시 쉬고 싶다면 스위치를 꺼도 돼요.'),
         actions: [
           TextButton(onPressed: () => Navigator.pop(ctx, false), child: const Text('그대로 둘게요')),

@@ -13,6 +13,7 @@ import '../../room/scene.dart';
 import '../../theme/tokens.dart';
 import '../motion.dart';
 import 'iso_room_painter.dart';
+import '../widgets.dart';
 import 'iso_room_view.dart';
 import 'minimi_sprite.dart';
 import 'room_painter.dart';
@@ -165,7 +166,7 @@ class _RoomEditorScreenState extends State<RoomEditorScreen> with SingleTickerPr
     if (item == null) return;
     _s.putAway(item);
     setState(() => _selected = null);
-    showAppToast(context, '${item.name}을(를) 보관함에 넣었어요');
+    showAppToast(context, '${item.name}${josa(item.name, '을', '를')} 보관함에 넣었어요');
   }
 
   void _placeFromStorage(ShopItem item) {

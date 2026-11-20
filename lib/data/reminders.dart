@@ -11,15 +11,16 @@ import 'package:timezone/timezone.dart' as tz;
 import 'models.dart';
 
 /// 알림 예약. 상태가 바뀔 때마다 전부 지우고 다시 건다.
+/// [Reminders.sync] 의 doneToday: 오늘 이미 한 루틴 id. 그 루틴의 오늘 알림은 울리지 않는다.
 abstract class Reminders {
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings});
+  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}});
   Future<void> clear();
   Future<bool> requestPermission();
 }
 
 class NoReminders implements Reminders {
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings}) async {}
+  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {}
   @override
   Future<void> clear() async {}
   @override
@@ -138,25 +139,31 @@ class LocalReminders implements Reminders {
   }
 
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings}) async {
+  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
     try {
       await _init();
       await _plugin.cancelAll();
       if (!settings.allOn) return;
+      final now = tz.TZDateTime.now(tz.local);
       var id = 1;
       if (settings.routineStart) {
         for (final r in routines) {
           if (!r.active || !r.alarmOn || r.minuteOfDay == null) continue;
           for (final d in r.weekdays) {
             final nid = id++;
+            final t = _next(r.minuteOfDay!, weekday: d);
+            // 오늘 이미 한 루틴은 오늘 알림을 건너뛴다. iOS 의 매주 반복 알림은 시작 날짜를 미룰 수 없어서
+            // 다음 주 한 번만 건다. 체크하거나 앱을 켤 때마다 다시 걸리므로 그때 매주 반복으로 돌아온다.
+            // shortcut: 앱을 일주일 넘게 안 열면 이 요일 알림이 그 뒤로 멈춘다, 문제가 되면 몇 주치를 미리 건다.
+            final skip = doneToday.contains(r.id) && t.year == now.year && t.month == now.month && t.day == now.day;
             await _plugin.zonedSchedule(
               id: nid,
               title: '하루살이',
               body: routineAlarmBody(r),
-              scheduledDate: _next(r.minuteOfDay!, weekday: d),
+              scheduledDate: skip ? tz.TZDateTime(tz.local, t.year, t.month, t.day + 7, t.hour, t.minute) : t,
               notificationDetails: await _details(nid, iconAssetFor?.call(r.emoji), routineAlarmBody(r)),
               androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
-              matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+              matchDateTimeComponents: skip ? null : DateTimeComponents.dayOfWeekAndTime,
             );
           }
         }

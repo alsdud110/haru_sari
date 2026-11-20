@@ -201,6 +201,14 @@ String formatMinute(int? m) {
   return '$ampm $h12:${mm.toString().padLeft(2, '0')}';
 }
 
+/// [word] 뒤에 붙일 조사. 끝 글자에 받침이 있으면 [withFinal] ('은'·'을'·'이'), 없으면 [without] ('는'·'를'·'가').
+/// 끝 글자가 한글이 아니면 (영문·숫자) 둘 다 보여 준다: 은(는).
+String josa(String word, String withFinal, String without) {
+  final c = word.isEmpty ? 0 : word.runes.last;
+  if (c < 0xAC00 || c > 0xD7A3) return '$withFinal($without)';
+  return (c - 0xAC00) % 28 != 0 ? withFinal : without;
+}
+
 String weekdaySummary(Set<int> d) {
   if (d.length == 7) return '매일';
   if (d.length == 5 && d.containsAll({1, 2, 3, 4, 5})) return '평일';

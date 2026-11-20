@@ -1,7 +1,7 @@
 -- 광고 보상 (AdMob 보상형 광고를 끝까지 보면 코인)
 -- 여러 번 실행해도 안전하게 썼다.
 --
--- 규칙은 lib/data/rewards.dart 의 AdRules 와 같다: 하루 5번, 한 번에 5코인 (경험치 없음).
+-- 규칙은 lib/data/rewards.dart 의 AdRules 와 같다: 하루 5번, 한 번에 20코인 (2026-11-20 에 5 → 20, 이 파일을 다시 실행해 함수를 바꾼다) (경험치 없음).
 -- 횟수는 서버가 센다 → 기기를 바꾸거나 앱을 다시 깔아도 하루 5번을 넘지 못한다.
 
 create table if not exists public.ad_rewards (
@@ -48,7 +48,7 @@ begin
 
   insert into public.ad_rewards (user_id, day, used) values (uid, p_day, 1)
     on conflict (user_id, day) do update set used = ad_rewards.used + 1, updated_at = now();
-  update public.wallets set coins = wallets.coins + 5, updated_at = now()
+  update public.wallets set coins = wallets.coins + 20, updated_at = now()
    where user_id = uid returning * into w;
   return query select true, n + 1, w.level, w.xp, w.total_xp, w.coins;
 end $$;

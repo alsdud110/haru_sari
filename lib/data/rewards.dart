@@ -18,8 +18,8 @@ class AdRules {
   /// 하루에 볼 수 있는 횟수
   static const perDay = 5;
 
-  /// 한 번 볼 때 받는 코인. 다섯 번 다 보면 25코인이다 (하루를 모두 해낸 날의 코인은 15).
-  static const coins = 5;
+  /// 한 번 볼 때 받는 코인. 다섯 번 다 보면 100코인이다.
+  static const coins = 20;
 }
 
 class DailyReward {

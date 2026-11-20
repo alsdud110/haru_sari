@@ -575,7 +575,7 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
       final useVerb = item.isFurniture ? '방에 놓기' : '입기';
       final awayVerb = item.isFurniture ? '보관함에 넣기' : '벗기';
       final replaceHint = current != null && current.id != item.id
-          ? '지금 ${item.isFurniture ? '놓인' : '쓰고 있는'} ${current.name}은(는) 보관함으로 가요'
+          ? '지금 ${item.isFurniture ? '놓인' : '쓰고 있는'} ${current.name}${josa(current.name, '은', '는')} 보관함으로 가요'
           : null;
 
       final rows = <(String, String)>[];
@@ -623,10 +623,10 @@ Future<void> showItemSheet(BuildContext context, ShopItem item) {
                   showAppToast(
                     context,
                     result == BuyResult.okStored
-                        ? '방에 빈 자리가 없어 ${item.name}을(를) 보관함에 넣었어요'
+                        ? '방에 빈 자리가 없어 ${item.name}${josa(item.name, '을', '를')} 보관함에 넣었어요'
                         : item.isFurniture
-                        ? '${item.name}을(를) 방에 들였어요'
-                        : '${item.name}을(를) 입었어요',
+                        ? '${item.name}${josa(item.name, '을', '를')} 방에 들였어요'
+                        : '${item.name}${josa(item.name, '을', '를')} 입었어요',
                   );
                   if (badges.isNotEmpty) showNewBadges(context, badges);
                 }
