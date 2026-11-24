@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haru_sari/app.dart';
+import 'package:haru_sari/data/cheers.dart';
 import 'package:haru_sari/data/rewards.dart';
 import 'package:haru_sari/data/store.dart';
 import 'package:haru_sari/ui/motion.dart';
@@ -78,5 +79,11 @@ void main() {
 
     await sheet(0);
     expect(find.text('레벨 업!'), findsNothing);
+    // 보상 시트 문구는 날마다 바뀌는 목록에서 고른다 (다 하지 못한 날 → rewardEnough)
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    final (title, line) = cheerOf(rewardEnough, dayNumber(s.today));
+    expect(find.text(title), findsOneWidget);
+    expect(find.text(line), findsOneWidget);
   });
 }

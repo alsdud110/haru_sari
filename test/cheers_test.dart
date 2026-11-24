@@ -34,11 +34,24 @@ void main() {
     }
   });
 
+  test('보상 시트: 묶음마다 8개, 제목은 15자·아랫줄은 한 줄 22자 안쪽, 제목이 겹치지 않는다', () {
+    for (final list in [rewardAll, rewardEnough]) {
+      expect(list, hasLength(8));
+      expect(list.map((c) => c.$1).toSet(), hasLength(8));
+      for (final (title, line) in list) {
+        expect(title.length, lessThanOrEqualTo(15), reason: title);
+        expect(line.length, lessThanOrEqualTo(22), reason: line);
+        expect(line, isNot(contains('\n')), reason: line);
+      }
+    }
+  });
+
   test('다그치거나 지적하는 말을 쓰지 않는다', () {
     final all = [
       for (final g in gentle.values) ...g,
       for (final c in cheers.values)
         for (final (title, body) in c) ...[title, body],
+      for (final (title, line) in [...rewardAll, ...rewardEnough]) ...[title, line],
     ];
     expect(all.length, greaterThanOrEqualTo(60));
     for (final line in all) {

@@ -554,6 +554,7 @@ class EncouragementScreen extends StatelessWidget {
 /// 하루 보상 시트. 레벨업이면 시트를 닫을 때 레벨 달성 축하 창이 이어서 뜬다.
 Future<void> showRewardSheet(BuildContext context, DailyReward r) async {
   final s = AppScope.read(context);
+  final (title, line) = cheerOf(r.perfect ? rewardAll : rewardEnough, dayNumber(s.today));
   await showAppSheet<void>(
     context,
     showDragHandle: false,
@@ -570,16 +571,12 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) async {
               const SizedBox(height: Space.lg),
               Reveal(
                 index: 1,
-                child: Text(
-                  r.perfect ? '오늘을 온전히 살아냈어요' : '오늘 하루도 잘 해냈어요',
-                  style: t.titleLarge?.cheer,
-                  textAlign: TextAlign.center,
-                ),
+                child: Text(title, style: t.titleLarge?.cheer, textAlign: TextAlign.center),
               ),
               const SizedBox(height: Space.xs),
               Reveal(
                 index: 2,
-                child: Text('평범한 하루를 살아낸 것만으로도 충분해요', style: t.bodyMedium?.copyWith(color: AppColors.textMuted).cheer),
+                child: Text(line, style: t.bodyMedium?.copyWith(color: AppColors.textMuted).cheer),
               ),
               const SizedBox(height: Space.md),
               Reveal(
