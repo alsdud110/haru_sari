@@ -33,8 +33,8 @@
 - [x] Android 는 Play 비공개 테스트 중(프로덕션 전) → 마이그레이션의 android `store_url` 을 비움. 프로덕션 출시 후 Table Editor 에서 채운다
 - [x] 버전을 `1.1.1+5` 로, `AppVersion.build` 를 5 로 올림 (iOS 1.1.0 이 이미 출시돼 버전 이름도 올림)
 - [x] 업데이트 버튼이 `https://apps.apple.com`, `https://play.google.com` 주소만 열게 막음 (`AppUpdate.isStoreUrl`, 테스트 추가)
-- [ ] 실제 기기에서 "업데이트" 버튼이 스토어를 여는지 확인 (시뮬레이터에는 App Store가 없어 못 봄)
-- [ ] 새 버전이 스토어에 올라가면 테이블의 `latest_build` 를 그 번호로 바꾼다
+- [x] 실제 기기에서 "업데이트" 버튼이 스토어를 여는지 확인 (2026-11-24, latest_build 를 잠깐 99로 올려 팝업 → App Store 열림 확인, 7로 되돌림)
+- [ ] 새 버전이 스토어에 올라가면 테이블의 `latest_build` 를 그 번호로 바꾼다 (iOS 지금 7, 1.1.3 출시되면 8)
 
 ## 팝업을 서버 없이 띄워 보는 법
 
