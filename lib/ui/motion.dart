@@ -481,6 +481,105 @@ class _RevealState extends State<Reveal> with SingleTickerProviderStateMixin {
   );
 }
 
+// ───────── 축하: 색종이 · 튀어나오기 ─────────
+
+/// 화면 위쪽 가운데에서 픽셀 색종이가 한 번 터져 떨어진다. 누르기는 그대로 통과한다.
+/// '동작 줄이기'가 켜져 있으면 그리지 않는다.
+class Confetti extends StatefulWidget {
+  const Confetti({super.key});
+  static const duration = Duration(milliseconds: 2200);
+  static const colors = [AppColors.primary, AppColors.coin, AppColors.sage, AppColors.sky, AppColors.primarySoft];
+
+  @override
+  State<Confetti> createState() => _ConfettiState();
+}
+
+class _ConfettiState extends State<Confetti> with SingleTickerProviderStateMixin {
+  late final _c = AnimationController(vsync: this, duration: Confetti.duration)..forward();
+  // (각도, 속도, 크기, 회전 속도, 색) — 매번 같은 모양이면 충분하다
+  late final _bits = () {
+    final rnd = math.Random(7);
+    return [
+      for (var i = 0; i < 64; i++)
+        (
+          -math.pi / 2 + (rnd.nextDouble() - 0.5) * math.pi * 0.9,
+          0.55 + rnd.nextDouble() * 0.6,
+          8.0 + rnd.nextInt(3) * 3,
+          (rnd.nextDouble() - 0.5) * 12,
+          Confetti.colors[i % Confetti.colors.length],
+        ),
+    ];
+  }();
+
+  @override
+  void dispose() {
+    _c.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (AppMotion.reduced(context)) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: CustomPaint(painter: _ConfettiPainter(_c, _bits), size: Size.infinite),
+    );
+  }
+}
+
+class _ConfettiPainter extends CustomPainter {
+  _ConfettiPainter(this.t, this.bits) : super(repaint: t);
+  final Animation<double> t;
+  final List<(double, double, double, double, Color)> bits;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final v = t.value;
+    if (v == 0 || v == 1) return;
+    final s = v * 2.2; // 초 단위로 보고 계산
+    final origin = Offset(size.width / 2, size.height * 0.3);
+    final speed = size.height * 0.9; // 화면 높이에 맞춰 같은 느낌으로
+    final fade = v < 0.7 ? 1.0 : (1 - v) / 0.3;
+    final paint = Paint();
+    for (final (angle, power, side, spin, color) in bits) {
+      final vx = math.cos(angle) * power * speed, vy = math.sin(angle) * power * speed;
+      final p = origin + Offset(vx * s * 0.6, vy * s + 0.5 * speed * 1.6 * s * s);
+      canvas.save();
+      canvas.translate(p.dx, p.dy);
+      canvas.rotate(spin * s);
+      paint.color = color.withValues(alpha: fade);
+      canvas.drawRect(Rect.fromCenter(center: Offset.zero, width: side, height: side * 0.6), paint);
+      canvas.restore();
+    }
+  }
+
+  @override
+  bool shouldRepaint(_ConfettiPainter old) => false;
+}
+
+/// 처음 그려질 때 작게 시작해 탄성 있게 튀어나온다.
+class PopIn extends StatelessWidget {
+  const PopIn({super.key, required this.child, this.delay = Duration.zero});
+  final Widget child;
+  final Duration delay;
+
+  @override
+  Widget build(BuildContext context) {
+    if (AppMotion.reduced(context)) return child;
+    const total = Duration(milliseconds: 900);
+    final wait = delay.inMilliseconds / (total + delay).inMilliseconds;
+    return TweenAnimationBuilder<double>(
+      tween: Tween(begin: 0, end: 1),
+      duration: total + delay,
+      curve: Interval(wait, 1, curve: Curves.elasticOut),
+      builder: (_, v, child) => Opacity(
+        opacity: v.clamp(0, 1),
+        child: Transform.scale(scale: 0.3 + 0.7 * v, child: child),
+      ),
+      child: child,
+    );
+  }
+}
+
 /// 숨 쉬듯 위아래로 살짝 움직인다. '동작 줄이기'가 켜져 있으면 가만히 있는다.
 class Breathing extends StatefulWidget {
   const Breathing({super.key, required this.child});

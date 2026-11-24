@@ -551,10 +551,10 @@ class EncouragementScreen extends StatelessWidget {
   }
 }
 
-/// 하루 보상 시트. 레벨업이면 '레벨 달성 확인하기'로 이어진다.
-Future<void> showRewardSheet(BuildContext context, DailyReward r) {
+/// 하루 보상 시트. 레벨업이면 시트를 닫을 때 레벨 달성 축하 창이 이어서 뜬다.
+Future<void> showRewardSheet(BuildContext context, DailyReward r) async {
   final s = AppScope.read(context);
-  return showAppSheet<void>(
+  await showAppSheet<void>(
     context,
     showDragHandle: false,
     builder: (ctx) {
@@ -605,13 +605,7 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
               ),
               const SizedBox(height: Space.xl),
               if (r.leveledUp)
-                FilledButton(
-                  onPressed: () {
-                    Navigator.pop(ctx);
-                    showLevelUp(context, r);
-                  },
-                  child: const Text('레벨 달성 확인하기'),
-                )
+                FilledButton(onPressed: () => Navigator.pop(ctx), child: const Text('레벨 달성 확인하기'))
               else
                 FilledButton(
                   onPressed: () {
@@ -628,6 +622,7 @@ Future<void> showRewardSheet(BuildContext context, DailyReward r) {
       );
     },
   );
+  if (r.leveledUp && context.mounted) await showLevelUp(context, r);
 }
 
 /// 레벨 달성 모달: 새로 열린 아이템과 보너스 코인.
@@ -639,87 +634,102 @@ Future<void> showLevelUp(BuildContext context, DailyReward r) {
     if (unlocked.isEmpty || unlocked.any((i) => i.isFurniture)) false,
     if (unlocked.any((i) => !i.isFurniture)) true,
   ];
+  HapticFeedback.heavyImpact();
   return showAppDialog<void>(
     context,
     builder: (ctx) {
       final t = Theme.of(ctx).textTheme;
-      return Dialog(
-        backgroundColor: AppColors.background,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg)),
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(Space.xl),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Reveal(index: 0, child: Text('레벨 달성', style: t.bodySmall)),
-              const SizedBox(height: Space.xs),
-              Reveal(index: 1, child: Text('Lv.${r.newLevel}', style: t.headlineMedium)),
-              const SizedBox(height: Space.xs),
-              Reveal(
-                index: 2,
-                child: Text('꾸준히 쌓인 하루가 새로운 단계에 닿았어요', style: t.bodyMedium, textAlign: TextAlign.center),
-              ),
-              const SizedBox(height: Space.lg),
-              Reveal(
-                index: 3,
-                child: StatChip(
-                  icon: Icons.circle,
-                  label: '보너스 +${RewardRules.levelUpCoins * r.levelsGained} 코인',
-                  color: AppColors.coin,
-                  bg: AppColors.coinSoft,
-                ),
-              ),
-              if (unlocked.isNotEmpty) ...[
-                const SizedBox(height: Space.lg),
-                Text('새로 살 수 있게 됐어요', style: t.bodySmall),
-                const SizedBox(height: Space.sm),
-                Wrap(
-                  alignment: WrapAlignment.center,
-                  spacing: Space.md,
-                  runSpacing: Space.sm,
-                  children: [
-                    for (final i in unlocked)
-                      SizedBox(
-                        width: 76,
-                        child: Column(
-                          children: [
-                            Container(
-                              decoration: BoxDecoration(
-                                color: AppColors.surface,
-                                borderRadius: BorderRadius.circular(Radii.md),
-                              ),
-                              child: ItemThumb(i, size: 64, minimi: s.profile.minimi),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(i.name, style: t.bodySmall, textAlign: TextAlign.center, maxLines: 2),
-                          ],
-                        ),
-                      ),
-                  ],
-                ),
-              ],
-              const SizedBox(height: Space.xl),
-              // 새로 열린 것에 맞춰 가구 상점·미니미 상점으로 (아무것도 안 열렸으면 가구 상점)
-              Row(
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          Dialog(
+            backgroundColor: AppColors.background,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(Radii.lg)),
+            child: SingleChildScrollView(
+              padding: const EdgeInsets.all(Space.xl),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
                 children: [
-                  for (final minimi in shops) ...[
-                    if (minimi != shops.first) const SizedBox(width: Space.sm),
-                    Expanded(
-                      child: FilledButton(
-                        onPressed: () {
-                          Navigator.pop(ctx);
-                          HomeShell.openShop(context, minimi: minimi);
-                        },
-                        child: Text(minimi ? '미니미 상점' : '가구 상점'),
-                      ),
+                  PopIn(child: MinimiView(profile: s.profile, happy: true, width: 80)),
+                  const SizedBox(height: Space.sm),
+                  Reveal(
+                    index: 0,
+                    child: Text('레벨 업!', style: t.titleLarge?.copyWith(color: AppColors.primaryInk).cheer),
+                  ),
+                  PopIn(
+                    delay: const Duration(milliseconds: 200),
+                    child: Text('Lv.${r.newLevel}', style: t.headlineMedium?.copyWith(fontSize: 48)),
+                  ),
+                  const SizedBox(height: Space.xs),
+                  Reveal(
+                    index: 2,
+                    child: Text('꾸준히 쌓인 하루가 새로운 단계에 닿았어요', style: t.bodyMedium, textAlign: TextAlign.center),
+                  ),
+                  const SizedBox(height: Space.lg),
+                  Reveal(
+                    index: 3,
+                    child: StatChip(
+                      icon: Icons.circle,
+                      label: '보너스 +${RewardRules.levelUpCoins * r.levelsGained} 코인',
+                      color: AppColors.coin,
+                      bg: AppColors.coinSoft,
+                    ),
+                  ),
+                  if (unlocked.isNotEmpty) ...[
+                    const SizedBox(height: Space.lg),
+                    Text('새 아이템 ${unlocked.length}개가 열렸어요', style: t.bodySmall),
+                    const SizedBox(height: Space.sm),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      spacing: Space.md,
+                      runSpacing: Space.sm,
+                      children: [
+                        // 다 보여 주면 창이 가득 차서 세 개만 맛보기로. 나머지는 상점에서 본다
+                        for (final i in unlocked.take(3))
+                          SizedBox(
+                            width: 76,
+                            child: Column(
+                              children: [
+                                Container(
+                                  decoration: BoxDecoration(
+                                    color: AppColors.surface,
+                                    borderRadius: BorderRadius.circular(Radii.md),
+                                  ),
+                                  child: ItemThumb(i, size: 64, minimi: s.profile.minimi),
+                                ),
+                                const SizedBox(height: 4),
+                                Text(i.name, style: t.bodySmall, textAlign: TextAlign.center, maxLines: 2),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ],
+                  const SizedBox(height: Space.xl),
+                  // 새로 열린 것에 맞춰 가구 상점·미니미 상점으로 (아무것도 안 열렸으면 가구 상점)
+                  Row(
+                    children: [
+                      for (final minimi in shops) ...[
+                        if (minimi != shops.first) const SizedBox(width: Space.sm),
+                        Expanded(
+                          child: FilledButton(
+                            onPressed: () {
+                              Navigator.pop(ctx);
+                              HomeShell.openShop(context, minimi: minimi);
+                            },
+                            child: Text(minimi ? '미니미 상점' : '가구 상점'),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                  TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫기')),
                 ],
               ),
-              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('닫기')),
-            ],
+            ),
           ),
-        ),
+          const Confetti(),
+        ],
       );
     },
   );
