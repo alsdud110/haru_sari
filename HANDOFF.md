@@ -2,15 +2,8 @@
 
 다른 PC에서 이어서 작업하기 위한 메모. 끝나면 지운다.
 
-> ⚠️ **아직 커밋 안 함.** 아래 "나의 루틴 공유" 작업 전부가 작업 폴더에만 있다 (마지막 커밋 `a912ed3` 은 기획 문서).
-> 커밋·푸시는 조직 정책으로 Claude 가 못 한다 → 직접 실행:
-> ```
-> (2026-11-26 Claude 가 아래 파일을 모두 `git add` 해 두었다 → 바로 commit 하면 된다)
-> git add -A PLAN_FRIEND_SHARE.md PLAN_FRIEND_SHARE_STEP1.md HANDOFF.md pubspec.yaml pubspec.lock supabase lib test tool docs art/source/icons assets/icons ios/Runner/Info.plist android/app/src/main/AndroidManifest.xml demo
-> git commit -m "나의 루틴 공유 1~3단계, 개발용 로그인·카톡 미리보기, 아이콘, 초대 링크 페이지"
-> git push origin main
-> ```
-> 푸시해야 `docs/` 의 카톡 카드 그림·초대 링크 페이지·개인정보 처리방침이 GitHub Pages 에 올라간다.
+> ✅ **커밋·푸시 완료** (`d3327cd`, 2026-11-26). GitHub Pages 에 카톡 카드 그림·초대 링크 페이지(`/i/`)·새 개인정보 처리방침이 올라간 것도 확인함.
+> 커밋·푸시는 조직 정책으로 Claude 가 못 한다 → 앞으로도 직접 실행.
 
 ---
 
