@@ -97,6 +97,27 @@ class SupabaseAuthService extends AuthService {
     }
   }
 
+  /// 개발 빌드 전용 익명 로그인. kDebugMode 는 컴파일 상수라 출시 빌드에서는 이 길이 아예 빠진다.
+  /// Supabase 대시보드 Authentication → Sign In / Providers → "Allow anonymous sign-ins" 를 켜야 동작한다.
+  /// 익명 계정은 서버에서 초대 보상을 받을 수 없다 (supabase/migrations/20261127000000_invite_rewards.sql).
+  @override
+  bool get devSignInAvailable => kDebugMode;
+
+  @override
+  Future<String?> signInDev() async {
+    if (!kDebugMode) return '개발 빌드에서만 쓸 수 있어요';
+    try {
+      await _auth.signInAnonymously();
+      return null;
+    } on AuthException catch (e) {
+      debugPrint('dev sign-in failed: ${e.message}');
+      return '익명 로그인이 꺼져 있어요 (Supabase → Authentication → Allow anonymous sign-ins)';
+    } catch (e) {
+      debugPrint('dev sign-in failed: $e');
+      return '인터넷 연결을 확인하고 다시 시도해 주세요';
+    }
+  }
+
   Future<String?> _apple() async {
     final raw = _nonce();
     final cred = await SignInWithApple.getAppleIDCredential(

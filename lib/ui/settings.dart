@@ -6,6 +6,8 @@ import 'package:flutter/services.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../app.dart';
+import 'friends/friends_screen.dart';
+import 'friends/routine_share_screen.dart';
 import '../config.dart';
 import '../data/badges.dart';
 import '../data/catalog.dart';
@@ -87,6 +89,26 @@ class ProfileScreen extends StatelessWidget {
               onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const MinimiEditScreen())),
             ),
           ]),
+          if (s.sharing case final sh?) ...[
+            const SizedBox(height: Space.lg),
+            ListenableBuilder(
+              listenable: sh,
+              builder: (context, _) => _Section('친구', [
+                _Tile(
+                  icon: Icons.ios_share_rounded,
+                  title: '루틴 공유',
+                  subtitle: sh.isOn ? '공유 중 · ${sh.ids.length}개' : '꺼짐',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RoutineShareScreen())),
+                ),
+                _Tile(
+                  icon: Icons.group_outlined,
+                  title: '친구 루틴',
+                  subtitle: '코드로 추가 · 친구 루틴 구경',
+                  onTap: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const FriendsScreen())),
+                ),
+              ]),
+            ),
+          ],
           const SizedBox(height: Space.lg),
           _Section('알림', [
             SwitchListTile.adaptive(

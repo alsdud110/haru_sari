@@ -39,6 +39,8 @@ const sheets = {
   ],
   // 낱장 아이콘 (한 장에 하나)
   'art/source/icons/play_original.png': ['play'], // 광고 보고 코인 받기 버튼
+  'art/source/icons/bell_original.png': ['bell'], // 친구 루틴 알림 꺼짐
+  'art/source/icons/bell_ring_original.png': ['bell_ring'], // 친구 루틴 알림 켜짐
 };
 
 void main() {

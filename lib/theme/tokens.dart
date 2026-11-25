@@ -203,7 +203,9 @@ ThemeData buildTheme() {
 }
 
 /// 한글이 낱말 중간에서 줄바꿈되지 않게, 붙어 있는 글자 사이에 폭 없는 이음자(U+200D)를 넣는다.
-String keepWords(String s) => s.replaceAll('\u200D', '').replaceAllMapped(RegExp(r'\S(?=\S)'), (m) => '${m[0]}\u200D');
+/// unicode: 이모지처럼 UTF-16 두 칸짜리 글자를 반으로 가르지 않게 글자(코드 포인트) 단위로 본다
+/// (가르면 "string is not well-formed UTF-16" 으로 그리지 못한다).
+String keepWords(String s) => s.replaceAll('\u200D', '').replaceAllMapped(RegExp(r'\S(?=\S)', unicode: true),(m) => '${m[0]}\u200D');
 
 /// 앱 화면에서 쓰는 Text. 줄이 넘어갈 때 낱말 중간이 아니라 띄어쓰기에서만 바뀐다
 /// (플러터에는 CSS의 word-break: keep-all이 없다). 화면 파일은 머티리얼의 Text를 숨기고 이것을 쓴다.

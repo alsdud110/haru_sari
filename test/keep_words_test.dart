@@ -25,4 +25,13 @@ void main() {
     expect(lines(s), isNot(['천천히', '시작해도', '괜찮아요'])); // 그냥 두면 낱말이 잘린다
     expect(lines(keepWords(s)), ['천천히', '시작해도', '괜찮아요']);
   });
+
+  test('keepWords: 이모지(UTF-16 두 칸)를 반으로 가르지 않는다', () {
+    for (final s in ['물🥤 마시기', '🔔을 누르면', '🌱하루', '👍👍']) {
+      final out = keepWords(s);
+      // 짝 없는 서로게이트가 있으면 well-formed 가 아니다
+      expect(out.runes.any((r) => r >= 0xD800 && r <= 0xDFFF), isFalse, reason: s);
+      expect(out.replaceAll('‍', ''), s.replaceAll(' ', ' '));
+    }
+  });
 }

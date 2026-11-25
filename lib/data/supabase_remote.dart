@@ -1,5 +1,6 @@
 import 'package:supabase_flutter/supabase_flutter.dart';
 
+import 'friends.dart';
 import 'sync.dart';
 
 /// Supabase 테이블·함수 (supabase/migrations/20261112000000_init.sql) 에 맞춘 [Remote].
@@ -103,4 +104,114 @@ class SupabaseRemote implements Remote {
   @override
   Future<void> setRoomPublic(bool on) =>
       on ? _c.rpc<void>('publish_room') : _c.from('room_shares').delete().eq('user_id', uid);
+
+  // supabase/migrations/20261125000000_routine_shares.sql
+
+  @override
+  Future<String> saveRoutineShare({
+    required String nickname,
+    required SharedLook look,
+    required List<SharedRoutine> routines,
+  }) async {
+    try {
+      final code = await _c.rpc<String>(
+        'save_routine_share',
+        params: {
+          'p_nickname': nickname,
+          'p_look': look.toJson(),
+          'p_routines': [for (final r in routines) r.toJson()],
+        },
+      );
+      final parsed = InviteCode.parse(code);
+      if (parsed == null) throw const RemoteRejected('bad code from server');
+      return parsed;
+    } on PostgrestException catch (e) {
+      // 서버가 입력을 거절함 (길이·형식). 다시 보내도 같다.
+      throw RemoteRejected(e.message);
+    }
+  }
+
+  @override
+  Future<void> stopRoutineShare() => _c.rpc<void>('stop_routine_share');
+
+  @override
+  Future<MyShare?> myRoutineShare() async {
+    final r = await _c.from('routine_shares').select('code, routines').eq('user_id', uid).maybeSingle();
+    final code = InviteCode.parse(r?['code'] as String?);
+    if (r == null || code == null) return null;
+    final list = r['routines'];
+    return MyShare(
+      code: code,
+      routineIds: {
+        if (list is List)
+          for (final j in list)
+            if (j is Map && j['id'] is String) j['id'] as String,
+      },
+    );
+  }
+
+  @override
+  Future<ShareLookup> lookupShare(String code) async {
+    final rows = await _c.rpc<List<dynamic>>('get_shared_routines', params: {'p_code': code});
+    if (rows.isEmpty) return ShareLookup.notFound;
+    return ShareLookup.fromRow((rows.first as Map).cast<String, dynamic>());
+  }
+
+  @override
+  Future<FollowResult> follow(String code) async {
+    final rows = await _c.rpc<List<dynamic>>('follow_share', params: {'p_code': code});
+    final r = rows.isEmpty ? const <String, dynamic>{} : (rows.first as Map).cast<String, dynamic>();
+    if (r['ok'] == true) return FollowResult.ok;
+    return switch (r['reason']) {
+      'self' => FollowResult.self,
+      'limit' => FollowResult.limit,
+      _ => FollowResult.notFound,
+    };
+  }
+
+  @override
+  Future<void> unfollow(String owner) => _c.from('friend_follows').delete().eq('follower', uid).eq('owner', owner);
+
+  // supabase/migrations/20261127000000_invite_rewards.sql
+
+  @override
+  Future<bool> inviteEligible() async {
+    final rows = await _c.rpc<List<dynamic>>('invite_status');
+    return rows.isNotEmpty && (rows.first as Map)['eligible'] == true;
+  }
+
+  @override
+  Future<InviteClaim> claimInvite(String code) async {
+    final rows = await _c.rpc<List<dynamic>>('claim_invite', params: {'p_code': code});
+    if (rows.isEmpty) return const InviteClaim(result: ClaimResult.notFound);
+    final r = (rows.first as Map).cast<String, dynamic>();
+    final result = r['ok'] == true
+        ? ClaimResult.ok
+        : switch (r['reason']) {
+            'self' => ClaimResult.self,
+            'claimed' => ClaimResult.claimed,
+            'not_new' => ClaimResult.notNew,
+            _ => ClaimResult.notFound,
+          };
+    return InviteClaim(result: result, gained: r['gained'] as int? ?? 0, wallet: Wallet.fromRow(r));
+  }
+
+  // supabase/migrations/20261126000000_friend_alarms.sql
+
+  @override
+  Future<AlarmResult> setFriendAlarm(String owner, String routineId, bool on) async {
+    final rows = await _c.rpc<List<dynamic>>(
+      'set_friend_alarm',
+      params: {'p_owner': owner, 'p_routine_id': routineId, 'p_on': on},
+    );
+    final r = rows.isEmpty ? const <String, dynamic>{} : (rows.first as Map).cast<String, dynamic>();
+    if (r['ok'] == true) return AlarmResult.ok;
+    return r['reason'] == 'limit' ? AlarmResult.limit : AlarmResult.notFriend;
+  }
+
+  @override
+  Future<List<FriendShare>> friendRoutines() async {
+    final rows = await _c.rpc<List<dynamic>>('my_friend_routines');
+    return [for (final r in rows) FriendShare.fromRow((r as Map).cast<String, dynamic>())];
+  }
 }

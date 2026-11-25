@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haru_sari/data/catalog.dart';
+import 'package:haru_sari/data/friends.dart';
 import 'package:haru_sari/data/models.dart';
 import 'package:haru_sari/data/rewards.dart';
 import 'package:haru_sari/data/store.dart';
@@ -136,6 +137,153 @@ class FakeServer implements Remote {
     adUsed[day] = n + 1;
     coins += 10;
     return AdReply(ok: true, used: n + 1, wallet: wallet);
+  }
+
+  // ───── 루틴 공유 (supabase/migrations/20261125000000_routine_shares.sql 와 같은 규칙) ─────
+
+  /// 이 계정의 공유. null 이면 공유 안 함.
+  String? shareCode;
+  List<SharedRoutine> sharedRoutines = [];
+  String sharedNickname = '';
+  SharedLook sharedLook = const SharedLook();
+
+  /// 다른 사람들의 공유: 코드 → (owner 가 채워진) 공유
+  final Map<String, FriendShare> others = {};
+
+  /// 내가 친구로 추가한 owner
+  final Set<String> following = {};
+  int lookupMisses = 0;
+
+  @override
+  Future<String> saveRoutineShare({
+    required String nickname,
+    required SharedLook look,
+    required List<SharedRoutine> routines,
+  }) async {
+    _net();
+    calls.add('share save ${routines.map((e) => e.id).join(',')}');
+    if (routines.length > 30) throw const RemoteRejected('too many routines');
+    shareCode ??= 'MYCQDE23';
+    sharedNickname = nickname;
+    sharedLook = look;
+    sharedRoutines = List.of(routines);
+    return shareCode!;
+  }
+
+  @override
+  Future<void> stopRoutineShare() async {
+    _net();
+    calls.add('share stop');
+    shareCode = null;
+    sharedRoutines = [];
+  }
+
+  @override
+  Future<MyShare?> myRoutineShare() async {
+    _net();
+    final c = shareCode;
+    return c == null ? null : MyShare(code: c, routineIds: {for (final r in sharedRoutines) r.id});
+  }
+
+  @override
+  Future<ShareLookup> lookupShare(String code) async {
+    _net();
+    if (lookupMisses >= 20) return ShareLookup.limited;
+    if (code == shareCode) {
+      return ShareLookup(
+        LookupStatus.ok,
+        share: FriendShare(nickname: sharedNickname, look: sharedLook, routines: sharedRoutines),
+        isMe: true,
+      );
+    }
+    final s = others[code];
+    if (s == null) {
+      lookupMisses++;
+      return ShareLookup.notFound;
+    }
+    return ShareLookup(LookupStatus.ok, share: s, following: following.contains(s.owner));
+  }
+
+  @override
+  Future<FollowResult> follow(String code) async {
+    _net();
+    if (code == shareCode) return FollowResult.self;
+    final s = others[code];
+    if (s == null) return FollowResult.notFound;
+    if (following.contains(s.owner)) return FollowResult.ok;
+    if (following.length >= maxFriends) return FollowResult.limit;
+    following.add(s.owner!);
+    return FollowResult.ok;
+  }
+
+  @override
+  Future<void> unfollow(String owner) async {
+    _net();
+    following.remove(owner);
+  }
+
+  /// 가입 48시간 안인지 (invite_status 흉내). 기본은 아님 → 다른 화면 테스트에 보상 안내가 끼지 않게.
+  bool newAccount = false;
+  bool inviteClaimed = false;
+
+  @override
+  Future<bool> inviteEligible() async {
+    _net();
+    return newAccount && !inviteClaimed;
+  }
+
+  @override
+  Future<InviteClaim> claimInvite(String code) async {
+    _net();
+    calls.add('invite $code');
+    ClaimResult? fail;
+    if (code == shareCode) {
+      fail = ClaimResult.self;
+    } else if (!others.containsKey(code)) {
+      fail = ClaimResult.notFound;
+    } else if (inviteClaimed) {
+      fail = ClaimResult.claimed;
+    } else if (!newAccount) {
+      fail = ClaimResult.notNew;
+    }
+    if (fail != null) return InviteClaim(result: fail, wallet: wallet);
+    inviteClaimed = true;
+    coins += InviteRules.newFriendCoins;
+    return InviteClaim(result: ClaimResult.ok, gained: InviteRules.newFriendCoins, wallet: wallet);
+  }
+
+  /// owner → 알림을 켠 루틴 id (set_friend_alarm 과 같은 규칙)
+  final Map<String, Set<String>> alarmIds = {};
+
+  @override
+  Future<List<FriendShare>> friendRoutines() async {
+    _net();
+    return [
+      for (final s in others.values)
+        if (following.contains(s.owner))
+          FriendShare(
+            owner: s.owner,
+            nickname: s.nickname,
+            look: s.look,
+            routines: s.routines,
+            alarmIds: {...?alarmIds[s.owner]},
+          ),
+    ];
+  }
+
+  @override
+  Future<AlarmResult> setFriendAlarm(String owner, String routineId, bool on) async {
+    _net();
+    if (!following.contains(owner)) return AlarmResult.notFriend;
+    final ids = alarmIds.putIfAbsent(owner, () => {});
+    if (on && !ids.contains(routineId)) {
+      final total = alarmIds.values.fold<int>(0, (n, e) => n + e.length);
+      if (total >= maxFriendAlarms) return AlarmResult.limit;
+      ids.add(routineId);
+    } else if (!on) {
+      ids.remove(routineId);
+    }
+    return AlarmResult.ok;
   }
 }
 

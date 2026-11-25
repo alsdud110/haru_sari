@@ -8,19 +8,31 @@ import 'package:path_provider/path_provider.dart';
 import 'package:timezone/data/latest_all.dart' as tzdata;
 import 'package:timezone/timezone.dart' as tz;
 
+import 'friends.dart';
 import 'models.dart';
 
 /// 알림 예약. 상태가 바뀔 때마다 전부 지우고 다시 건다.
 /// [Reminders.sync] 의 doneToday: 오늘 이미 한 루틴 id. 그 루틴의 오늘 알림은 울리지 않는다.
 abstract class Reminders {
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}});
+  /// [friendAlarms]: 알림을 켠 친구 루틴 (2단계). 내 알림을 다 건 뒤 남은 자리에만 건다 ([maxScheduled]).
+  Future<void> sync({
+    required List<Routine> routines,
+    required AlarmSettings settings,
+    Set<String> doneToday = const {},
+    List<FriendAlarm> friendAlarms = const [],
+  });
   Future<void> clear();
   Future<bool> requestPermission();
 }
 
 class NoReminders implements Reminders {
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {}
+  Future<void> sync({
+    required List<Routine> routines,
+    required AlarmSettings settings,
+    Set<String> doneToday = const {},
+    List<FriendAlarm> friendAlarms = const [],
+  }) async {}
   @override
   Future<void> clear() async {}
   @override
@@ -34,6 +46,30 @@ String routineAlarmBody(Routine r) => '${r.name}, 할 수 있을 때 해봐요.'
 /// 글 앞의 💌는 폰 기본 이모지다 (알림 글에는 그림을 넣을 수 없다). 앱 그림은 알림 옆에 따로 붙는다.
 const dayEndTitle = '💌 오늘 하루도 수고했어요';
 const dayEndBody = '잠깐 오늘을 돌아볼까요? 한 개만 했어도 충분해요.';
+
+/// 친구 루틴 알림 문구 (PLAN_FRIEND_SHARE.md).
+String friendAlarmBody(FriendAlarm a) => '🌱 ${a.nickname}님의 ‘${a.routine.name}’ 시간이에요. 같이 해볼까요?';
+
+/// 한 번에 예약해 두는 알림 수 상한. iOS 는 앱당 64개까지만 남기고 나머지를 버리므로 여유를 둔다.
+const maxScheduled = 60;
+
+/// 친구 알림 번호는 내 알림(1부터)과 겹치지 않게 여기서 시작한다.
+const friendAlarmIdBase = 5000;
+
+/// 남은 자리 [budget] 안에서 걸 친구 알림 (친구 루틴·요일). 앞에 있는 것부터, 루틴 하나의 요일은 모두 걸거나 하나도 걸지 않는다
+/// (월·수만 울리고 금은 안 울리는 식으로 잘리지 않게).
+List<({FriendAlarm alarm, int weekday})> friendSlots(List<FriendAlarm> alarms, int budget) {
+  final out = <({FriendAlarm alarm, int weekday})>[];
+  for (final a in alarms.take(maxFriendAlarms)) {
+    if (a.routine.minuteOfDay == null) continue;
+    final days = a.routine.weekdays;
+    if (out.length + days.length > budget) continue;
+    for (final d in days) {
+      out.add((alarm: a, weekday: d));
+    }
+  }
+  return out;
+}
 
 /// [now] 다음의 [minute]분 (그날 0시부터) 시각. [weekday] 가 있으면 그 요일로.
 tz.TZDateTime nextAt(int minute, tz.TZDateTime now, {int? weekday}) {
@@ -149,17 +185,25 @@ class LocalReminders implements Reminders {
   }
 
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
+  Future<void> sync({
+    required List<Routine> routines,
+    required AlarmSettings settings,
+    Set<String> doneToday = const {},
+    List<FriendAlarm> friendAlarms = const [],
+  }) async {
     try {
       await _init();
       await _plugin.cancelAll();
       if (!settings.allOn) return;
       final now = tz.TZDateTime.now(tz.local);
       var id = 1;
+      // 하루 마감 알림 자리를 먼저 빼 둔다
+      var used = settings.dayEnd ? 1 : 0;
       if (settings.routineStart) {
         for (final r in routines) {
           if (!r.active || !r.alarmOn || r.minuteOfDay == null) continue;
           for (final d in r.weekdays) {
+            used++;
             final nid = id++;
             final slot = routineSlot(r.minuteOfDay!, d, doneToday: doneToday.contains(r.id), now: now);
             await _plugin.zonedSchedule(
@@ -173,6 +217,21 @@ class LocalReminders implements Reminders {
             );
           }
         }
+      }
+      // 친구 루틴 알림: 내 알림 뒤 남은 자리에만. 매주 반복.
+      var fid = friendAlarmIdBase;
+      for (final s in friendSlots(friendAlarms, maxScheduled - used)) {
+        final nid = fid++;
+        final body = friendAlarmBody(s.alarm);
+        await _plugin.zonedSchedule(
+          id: nid,
+          title: '하루살이',
+          body: body,
+          scheduledDate: nextAt(s.alarm.routine.minuteOfDay!, now, weekday: s.weekday),
+          notificationDetails: await _details(nid, iconAssetFor?.call(s.alarm.routine.emoji), body),
+          androidScheduleMode: AndroidScheduleMode.inexactAllowWhileIdle,
+          matchDateTimeComponents: DateTimeComponents.dayOfWeekAndTime,
+        );
       }
       if (settings.dayEnd) {
         await _plugin.zonedSchedule(

@@ -4,6 +4,7 @@ import 'dart:convert';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:haru_sari/data/auth.dart';
 import 'package:haru_sari/data/catalog.dart';
+import 'package:haru_sari/data/friends.dart';
 import 'package:haru_sari/data/models.dart';
 import 'package:haru_sari/data/reminders.dart';
 import 'package:haru_sari/data/rewards.dart';
@@ -22,13 +23,20 @@ class FakeReminders implements Reminders {
   List<Routine> lastRoutines = [];
   AlarmSettings? lastSettings;
   Set<String> lastDone = {};
+  List<FriendAlarm> lastFriendAlarms = const [];
 
   /// 있으면 알림 걸기가 이것이 끝날 때까지 멈춰 있다 (오래 걸리는 알림 걸기를 흉내 낸다).
   Completer<void>? gate;
   int running = 0, maxRunning = 0;
 
   @override
-  Future<void> sync({required List<Routine> routines, required AlarmSettings settings, Set<String> doneToday = const {}}) async {
+  Future<void> sync({
+    required List<Routine> routines,
+    required AlarmSettings settings,
+    Set<String> doneToday = const {},
+    List<FriendAlarm> friendAlarms = const [],
+  }) async {
+    lastFriendAlarms = friendAlarms;
     syncs++;
     running++;
     if (running > maxRunning) maxRunning = running;

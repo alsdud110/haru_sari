@@ -1,0 +1,43 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<!-- 스크립트는 같은 폴더의 go.js 만, 이동은 스토어 두 곳으로만 (go.js 에 고정) -->
+<meta http-equiv="Content-Security-Policy" content="default-src 'none'; script-src 'self'; style-src 'unsafe-inline'; img-src 'self'; base-uri 'none'; form-action 'none'">
+<meta name="referrer" content="no-referrer">
+<meta name="robots" content="noindex">
+<title>하루살이 · 친구 초대</title>
+<style>
+:root{color-scheme:light}
+*{box-sizing:border-box}
+body{margin:0;background:#F7F0E6;color:#3B3129;font:16px/1.7 system-ui,-apple-system,"Apple SD Gothic Neo","Noto Sans KR",sans-serif}
+main{max-width:440px;margin:auto;padding:48px 22px 64px;text-align:center}
+h1{font-size:1.5rem;margin:12px 0 6px}
+p{margin:6px 0;color:#7B7266}
+.code{display:inline-block;margin:14px 0 6px;padding:10px 16px;border-radius:12px;background:#fff;font:700 1.25rem/1 ui-monospace,Menlo,monospace;letter-spacing:.04em;color:#3B3129;user-select:all}
+.stores{display:grid;gap:10px;margin-top:22px}
+.stores a{display:block;padding:14px;border-radius:12px;background:#3B3129;color:#fff;text-decoration:none;font-weight:600}
+.stores a.alt{background:#fff;color:#3B3129;border:1px solid #E8DDCF}
+.hint{font-size:.9rem;margin-top:18px}
+[hidden]{display:none!important}
+</style>
+</head>
+<body>
+<main>
+  <img src="../share/card.png" alt="" width="200" height="100">
+  <h1>친구가 하루살이에 초대했어요</h1>
+  <p id="moving" hidden>스토어로 이동하고 있어요…</p>
+  <div id="codebox" hidden>
+    <p>가입한 뒤 이 코드를 넣으면 나도 친구도 코인을 받아요</p>
+    <div class="code" id="code"></div>
+  </div>
+  <div class="stores">
+    <a id="ios" href="https://apps.apple.com/app/id6834387060">App Store에서 받기 (iPhone)</a>
+    <a id="android" class="alt" href="https://play.google.com/store/apps/details?id=com.harusari.app">Google Play에서 받기 (Android)</a>
+  </div>
+  <p class="hint">이미 앱이 있으면 앱에서 나 → 친구 → 코드로 추가에 넣어 주세요.</p>
+</main>
+<script src="go.js"></script>
+</body>
+</html>

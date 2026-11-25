@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
 
+import 'friends.dart';
 import 'store.dart';
 
 /// 서버의 레벨·경험치·코인. 서버 값이 기준이다.
@@ -56,6 +57,14 @@ class AdReply {
   final Wallet wallet;
 }
 
+/// 초대 보상 요청의 답. [gained] 는 이번에 받은 코인, [wallet] 은 서버 지갑.
+class InviteClaim {
+  const InviteClaim({required this.result, this.gained = 0, this.wallet});
+  final ClaimResult result;
+  final int gained;
+  final Wallet? wallet;
+}
+
 /// 서버가 요청을 받았지만 처리하지 못했다 (함수가 없거나 값이 맞지 않음). 다시 보내도 같으므로 버린다.
 /// 연결이 끊긴 것과는 다르다 — 그때는 다른 예외가 나고, 요청을 남겨 두었다가 다시 보낸다.
 class RemoteRejected implements Exception {
@@ -87,6 +96,43 @@ abstract class Remote {
 
   /// 방문 공개를 켜거나 끈다. 끄면 방문 경로가 사라지고, 다시 켜면 새로 만들어진다.
   Future<void> setRoomPublic(bool on);
+
+  // ───── 나의 루틴 공유 (friends.dart). 방 공개처럼 동기화를 거치지 않고 바로 묻는다. ─────
+
+  /// 공유를 만들거나 스냅숏을 갱신한다. 지금 초대 코드를 돌려준다.
+  /// 서버가 값을 거절하면 [RemoteRejected].
+  Future<String> saveRoutineShare({
+    required String nickname,
+    required SharedLook look,
+    required List<SharedRoutine> routines,
+  });
+
+  /// 공유를 멈춘다. 코드가 사라지고 나를 추가한 친구 관계도 끊긴다.
+  Future<void> stopRoutineShare();
+
+  /// 지금 공유 중이면 코드와 공유한 루틴 id. 아니면 null.
+  Future<MyShare?> myRoutineShare();
+
+  /// 코드로 구경. [code] 는 [InviteCode.parse] 를 거친 값.
+  Future<ShareLookup> lookupShare(String code);
+
+  /// 친구 추가.
+  Future<FollowResult> follow(String code);
+
+  /// 친구 끊기.
+  Future<void> unfollow(String owner);
+
+  /// 내 친구들의 공유 루틴 (지금 공유 중인 사람만).
+  Future<List<FriendShare>> friendRoutines();
+
+  /// 친구 루틴 알림 켜기/끄기 (한 사람당 [maxFriendAlarms]개).
+  Future<AlarmResult> setFriendAlarm(String owner, String routineId, bool on);
+
+  /// 지금 초대 코드를 넣으면 보상을 받을 수 있는지 (가입 48시간 안, 아직 안 받음).
+  Future<bool> inviteEligible();
+
+  /// 초대 보상 받기 ([InviteRules]).
+  Future<InviteClaim> claimInvite(String code);
 }
 
 /// 기기 ↔ 서버 동기화.

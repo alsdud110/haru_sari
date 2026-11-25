@@ -1,5 +1,7 @@
 import 'package:flutter/foundation.dart';
 
+import 'data/friends.dart';
+
 /// AdMob 광고 정보. 공개돼도 되는 값이다.
 ///
 /// 넣을 곳이 두 군데다.
@@ -33,6 +35,45 @@ class AdConfig {
 /// 업데이트 안내 팝업이 서버의 app_updates 와 비교한다.
 class AppVersion {
   static const build = 8;
+}
+
+/// 카카오 (카카오톡 공유).
+///
+/// 네이티브 앱 키는 비밀값이 아니다: 앱 안의 URL scheme(kakao{키}, Info.plist·AndroidManifest)에
+/// 그대로 들어가야 하는 공개 식별자다. 다른 앱이 이 키를 쓰지 못하게 하는 건 카카오 콘솔의
+/// 번들 ID·패키지·키 해시 등록이다. REST API 키·Client Secret 은 절대 여기에 넣지 않는다.
+class KakaoConfig {
+  static const nativeAppKey = '5ca008b29b4d7516d31e55049ad7b6d9';
+}
+
+/// 나의 루틴 공유 문구 (PLAN_FRIEND_SHARE_STEP1.md). 문구는 여기서만 바꾼다.
+class ShareCopy {
+  static const appStore = 'https://apps.apple.com/app/id6834387060';
+  static const playStore = 'https://play.google.com/store/apps/details?id=com.harusari.app';
+
+  /// 초대 링크 하나: 받는 사람의 폰에 맞는 스토어로 보낸다 (docs/i/ 를 GitHub Pages 로 공개).
+  /// Android 는 그 페이지가 Play 링크에 코드를 실어(`referrer`) 설치 뒤 앱이 읽게 한다 (Install Referrer).
+  static String inviteLink(String code) => 'https://alsdud110.github.io/haru_sari/i/?code=$code';
+
+  /// [name] 은 보내는 사람 닉네임 (없으면 '친구'), [code] 는 8자 코드.
+  static String otherApps(String name, String code) =>
+      '$name님이 하루살이에서 루틴을 공유했어요 🌱\n'
+      '새로 가입하면 코드를 넣고 나도 친구도 ${InviteRules.newFriendCoins}코인을 받아요.\n'
+      '앱에서 나 → 친구 → 코드로 추가에 넣어 주세요.\n'
+      '코드: ${InviteCode.display(code)}\n'
+      '\n'
+      '앱 받기: ${inviteLink(code)}';
+
+  /// 공유하는 사람에게 보여 주는 한 줄 (루틴 공유 화면).
+  static String inviterReward() =>
+      '친구가 내 코드로 새로 가입하면 나도 ${InviteRules.inviterCoins}코인을 받아요 (${InviteRules.inviterMax}명까지)';
+
+  /// 카톡 카드 이미지 (docs/share/card.png 를 GitHub Pages 로 공개한 주소, 800×400).
+  static const cardImage = 'https://alsdud110.github.io/haru_sari/share/card.png';
+
+  static String kakaoTitle(String name) => '$name님의 루틴을 구경해 보세요';
+  static String kakaoDescription(String code) => '하루살이에서 같이 해요 · 코드 $code';
+  static const kakaoButton = '구경하러 가기';
 }
 
 /// 앱 밖의 안내 페이지.

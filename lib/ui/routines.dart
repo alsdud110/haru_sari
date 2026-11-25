@@ -3,6 +3,7 @@ import 'package:flutter/material.dart' hide Text;
 import '../app.dart';
 import '../data/models.dart';
 import '../theme/tokens.dart';
+import 'friends/routine_share_screen.dart';
 import 'motion.dart';
 import 'settings.dart';
 import 'routine_icon.dart';
@@ -37,6 +38,12 @@ class RoutineManageScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('내 루틴 관리'),
         actions: [
+          if (s.sharing != null && list.isNotEmpty)
+            IconButton(
+              tooltip: '루틴 공유',
+              onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const RoutineShareScreen())),
+              icon: const Icon(Icons.ios_share_rounded, size: 20),
+            ),
           TextButton.icon(
             onPressed: () => Navigator.push(context, MaterialPageRoute(builder: (_) => const AlarmSettingsScreen())),
             icon: const Icon(Icons.notifications_none_rounded, size: 20),

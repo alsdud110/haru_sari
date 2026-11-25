@@ -43,6 +43,12 @@ abstract class AuthService extends ChangeNotifier {
   /// 성공하면 null, 실패하면 안내 문구. 취소는 '' (안내 없이 조용히 끝낸다).
   Future<String?> signIn(SocialProvider provider);
 
+  /// 개발 빌드에서만: 소셜 로그인 없이 바로 시작 (서버의 익명 계정). 출시 빌드에서는 늘 false.
+  bool get devSignInAvailable => false;
+
+  /// [devSignInAvailable] 일 때만 부른다. 성공하면 null.
+  Future<String?> signInDev() async => '개발 빌드에서만 쓸 수 있어요';
+
   Future<void> logout() => signOutAccount();
 
   /// 계정 삭제. 서버의 계정·기록과 이 기기의 기록을 함께 지운다.

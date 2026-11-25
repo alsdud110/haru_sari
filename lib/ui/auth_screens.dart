@@ -179,8 +179,12 @@ class _IntroScreenState extends State<IntroScreen> {
   void _to(int i) => _page.animateToPage(i, duration: Motion.normal, curve: Motion.curve);
 }
 
-/// 공식 로고 (각 회사 로그인 버튼 가이드의 심볼).
-const _kakaoSymbol =
+/// 카카오 버튼 색 (카카오 로그인·카카오톡 공유 버튼 가이드). 루틴 공유 화면의 카카오톡 버튼도 같이 쓴다.
+const kakaoYellow = Color(0xFFFEE500);
+const kakaoLabel = Color(0xD9000000);
+
+/// 공식 로고 (각 회사 로그인 버튼 가이드의 심볼). 카카오 말풍선은 카카오톡 공유 버튼에도 쓴다.
+const kakaoSymbolSvg =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 18 18"><path fill="#000000" d="M9 .6C4.03.6 0 3.713 0 7.552c0 2.388 1.558 4.493 3.932 5.745l-.999 3.648c-.088.322.28.579.563.392l4.377-2.889c.37.036.745.057 1.127.057 4.97 0 9-3.113 9-6.953C18 3.713 13.97.6 9 .6"/></svg>';
 const _googleG =
     '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">'
@@ -203,8 +207,8 @@ class _SocialButtonsState extends State<SocialButtons> {
   SocialProvider? _busy;
   String? _error;
 
-  static const _kakaoYellow = Color(0xFFFEE500);
-  static const _kakaoText = Color(0xD9000000);
+  static const _kakaoYellow = kakaoYellow;
+  static const _kakaoText = kakaoLabel;
   static const _googleText = Color(0xFF1F1F1F);
   static const _googleBorder = Color(0xFF747775);
 
@@ -222,6 +226,11 @@ class _SocialButtonsState extends State<SocialButtons> {
     // 성공하면 앱이 첫 설정 화면(또는 홈)으로 바뀐다.
   }
 
+  Future<void> _dev() async {
+    final err = await AuthScope.read(context).signInDev();
+    if (mounted && err != null) setState(() => _error = err);
+  }
+
   /// 로고는 왼쪽, 문구는 가운데 (세 회사 가이드 공통 배치).
   Widget _button(SocialProvider p) {
     final (bg, fg, border, logo, label) = switch (p) {
@@ -229,7 +238,7 @@ class _SocialButtonsState extends State<SocialButtons> {
         _kakaoYellow,
         _kakaoText,
         null,
-        SvgPicture.string(_kakaoSymbol, width: 20, height: 20),
+        SvgPicture.string(kakaoSymbolSvg, width: 20, height: 20),
         '카카오로 시작하기',
       ),
       SocialProvider.google => (
@@ -302,6 +311,14 @@ class _SocialButtonsState extends State<SocialButtons> {
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         for (final p in providers) ...[_button(p), const SizedBox(height: Space.sm)],
+        if (AuthScope.of(context).devSignInAvailable) ...[
+          OutlinedButton.icon(
+            onPressed: _busy == null ? _dev : null,
+            icon: const Icon(Icons.bug_report_outlined),
+            label: const Text('개발용: 새 익명 계정으로 시작'),
+          ),
+          const SizedBox(height: Space.sm),
+        ],
         const SizedBox(height: Space.xs),
         // 실패 안내는 아래 한 줄 자리에 대신 보여준다 (버튼 자리가 밀리지 않게).
         Text(

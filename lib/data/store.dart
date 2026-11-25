@@ -13,6 +13,8 @@ import 'catalog.dart';
 import 'models.dart';
 import 'reminders.dart';
 import 'rewards.dart';
+import 'friends.dart';
+import 'routine_sharing.dart';
 import 'sync.dart';
 
 /// 저장소 추상화. 테스트에서는 메모리 저장소를 쓴다.
@@ -102,6 +104,20 @@ class AppState extends ChangeNotifier {
   static const _kLogs = 'logs';
   static const _kProfile = 'profile';
   static const _kOnboarded = 'onboarded';
+  static const _kFriendAlarms = 'friend_alarms';
+
+  /// 알림을 켠 친구 루틴 (기기에 적어 둔 것. 서버 친구 목록을 받을 때마다 맞춘다 → friend_alarm_sync.dart)
+  List<FriendAlarm> friendAlarms = [];
+
+  /// 친구 알림 목록을 바꾸고, 달라졌으면 알림을 다시 건다.
+  void setFriendAlarms(List<FriendAlarm> alarms) {
+    final next = jsonEncode([for (final a in alarms) a.toJson()]);
+    if (next == jsonEncode([for (final a in friendAlarms) a.toJson()])) return;
+    friendAlarms = List.of(alarms);
+    _kv.write(_kFriendAlarms, next);
+    notifyListeners();
+    syncReminders();
+  }
 
   final List<Routine> routines = [];
   final Map<String, DayLog> logs = {};
@@ -129,6 +145,12 @@ class AppState extends ChangeNotifier {
     final p = _kv.read(_kProfile);
     if (p != null) profile = Profile.fromJson((jsonDecode(p) as Map).cast<String, dynamic>());
     onboarded = _kv.read(_kOnboarded) == 'true';
+    final fa = _kv.read(_kFriendAlarms);
+    if (fa != null && fa.isNotEmpty) {
+      try {
+        friendAlarms = (jsonDecode(fa) as List).map(FriendAlarm.tryParse).whereType<FriendAlarm>().toList();
+      } catch (_) {}
+    }
     _migrateRoom();
   }
 
@@ -162,6 +184,9 @@ class AppState extends ChangeNotifier {
 
   /// 붙어 있으면 바뀐 것을 서버에 올린다. 없으면 기기에만 저장한다 (테스트 등).
   SyncEngine? sync;
+
+  /// 나의 루틴 공유 (서버가 붙어 있을 때만).
+  RoutineSharing? sharing;
 
   ShopItem? itemById(String id) => _catalogItem(id);
 
@@ -243,7 +268,12 @@ class AppState extends ChangeNotifier {
   Future<void> syncReminders() => _reminderRun = _reminderRun
       .then<void>((_) async {
         if (_closed) return; // 로그아웃 뒤에는 다시 걸지 않는다
-        await reminders.sync(routines: routines, settings: profile.alarms, doneToday: todayLog.completed.toSet());
+        await reminders.sync(
+          routines: routines,
+          settings: profile.alarms,
+          doneToday: todayLog.completed.toSet(),
+          friendAlarms: friendAlarms,
+        );
       })
       .onError((e, _) => debugPrint('reminder sync failed: $e'));
 

@@ -47,6 +47,13 @@
                 <category android:name="android.intent.category.BROWSABLE"/>
                 <data android:scheme="com.harusari.app" android:host="login-callback"/>
             </intent-filter>
+            <!-- 카카오톡 공유 카드의 "구경하러 가기": kakao{네이티브 앱 키}://kakaolink?code=... -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="kakao5ca008b29b4d7516d31e55049ad7b6d9" android:host="kakaolink"/>
+            </intent-filter>
         </activity>
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

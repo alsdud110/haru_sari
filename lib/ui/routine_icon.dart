@@ -58,10 +58,24 @@ const _otherIcons = <String, String>{
   '💌': 'letter',
   '🪙': 'coin',
   '🏆': 'trophy',
+  '✔': 'check',
+  '🔔': 'bell',
 };
 
+/// 친구 루틴 알림 종 (꺼짐: bell, 켜짐: 흔들리는 bell_ring).
+String bellAsset({required bool ringing}) => 'assets/icons/${ringing ? 'bell_ring' : 'bell'}.png';
+
 /// 같은 그림으로 이어 주는 이모지 (예전에 저장된 값 등)
-const _aliases = <String, String>{'🌅': 'sun', '☀': 'sun', '👟': 'shoe', '❤': 'heart', '📝': 'note', '🎶': 'music'};
+const _aliases = <String, String>{
+  '🌅': 'sun',
+  '☀': 'sun',
+  '👟': 'shoe',
+  '❤': 'heart',
+  '📝': 'note',
+  '🎶': 'music',
+  '✓': 'check',
+  '✅': 'check',
+};
 
 /// 아이콘 고르기에 보여 줄 이모지 목록.
 final routineIconChoices = routineIconAssets.keys.toList(growable: false);

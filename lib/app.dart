@@ -4,13 +4,17 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'data/ads.dart';
 import 'data/app_update.dart';
 import 'data/auth.dart';
+import 'data/friend_alarm_sync.dart';
+import 'data/kakao_share.dart';
 import 'data/reminders.dart';
 import 'data/store.dart';
+import 'data/routine_sharing.dart';
 import 'data/sync.dart';
 import 'room/manifest.dart';
 import 'room/registry.dart';
 import 'theme/tokens.dart';
 import 'ui/auth_screens.dart';
+import 'ui/friends/invite_scope.dart';
 import 'ui/motion.dart';
 import 'ui/onboarding.dart';
 import 'ui/shell.dart';
@@ -55,8 +59,12 @@ class HaruSariApp extends StatefulWidget {
     this.manifest,
     this.remoteFor,
     this.checkUpdate,
+    this.invites,
   });
   final KeyValue kv;
+
+  /// 카카오톡 공유·초대 링크 받기. 없으면 카카오톡 버튼을 숨긴다 (테스트).
+  final FriendInvites? invites;
   final AuthService auth;
   final Reminders? reminders;
 
@@ -110,14 +118,20 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
         final engine = SyncEngine(_state!, remote, kv, clock: widget.clock);
         _state!.sync = engine;
         engine.start();
+        _state!.sharing = RoutineSharing(_state!, remote, kv)..flush();
+        refreshFriendAlarms(_state!, remote);
       }
     }
     return _state!;
   }
 
+  /// 카톡 카드로 받은 초대 코드 (로그인·첫 설정 뒤 홈에서 연다)
+  late final PendingInvite _pending = PendingInvite(widget.kv);
+
   @override
   void initState() {
     super.initState();
+    widget.invites?.listen(_pending.receive);
     widget.auth.addListener(_onAuth);
     WidgetsBinding.instance.addObserver(this);
   }
@@ -125,11 +139,17 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
   /// 앱으로 돌아오면 못 보낸 것을 다시 보낸다.
   @override
   void didChangeAppLifecycleState(AppLifecycleState s) {
-    if (s == AppLifecycleState.resumed) _state?.sync?.flush();
+    if (s == AppLifecycleState.resumed) {
+      _state?.sync?.flush();
+      _state?.sharing?.flush();
+      final s = _state, remote = s?.sync?.remote;
+      if (s != null && remote != null) refreshFriendAlarms(s, remote);
+    }
   }
 
   void _disposeState() {
     _state?.sync?.dispose();
+    _state?.sharing?.dispose();
     _state?.dispose();
     _state = null;
   }
@@ -181,7 +201,8 @@ class _HaruSariAppState extends State<HaruSariApp> with WidgetsBindingObserver {
       ),
     );
     final reg = _registry;
-    return reg == null ? app : RegistryScope(registry: reg, child: app);
+    final scoped = InviteScope(pending: _pending, invites: widget.invites, child: app);
+    return reg == null ? scoped : RegistryScope(registry: reg, child: scoped);
   }
 }
 
@@ -192,7 +213,11 @@ class _Gate extends StatelessWidget {
   Widget build(BuildContext context) {
     final s = AppScope.of(context);
     final pulling = s.sync?.pulling;
-    Widget pick() => s.onboarded ? const HomeShell() : const SetupFlow();
+    Widget pick() => !s.onboarded
+        ? const SetupFlow()
+        : s.sync == null
+        ? const HomeShell()
+        : const InviteOpener(child: HomeShell());
     if (pulling == null) return AnimatedSwitcher(duration: Motion.slow, child: pick());
     // 새 기기: 서버에서 받아오는 동안 첫 설정 화면 대신 잠깐 기다린다.
     return ValueListenableBuilder<bool>(

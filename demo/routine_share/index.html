@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<!-- 나의 루틴 공유 시연 캡처 (에뮬레이터, 2026-11-26). 원본: https://claude.ai/artifact/7tWwNxwu8raVcghEPcSMpN -->
+<title>하루살이 루틴 공유 시연</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Dodum&family=Noto+Sans+KR:wght@400;600;700&display=swap">
+<style>
+  /* Layout: 한 줄 요약 → 장(A 보내기 / B 받기 / 확인) → 장마다 폰 화면 카드가 가로로 이어지는 띠 */
+  :root {
+    --bg: #FBF8F3;
+    --surface: #FFFFFF;
+    --ink: #2E2622;
+    --muted: #7A6E66;
+    --line: #E8DFD6;
+    --accent: #B85C38;
+    --accent-soft: #F3E3D9;
+    --ok: #3F7D58;
+    --display: "Gowun Dodum", "Noto Sans KR", system-ui, sans-serif;
+    --body: "Noto Sans KR", system-ui, -apple-system, sans-serif;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #1E1A17; --surface: #2A2420; --ink: #F1E9E1; --muted: #B4A79C; --line: #3D352F;
+      --accent: #E08A62; --accent-soft: #3A2A21; --ok: #7CC39A; color-scheme: dark;
+    }
+  }
+  :root[data-theme="dark"] {
+    --bg: #1E1A17; --surface: #2A2420; --ink: #F1E9E1; --muted: #B4A79C; --line: #3D352F;
+    --accent: #E08A62; --accent-soft: #3A2A21; --ok: #7CC39A; color-scheme: dark;
+  }
+  body { background: var(--bg); color: var(--ink); font-family: var(--body); line-height: 1.6; }
+  .wrap {
+    max-width: 1120px; margin: 0 auto;
+    padding-block: 32px 64px;
+    padding-left: max(16px, env(safe-area-inset-left, 0px));
+    padding-right: max(16px, env(safe-area-inset-right, 0px));
+    display: grid; gap: 40px;
+  }
+  header { display: grid; gap: 10px; max-width: 68ch; }
+  h1 { font-family: var(--display); font-weight: 400; font-size: clamp(1.8rem, 4vw, 2.5rem); line-height: 1.2; margin: 0; text-wrap: balance; }
+  .lede { margin: 0; color: var(--muted); }
+  .facts { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 0; padding: 0; list-style: none; }
+  .facts li { font-size: 0.82rem; padding: 4px 10px; border-radius: 999px; background: var(--accent-soft); color: var(--ink); }
+  .facts code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 0.8rem; }
+
+  section { display: grid; gap: 16px; }
+  .chapter { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .who { font-size: 0.75rem; font-weight: 700; letter-spacing: 0.06em; color: var(--surface); background: var(--accent); padding: 2px 10px; border-radius: 6px; }
+  .who.b { background: var(--ok); }
+  h2 { font-family: var(--display); font-weight: 400; font-size: 1.5rem; margin: 0; }
+  .chapter p { margin: 0; color: var(--muted); flex-basis: 100%; max-width: 68ch; }
+
+  .strip {
+    display: grid; grid-auto-flow: column; grid-auto-columns: minmax(200px, 230px);
+    gap: 16px; overflow-x: auto; padding-bottom: 12px; scroll-snap-type: x proximity;
+  }
+  figure { margin: 0; display: grid; gap: 10px; align-content: start; scroll-snap-align: start; }
+  .phone {
+    border-radius: 22px; overflow: hidden; border: 1px solid var(--line);
+    background: var(--surface); box-shadow: 0 6px 18px rgb(0 0 0 / 0.08);
+  }
+  .phone img { display: block; width: 100%; height: auto; }
+  figcaption { font-size: 0.88rem; display: grid; gap: 2px; min-width: 0; }
+  figcaption b { font-weight: 600; }
+  figcaption span { color: var(--muted); }
+  .step { font-variant-numeric: tabular-nums; color: var(--accent); font-weight: 700; margin-right: 4px; }
+
+  .notes { display: grid; gap: 12px; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); }
+  .note { background: var(--surface); border: 1px solid var(--line); border-radius: 14px; padding: 16px; display: grid; gap: 6px; min-width: 0; }
+  .note h3 { margin: 0; font-size: 1rem; }
+  .note p { margin: 0; color: var(--muted); font-size: 0.9rem; }
+  .note.ok h3::before { content: "✓ "; color: var(--ok); }
+  .note.warn h3::before { content: "! "; color: var(--accent); }
+  :focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+</style>
+
+<div class="wrap">
+  <header>
+    <h1>루틴 공유, 보내는 쪽부터 받는 쪽까지</h1>
+    <p class="lede">Pixel 7 Pro 에뮬레이터(Android 16)에서 개발 빌드로 처음부터 끝까지 눌러 본 화면입니다. 실제 Supabase 서버에 붙어 있고, 계정 두 개(Minyoung, Friend)는 개발용 익명 로그인으로 만들었습니다.</p>
+    <ul class="facts">
+      <li>실제 서버가 만든 코드 <code>HARU-JB2G-4MCW</code></li>
+      <li>공유한 루틴 3개 (점심은 뺌)</li>
+      <li>2026-11-26 촬영 · 최신 빌드로 전체 다시 찍음</li>
+    </ul>
+  </header>
+
+  <section aria-labelledby="ch-a">
+    <div class="chapter">
+      <span class="who">A · Minyoung</span>
+      <h2 id="ch-a">루틴을 골라 보내기</h2>
+      <p>나 탭의 새 "친구" 섹션에서 루틴 공유를 열고, 보여 줄 루틴을 고른 뒤 카카오톡과 다른 앱으로 보냅니다.</p>
+    </div>
+    <div class="strip">
+      <figure><div class="phone"><img src="shots/02_login.jpg?v=6" alt="로그인 화면. 카카오·구글 버튼 아래에 개발용 익명 계정 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">1</span>개발용 로그인</b><span>개발 빌드에만 보이는 "새 익명 계정으로 시작"</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/05_home_A.jpg?v=6" alt="A 계정의 오늘 화면. 루틴 4개" loading="lazy"></div>
+        <figcaption><b><span class="step">2</span>A의 홈</b><span>첫 설정에서 루틴 4개를 골랐어요</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/06_me_friends_section.jpg?v=6" alt="나 탭의 친구 섹션. 루틴 공유 꺼짐, 친구 루틴" loading="lazy"></div>
+        <figcaption><b><span class="step">3</span>나 → 친구</b><span>루틴 공유(꺼짐)와 친구 루틴 두 줄</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/07_share_screen.jpg?v=6" alt="루틴 공유 화면. 루틴 4개 모두 선택됨" loading="lazy"></div>
+        <figcaption><b><span class="step">4</span>루틴 공유</b><span>처음엔 쉬지 않는 루틴이 모두 선택돼요</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/08_share_picked.jpg?v=6" alt="점심 챙겨 먹기 선택을 해제한 화면" loading="lazy"></div>
+        <figcaption><b><span class="step">5</span>골라 빼기</b><span>"점심 챙겨 먹기"는 빼고 3개만</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/09_kakao_mock.jpg?v=6" alt="카카오톡 채팅방을 흉내 낸 개발용 화면. 미니미 카드와 구경하러 가기 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">6</span>카카오톡으로 보내기</b><span>에뮬레이터엔 카카오톡이 없어 카드 모양을 그린 개발용 화면</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/10_share_on.jpg?v=6" alt="공유 중 상태. 내 코드 HARU-JB2G-4MCW와 복사 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">7</span>공유 중</b><span>서버가 만든 코드와 복사 · 버튼 위에 "친구가 내 코드로 가입하면 나도 30코인" 안내</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/11_share_sheet.jpg?v=6" alt="안드로이드 공유 시트에 공유 글 미리보기" loading="lazy"></div>
+        <figcaption><b><span class="step">8</span>다른 앱으로 보내기</b><span>글에 코드와 "앱 받기" 링크 하나 (폰에 맞는 스토어로)</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/12_me_sharing_on.jpg?v=6" alt="나 탭에서 루틴 공유가 공유 중 3개로 표시" loading="lazy"></div>
+        <figcaption><b><span class="step">9</span>나 탭 상태</b><span>"공유 중 · 3개"</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="ch-b">
+    <div class="chapter">
+      <span class="who b">B · Friend</span>
+      <h2 id="ch-b">카톡 카드로 받아서 친구 되기</h2>
+      <p>로그아웃 후 새 익명 계정으로 가입했습니다. 카톡 카드의 "구경하러 가기"가 여는 것과 같은 링크(<code>kakao{앱키}://kakaolink?code=JB2G4MCW</code>)를 열어 앱의 실제 수신 경로를 탔습니다.</p>
+    </div>
+    <div class="strip">
+      <figure><div class="phone"><img src="shots/13_home_B.jpg?v=6" alt="B 계정의 오늘 화면" loading="lazy"></div>
+        <figcaption><b><span class="step">10</span>B의 홈</b><span>새 계정, 루틴 2개</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/14_received_preview.jpg?v=6" alt="Minyoung님이 루틴을 공유했어요. 루틴 3개와 친구 추가 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">11</span>카톡 수신 → 구경</b><span>링크가 열리자 바로 구경 화면. 고른 3개만 보여요</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/15_friends_list.jpg?v=6" alt="친구 목록에 Minyoung 루틴 3개, 친구 1/10명" loading="lazy"></div>
+        <figcaption><b><span class="step">12</span>친구 추가</b><span>친구 목록으로 넘어가요 · 1 / 10명</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/21_bells.jpg?v=6" alt="Minyoung님의 루틴 화면. 일어나기와 물 한 잔은 흐린 종과 추가함 체크, 가볍게 운동하기는 흔들리는 종과 내 루틴에 추가" loading="lazy"></div>
+        <figcaption><b><span class="step">13</span>친구 루틴 · 알림 · 담기</b><span>흔들리는 종 = 알림 켬("가볍게 운동하기" 오후 7시), 흐린 종 = 꺼짐. "일어나기"를 내 루틴에 담아 체크 표시</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/19_code_dialog.jpg?v=6" alt="코드로 친구 추가 입력 창에 HARU-ZZZZ-ZZZZ" loading="lazy"></div>
+        <figcaption><b><span class="step">14</span>코드로 추가</b><span>직접 입력 · 붙여넣기도 돼요</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/20_code_not_found.jpg?v=6" alt="화면 가운데에 우편함 아이콘과 공유가 끝났거나 코드가 맞지 않아요 안내, 다른 코드 넣기 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">15</span>틀린 코드</b><span>"공유가 끝났거나 코드가 맞지 않아요" · [다른 코드 넣기]</span></figcaption></figure>
+    </div>
+  </section>
+
+  <section aria-labelledby="ch-d">
+    <div class="chapter">
+      <span class="who b">B · Friend</span>
+      <h2 id="ch-d">다른 앱으로 보내기 (최신 화면)</h2>
+      <p>카카오톡 버튼에 로그인 화면과 같은 카카오 공식 말풍선 심볼을 넣은 뒤 다시 찍었습니다. 공유 전 상태에서 "다른 앱으로 보내기"를 누르면 서버가 코드를 만들고, 폰의 공유 시트가 열립니다.</p>
+    </div>
+    <div class="strip">
+      <figure><div class="phone"><img src="shots/22_kakao_button.jpg?v=6" alt="공유 전 루틴 공유 화면. 카카오 말풍선 심볼이 들어간 카카오톡으로 보내기 버튼과 다른 앱으로 보내기 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">16</span>공유 전</b><span>코드 칸 없음 · 30코인 안내 · 카카오 심볼 버튼</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/23_other_apps_sheet.jpg?v=6" alt="안드로이드 공유 시트. 보낼 글 미리보기에 앱 받기 링크 하나" loading="lazy"></div>
+        <figcaption><b><span class="step">17</span>다른 앱으로 보내기</b><span>폰의 공유 시트가 열려요. 글에는 "앱 받기" 링크가 하나만 들어가요</span></figcaption></figure>
+      <figure><div class="phone"><img src="shots/24_share_on_B.jpg?v=6" alt="공유 후 루틴 공유 화면. 내 코드 HARU-4KW7-KJET와 복사 버튼" loading="lazy"></div>
+        <figcaption><b><span class="step">18</span>보낸 뒤</b><span>돌아오면 내 코드 칸이 생겨 있어요</span></figcaption></figure>
+    </div>
+    <div class="note" style="max-width: 68ch">
+      <h3>공유 시트로 보내지는 글 (그대로)</h3>
+      <p style="white-space: pre-line; color: var(--ink)">Friend님이 하루살이에서 루틴을 공유했어요 🌱
+새로 가입하면 코드를 넣고 나도 친구도 30코인을 받아요.
+앱에서 나 → 친구 → 코드로 추가에 넣어 주세요.
+코드: HARU-4KW7-KJET
+
+앱 받기: https://alsdud110.github.io/haru_sari/i/?code=4KW7KJET</p>
+    </div>
+    <div class="notes">
+      <div class="note ok"><h3>링크를 누르면 폰에 맞는 스토어로</h3><p>iPhone·iPad는 App Store, Android는 Play 스토어로 바로 넘어가요. Android는 코드를 실어 보내서 설치 뒤 가입 창에 코드가 미리 채워져요. PC에서 열면 두 스토어 버튼과 코드를 보여 줘요.</p></div>
+      <div class="note ok"><h3>카톡 카드는 원래 자동</h3><p>"구경하러 가기"는 앱이 있으면 앱을 열고, 없으면 카카오가 OS를 보고 맞는 스토어로 보내요.</p></div>
+      <div class="note warn"><h3>링크 페이지는 푸시 후에 열려요</h3><p>이동 페이지(docs/i)는 GitHub Pages에 올라가야 동작해요. 그 전에는 링크를 눌러도 404가 나요.</p></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="ch-c">
+    <div class="chapter">
+      <h2 id="ch-c">화면 밖에서 확인한 것</h2>
+    </div>
+    <div class="notes">
+      <div class="note ok"><h3>친구 알림 예약</h3><p>기기의 예약 목록에 "🌱 Minyoung님의 ‘가볍게 운동하기’ 시간이에요. 같이 해볼까요?"가 요일 7개 모두 들어가 있었어요.</p></div>
+      <div class="note ok"><h3>공유 글의 Play 링크</h3><p>Android 링크 끝에 <code>&amp;referrer=code%3DJB2G4MCW</code>가 붙어, 이 링크로 설치하면 가입 직후 코드가 미리 채워져요.</p></div>
+      <div class="note warn"><h3>실제 카카오톡 화면은 아직</h3><p>에뮬레이터에 카카오톡이 없어 6번은 그린 화면이에요. 진짜 카드와 버튼은 카카오톡이 있는 폰에서 확인해야 해요.</p></div>
+      <div class="note warn"><h3>초대 보상 창은 이번엔 안 뜸</h3><p>익명 계정은 서버가 초대 보상을 막아서 B에게 "친구에게 초대받았나요?" 창이 뜨지 않았어요. 이 창은 위젯 테스트로 확인했고, 실제로 보려면 소셜 로그인 새 계정이 필요해요.</p></div>
+    </div>
+  </section>
+</div>
+
+</html>
